@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions/v2";
 import { getMessaging } from "firebase-admin/messaging";
 import { AUTH, FUNCTION_RUNTIME_OPTS } from "../../utils/config";
 
@@ -50,7 +51,7 @@ export const sendNotification = onCall(
         messageId: response,
       };
     } catch (error) {
-      console.error("Error sending notification:", error);
+      logger.error("Error sending notification:", error);
       throw new HttpsError(
         "internal",
         `Failed to send notification: ${

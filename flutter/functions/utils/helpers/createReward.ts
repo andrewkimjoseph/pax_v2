@@ -15,6 +15,7 @@ interface RewardParams {
   txnHash?: string | null;
   amount: number;
   rewardCurrencyId: number;
+  logPrefix?: "V1" | "V2";
 }
 
 /**
@@ -30,10 +31,12 @@ export async function createRewardRecord(params: RewardParams): Promise<string> 
       nonce, 
       txnHash = null,
       amount,
-      rewardCurrencyId
+      rewardCurrencyId,
+      logPrefix
     } = params;
-    
-    logger.info("Creating reward record", {
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+
+    logger.info(`${prefix}Creating reward record`, {
       taskId,
       participantId,
       taskCompletionId
@@ -61,8 +64,8 @@ export async function createRewardRecord(params: RewardParams): Promise<string> 
       timeCreated: FieldValue.serverTimestamp(),
       timeUpdated: FieldValue.serverTimestamp(),
     });
-    
-    logger.info("Reward record created successfully", {
+
+    logger.info(`${prefix}Reward record created successfully`, {
       rewardId,
       taskId,
       participantId,
@@ -71,7 +74,8 @@ export async function createRewardRecord(params: RewardParams): Promise<string> 
     
     return rewardId;
   } catch (error) {
-    logger.error("Error creating reward record", { error });
+    const prefix = params.logPrefix ? `[${params.logPrefix}] ` : "";
+    logger.error(`${prefix}Error creating reward record`, { error });
     throw error;
   }
 }
@@ -81,10 +85,12 @@ export async function createRewardRecord(params: RewardParams): Promise<string> 
  */
 export async function updateRewardWithTxnHash(
   rewardId: string,
-  txnHash: string
+  txnHash: string,
+  logPrefix?: "V1" | "V2"
 ): Promise<void> {
   try {
-    logger.info("Updating reward record with transaction hash", {
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+    logger.info(`${prefix}Updating reward record with transaction hash`, {
       rewardId,
       txnHash
     });
@@ -100,13 +106,14 @@ export async function updateRewardWithTxnHash(
       timePaidOut: FieldValue.serverTimestamp(),
       timeUpdated: FieldValue.serverTimestamp()
     });
-    
-    logger.info("Reward record updated successfully with transaction hash", {
+
+    logger.info(`${prefix}Reward record updated successfully with transaction hash`, {
       rewardId,
       txnHash
     });
   } catch (error) {
-    logger.error("Error updating reward record with transaction hash", { 
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+    logger.error(`${prefix}Error updating reward record with transaction hash`, { 
       error,
       rewardId,
       txnHash

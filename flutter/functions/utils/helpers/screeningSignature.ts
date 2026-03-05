@@ -7,6 +7,7 @@ import {
 import { celo } from "viem/chains";
 import { createViemAccount } from "@privy-io/server-auth/viem";
 import { randomBytes } from "crypto";
+import { logger } from "firebase-functions/v2";
 import { PRIVY_CLIENT, PAX_MASTER_PRIVATE_KEY_ACCOUNT } from "../config";
 
 // Generate a random nonce for signatures
@@ -78,7 +79,8 @@ export async function verifyScreeningSignatureCanvassing(
   taskId: string,
   nonce: bigint,
   signature: Hex,
-  expectedSigner: Address
+  expectedSigner: Address,
+  logPrefix?: "V1" | "V2"
 ): Promise<boolean> {
   try {
     const domain = createCanvassingTaskManagerDomain(taskManagerContractAddress);
@@ -105,7 +107,8 @@ export async function verifyScreeningSignatureCanvassing(
       signature,
     });
   } catch (error) {
-    console.error("Canvassing screening signature verification error:", error);
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+    logger.error(`${prefix}Canvassing screening signature verification error:`, error);
     return false;
   }
 }
@@ -114,7 +117,8 @@ export async function createScreeningSignaturePackageCanvassing(
   taskManagerContractAddress: Address,
   smartAccountContractAddress: Address,
   taskId: string,
-  nonce: bigint
+  nonce: bigint,
+  logPrefix?: "V1" | "V2"
 ) {
   const signature = await signScreeningRequestCanvassing(
     taskManagerContractAddress,
@@ -128,7 +132,8 @@ export async function createScreeningSignaturePackageCanvassing(
     taskId,
     nonce,
     signature,
-    PAX_MASTER_PRIVATE_KEY_ACCOUNT.address
+    PAX_MASTER_PRIVATE_KEY_ACCOUNT.address,
+    logPrefix
   );
   return {
     signature,
@@ -275,7 +280,7 @@ export async function verifyScreeningSignature(
       signature
     });
   } catch (error) {
-    console.error("Signature verification error:", error);
+    logger.error("[V1] Signature verification error:", error);
     return false;
   }
 }

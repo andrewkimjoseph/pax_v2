@@ -9,10 +9,12 @@ import { DB } from "../../utils/config";
  */
 export async function updateRewardWithTxnHash(
   rewardId: string,
-  txnHash: string
+  txnHash: string,
+  logPrefix?: "V1" | "V2"
 ): Promise<void> {
   try {
-    logger.info("Updating reward record with transaction hash", {
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+    logger.info(`${prefix}Updating reward record with transaction hash`, {
       rewardId,
       txnHash
     });
@@ -27,13 +29,14 @@ export async function updateRewardWithTxnHash(
       status: 'completed',
       timeUpdated: FieldValue.serverTimestamp()
     });
-    
-    logger.info("Reward record updated successfully with transaction hash", {
+
+    logger.info(`${prefix}Reward record updated successfully with transaction hash`, {
       rewardId,
       txnHash
     });
   } catch (error) {
-    logger.error("Error updating reward record with transaction hash", { 
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+    logger.error(`${prefix}Error updating reward record with transaction hash`, { 
       error,
       rewardId,
       txnHash

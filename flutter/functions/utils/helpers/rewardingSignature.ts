@@ -7,6 +7,7 @@ import {
 import { celo } from "viem/chains";
 import { createViemAccount } from "@privy-io/server-auth/viem";
 import { randomBytes } from "crypto";
+import { logger } from "firebase-functions/v2";
 import { PRIVY_CLIENT, PAX_MASTER_PRIVATE_KEY_ACCOUNT } from "../../utils/config";
 
 // Generate a random nonce for signatures
@@ -407,7 +408,7 @@ export async function verifyRewardClaimSignature(
       signature
     });
   } catch (error) {
-    console.error("Signature verification error:", error);
+    logger.error("[V1] Signature verification error:", error);
     return false;
   }
 }

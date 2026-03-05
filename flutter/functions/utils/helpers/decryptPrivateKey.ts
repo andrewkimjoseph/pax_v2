@@ -6,11 +6,13 @@ import {logger} from "firebase-functions/v2";
  * Uses AES-GCM with PBKDF2 key derivation, matching Flutter implementation.
  * @param {string} encryptedJson - Encrypted JSON string from Flutter
  * @param {string} sessionKey - Session key (Firebase Auth token or Google ID)
+ * @param {string} [logPrefix] - Optional "V1" or "V2" for log prefix (defaults to V2)
  * @return {string} Decrypted private key hex string (without 0x prefix)
  */
 export function decryptPrivateKey(
   encryptedJson: string,
-  sessionKey: string
+  sessionKey: string,
+  logPrefix?: "V1" | "V2"
 ): string {
   try {
     const data = JSON.parse(encryptedJson);
@@ -46,7 +48,8 @@ export function decryptPrivateKey(
 
     return decrypted;
   } catch (error) {
-    logger.error("Failed to decrypt private key", {error});
+    const prefix = logPrefix ? `[${logPrefix}] ` : "[V2] "; // V2 is default since only V2 uses ephemeral decryption
+    logger.error(`${prefix}Failed to decrypt private key`, {error});
     throw new Error(
       "Decryption failed. The encrypted key may be from a different " +
         "session or corrupted."

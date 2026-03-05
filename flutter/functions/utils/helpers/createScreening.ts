@@ -19,11 +19,15 @@ interface ScreeningParams {
  * Internal function to create a screening record
  * This can be called directly from other cloud functions
  */
-export async function createScreeningRecord(params: ScreeningParams): Promise<string> {
+export async function createScreeningRecord(
+  params: ScreeningParams,
+  logPrefix?: "V1" | "V2"
+): Promise<string> {
   try {
     const { taskId, participantId, signature, nonce, txnHash = null } = params;
-    
-    logger.info("Creating screening record", {
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+
+    logger.info(`${prefix}Creating screening record`, {
       taskId,
       participantId
     });
@@ -47,8 +51,8 @@ export async function createScreeningRecord(params: ScreeningParams): Promise<st
       timeCreated: FieldValue.serverTimestamp(),
       timeUpdated: FieldValue.serverTimestamp()
     });
-    
-    logger.info("Screening record created successfully", {
+
+    logger.info(`${prefix}Screening record created successfully`, {
       screeningId,
       taskId,
       participantId
@@ -56,7 +60,8 @@ export async function createScreeningRecord(params: ScreeningParams): Promise<st
     
     return screeningId;
   } catch (error) {
-    logger.error("Error creating screening record", { error });
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+    logger.error(`${prefix}Error creating screening record`, { error });
     throw error;
   }
 }

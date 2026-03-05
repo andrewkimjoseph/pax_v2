@@ -43,7 +43,7 @@ export const createPaxAccountV1Proxy = onCall(
       });
       // Ensure the user is authenticated
       if (!request.auth) {
-        logger.error("Unauthenticated request to createPaxAccountV1Proxy", {
+        logger.error("[V1] Unauthenticated request to createPaxAccountV1Proxy", {
           requestAuth: request.auth,
         });
         throw new HttpsError(
@@ -66,7 +66,7 @@ export const createPaxAccountV1Proxy = onCall(
 
       if (!_primaryPaymentMethod) {
         logger.error(
-          "Missing required parameter: walletAddress in createPaxAccountV1Proxy",
+          "[V1] Missing required parameter: walletAddress in createPaxAccountV1Proxy",
           { _primaryPaymentMethod }
         );
         throw new HttpsError(
@@ -77,7 +77,7 @@ export const createPaxAccountV1Proxy = onCall(
 
       if (!serverWalletId) {
         logger.error(
-          "Missing required parameter: serverWalletId in createPaxAccountV1Proxy",
+          "[V1] Missing required parameter: serverWalletId in createPaxAccountV1Proxy",
           { serverWalletId }
         );
         throw new HttpsError(
@@ -86,7 +86,7 @@ export const createPaxAccountV1Proxy = onCall(
         );
       }
 
-      logger.info("Deploying PaxAccount proxy", {
+      logger.info("[V1] Deploying PaxAccount proxy", {
         userId,
         _primaryPaymentMethod,
         serverWalletId,
@@ -104,7 +104,7 @@ export const createPaxAccountV1Proxy = onCall(
           paxAccountData?.contractAddress &&
           paxAccountData?.contractCreationTxnHash
         ) {
-          logger.info("PaxAccountContract already exists for user", {
+          logger.info("[V1] PaxAccountContract already exists for user", {
             contractAddress: paxAccountData.contractAddress,
             txnHash: paxAccountData.contractCreationTxnHash,
           });
@@ -114,7 +114,7 @@ export const createPaxAccountV1Proxy = onCall(
           };
         }
       } else {
-        logger.info("No PaxAccount contract found for user, creating new one", {
+        logger.info("[V1] No PaxAccount contract found for user, creating new one", {
           userId,
         });
       }
@@ -126,7 +126,7 @@ export const createPaxAccountV1Proxy = onCall(
 
       if (!wallet) {
         logger.error(
-          "Server wallet not found with the provided ID in createPaxAccountV1Proxy",
+          "[V1] Server wallet not found with the provided ID in createPaxAccountV1Proxy",
           { serverWalletId }
         );
         throw new HttpsError(
@@ -153,7 +153,7 @@ export const createPaxAccountV1Proxy = onCall(
         // version: "1.4.1",
       });
 
-      logger.info("Using Smart Account", {
+      logger.info("[V1] Using Smart Account", {
         address: smartAccount.address,
       });
 
@@ -192,7 +192,7 @@ export const createPaxAccountV1Proxy = onCall(
         ],
       });
 
-      logger.info("User operation submitted", { userOpTxnHash });
+      logger.info("[V1] User operation submitted", { userOpTxnHash });
 
       // Wait for user operation receipt
       const userOpReceipt =
@@ -201,7 +201,7 @@ export const createPaxAccountV1Proxy = onCall(
         });
 
       if (!userOpReceipt.success) {
-        logger.error("User operation failed in createPaxAccountV1Proxy", {
+        logger.error("[V1] User operation failed in createPaxAccountV1Proxy", {
           userOpReceipt,
         });
         throw new HttpsError(
@@ -211,14 +211,14 @@ export const createPaxAccountV1Proxy = onCall(
       }
 
       const txnHash = userOpReceipt.receipt.transactionHash;
-      logger.info("Transaction confirmed", { txnHash });
+      logger.info("[V1] Transaction confirmed", { txnHash });
 
       // Retrieve proxy address from logs
       const proxyAddress = await getDeployedProxyContractAddress(txnHash);
 
       if (!proxyAddress) {
         logger.error(
-          "Failed to retrieve proxy contract address from transaction logs in createPaxAccountV1Proxy",
+          "[V1] Failed to retrieve proxy contract address from transaction logs in createPaxAccountV1Proxy",
           { txnHash }
         );
         throw new HttpsError(
@@ -227,7 +227,7 @@ export const createPaxAccountV1Proxy = onCall(
         );
       }
 
-      logger.info("PaxAccount proxy deployed successfully", {
+      logger.info("[V1] PaxAccount proxy deployed successfully", {
         proxyAddress,
         implementationAddress: PAXACCOUNT_V1_IMPLEMENTATION_ADDRESS,
       });
@@ -238,7 +238,7 @@ export const createPaxAccountV1Proxy = onCall(
         txnHash,
       };
     } catch (error) {
-      logger.error("Error deploying PaxAccount proxy", { error });
+      logger.error("[V1] Error deploying PaxAccount proxy", { error });
 
       let errorMessage = "Unknown error occurred";
       if (error instanceof Error) {

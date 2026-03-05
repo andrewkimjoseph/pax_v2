@@ -41,7 +41,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
       // Ensure the user is authenticated
       if (!request.auth) {
         logger.error(
-          "Unauthenticated request to addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
+          "[V1] Unauthenticated request to addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
           {
             requestAuth: request.auth,
           }
@@ -74,7 +74,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
 
       if (!_paymentMethodId || _paymentMethodId === 0) {
         logger.error(
-          "Invalid payment method ID in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
+          "[V1] Invalid payment method ID in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
           { _paymentMethodId }
         );
         throw new HttpsError(
@@ -85,7 +85,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
 
       if (!walletAddress) {
         logger.error(
-          "Missing required parameter: paymentMethodAddress in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
+          "[V1] Missing required parameter: paymentMethodAddress in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
           { walletAddress }
         );
         throw new HttpsError(
@@ -96,7 +96,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
 
       if (!serverWalletId) {
         logger.error(
-          "Missing required parameter: serverWalletId in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
+          "[V1] Missing required parameter: serverWalletId in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
           { serverWalletId }
         );
         throw new HttpsError(
@@ -107,7 +107,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
 
       if (!contractAddress) {
         logger.error(
-          "Missing required parameter: contractAddress in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
+          "[V1] Missing required parameter: contractAddress in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
           { contractAddress }
         );
         throw new HttpsError(
@@ -116,7 +116,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
         );
       }
 
-      logger.info("Adding non-primary payment method to PaxAccount", {
+      logger.info("[V1] Adding non-primary payment method to PaxAccount", {
         userId,
         _paymentMethodId,
         walletAddress,
@@ -131,7 +131,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
 
       if (!wallet) {
         logger.error(
-          "Server wallet not found with the provided ID in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
+          "[V1] Server wallet not found with the provided ID in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
           { serverWalletId }
         );
         throw new HttpsError(
@@ -157,7 +157,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
         },
       });
 
-      logger.info("Using Smart Account", {
+      logger.info("[V1] Using Smart Account", {
         address: smartAccount.address,
       });
 
@@ -193,7 +193,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
         calls: [transactionData],
       });
 
-      logger.info("User operation submitted for adding payment method", {
+      logger.info("[V1] User operation submitted for adding payment method", {
         userOpTxnHash,
       });
 
@@ -205,7 +205,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
 
       if (!userOpReceipt.success) {
         logger.error(
-          "User operation failed in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
+          "[V1] User operation failed in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
           {
             userOpReceipt,
           }
@@ -217,13 +217,13 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
       }
 
       const txnHash = userOpReceipt.receipt.transactionHash;
-      logger.info("Payment method addition transaction confirmed", { txnHash });
+      logger.info("[V1] Payment method addition transaction confirmed", { txnHash });
 
       return {
         txnHash,
       };
     } catch (error) {
-      logger.error("Error adding non-primary payment method to PaxAccount", {
+      logger.error("[V1] Error adding non-primary payment method to PaxAccount", {
         error,
       });
 
