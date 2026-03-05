@@ -109,7 +109,7 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
             print('FCM Provider: Auth state changed to authenticated');
           }
 
-          _saveTokenForCurrentUser(current.user.uid);
+          _requestPermissionAndSaveTokenForCurrentUser(current.user.uid);
         } else if (current.state == AuthState.unauthenticated) {
           if (kDebugMode) {
             print('FCM Provider: Auth state changed to unauthenticated');
@@ -122,7 +122,8 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
     });
   }
 
-  Future<void> _saveTokenForCurrentUser(String userId) async {
+  /// Requests notification permission (after login) then saves FCM token for the user.
+  Future<void> _requestPermissionAndSaveTokenForCurrentUser(String userId) async {
     if (state.isSavingToken) {
       if (kDebugMode) {
         print(
@@ -135,10 +136,11 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
     try {
       state = state.copyWith(isSavingToken: true);
 
-      // Save token
-      await _notificationService.saveTokenForParticipant(userId);
+      // Request notification permission and obtain FCM token (after sign-in)
+      await _notificationService.requestPermissionAndEnsureFcmToken();
 
-      // Start listening for token refreshes
+      // Save token and start listening for refreshes
+      await _notificationService.saveTokenForParticipant(userId);
       _notificationService.listenForTokenRefresh(userId);
 
       state = state.copyWith(isSavingToken: false);

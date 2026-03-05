@@ -26,7 +26,8 @@ class NotificationService {
   // State management variables
   String? _currentToken; // Current FCM token
   String? _currentUserId; // Current user's ID
-  bool _isInitialized = false; // Initialization status
+  bool _isInitialized = false; // Initialization status (local notifications)
+  bool _isFcmInitialized = false; // FCM permission requested and token obtained (done after login)
   bool _isSavingToken = false; // Token saving status
 
   /// Android notification channel configuration for high importance notifications
@@ -44,8 +45,9 @@ class NotificationService {
   // Private constructor for singleton pattern
   NotificationService._internal() : _repository = FcmTokenRepository();
 
-  /// Initializes the notification service by setting up both local and Firebase notifications.
-  /// This method should be called when the app starts.
+  /// Initializes the notification service by setting up local notifications only.
+  /// Does NOT request notification permission or fetch FCM token here; that happens
+  /// after sign-in via [requestPermissionAndEnsureFcmToken].
   Future<void> initialize() async {
     if (_isInitialized) {
       if (kDebugMode) print('Notification Service: Already initialized');
@@ -54,11 +56,28 @@ class NotificationService {
 
     try {
       await _initializeLocalNotifications();
-      await _initializeFirebaseMessaging();
       _isInitialized = true;
-      if (kDebugMode) print('Notification Service: Successfully initialized');
+      if (kDebugMode) print('Notification Service: Local notifications initialized');
     } catch (e) {
       if (kDebugMode) print('Notification Service: Error initializing: $e');
+    }
+  }
+
+  /// Requests notification permission and fetches the FCM token.
+  /// Call this after the user has signed in so the permission prompt appears post-login.
+  Future<void> requestPermissionAndEnsureFcmToken() async {
+    if (_isFcmInitialized) {
+      if (kDebugMode) print('Notification Service: FCM already initialized');
+      return;
+    }
+
+    try {
+      await _initializeFirebaseMessaging();
+      _isFcmInitialized = true;
+      if (kDebugMode) print('Notification Service: FCM permission and token ready');
+    } catch (e) {
+      if (kDebugMode) print('Notification Service: Error initializing FCM: $e');
+      rethrow;
     }
   }
 
@@ -132,16 +151,18 @@ class NotificationService {
     );
 
     _currentToken = await _messaging.getToken();
+    _isFcmInitialized = true;
     if (kDebugMode) {
       print('FCM Token: ${_currentToken?.substring(0, 10)}...');
     }
   }
 
-  /// Retrieves the current FCM token. If not initialized, initializes the service first.
-  /// Returns null if token retrieval fails.
+  /// Retrieves the current FCM token. Returns null if permission has not yet been
+  /// requested (e.g. before login). Call [requestPermissionAndEnsureFcmToken] after
+  /// sign-in to request permission and obtain the token.
   Future<String?> getToken() async {
     try {
-      if (!_isInitialized) await initialize();
+      if (!_isFcmInitialized) return null;
       final token = await _messaging.getToken();
       _currentToken = token;
       if (kDebugMode) {
@@ -333,10 +354,11 @@ class NotificationService {
     FirebaseMessaging.onMessageOpenedApp.listen(onMessageTap);
   }
 
-  /// Cleans up the service by resetting state variables
+  /// Cleans up the service by resetting state variables (e.g. on sign-out).
   void dispose() {
     _currentUserId = null;
     _currentToken = null;
+    _isFcmInitialized = false;
   }
 
   /// Formats numeric amounts for display in notifications
