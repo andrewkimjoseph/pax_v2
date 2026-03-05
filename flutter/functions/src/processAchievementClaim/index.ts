@@ -16,7 +16,7 @@ import {
   DB,
   AUTH,
   DRPC_URL,
-  CANVASSING_REWARDER_ADDRESS,
+  CANVASSING_REWARDER_PROXY_ADDRESS,
   REWARD_TOKEN_ADDRESS,
   PIMLICO_URL,
   PAX_MASTER_PRIVATE_KEY_ACCOUNT,
@@ -123,13 +123,13 @@ export const processAchievementClaim = onCall(
 
       if (isV2) {
         if (
-          !CANVASSING_REWARDER_ADDRESS ||
-          CANVASSING_REWARDER_ADDRESS === "0x"
+          !CANVASSING_REWARDER_PROXY_ADDRESS ||
+          CANVASSING_REWARDER_PROXY_ADDRESS === "0x"
         ) {
-          logger.error("CANVASSING_REWARDER_ADDRESS not configured");
+          logger.error("[V2] CANVASSING_REWARDER_PROXY_ADDRESS not configured");
           throw new HttpsError(
             "failed-precondition",
-            "Achievement claim service not configured. Missing CANVASSING_REWARDER_ADDRESS."
+            "Achievement claim service not configured. Missing CANVASSING_REWARDER_PROXY_ADDRESS."
           );
         }
 
@@ -144,7 +144,7 @@ export const processAchievementClaim = onCall(
             privateKeyHex = "0x" + privateKeyHex;
           }
         } catch (error) {
-          logger.error("Failed to decrypt private key (achievement claim)", {
+          logger.error("[V2] Failed to decrypt private key (achievement claim)", {
             error,
           });
           throw new HttpsError(
@@ -154,7 +154,7 @@ export const processAchievementClaim = onCall(
         }
         const account = privateKeyToAccount(privateKeyHex as `0x${string}`);
         if (account.address.toLowerCase() !== eoWalletAddress.toLowerCase()) {
-          logger.error("EOA address mismatch (achievement claim)", {
+          logger.error("[V2] EOA address mismatch (achievement claim)", {
             derived: account.address,
             provided: eoWalletAddress,
           });
@@ -166,7 +166,7 @@ export const processAchievementClaim = onCall(
         eoaAccount = account;
         eoAddress = eoWalletAddress as Address;
         privateKeyHex = "";
-        logger.info("Using V2 CanvassingRewarder achievement claim flow", {
+        logger.info("[V2] Using V2 CanvassingRewarder achievement claim flow", {
           userId,
           achievementId,
           smartAccountContractAddress,
@@ -178,7 +178,7 @@ export const processAchievementClaim = onCall(
 
         const signaturePackage =
           await createAchievementRewardClaimSignaturePackageCanvassing(
-            CANVASSING_REWARDER_ADDRESS,
+            CANVASSING_REWARDER_PROXY_ADDRESS,
             eoAddress,
             smartAccountContractAddress,
             achievementId,
@@ -188,7 +188,7 @@ export const processAchievementClaim = onCall(
           );
 
         if (!signaturePackage.isValid) {
-          logger.error("Achievement claim signature validation failed", {
+          logger.error("[V2] Achievement claim signature validation failed", {
             signaturePackage,
           });
           throw new HttpsError("internal", "Signature validation failed");
@@ -215,22 +215,22 @@ export const processAchievementClaim = onCall(
         });
 
         logger.info(
-          "Submitting achievement claim transaction (CanvassingRewarder, V2)"
+          "[V2] Submitting achievement claim transaction (CanvassingRewarder)"
         );
 
         const txHash = await walletClient.sendTransaction({
-          to: CANVASSING_REWARDER_ADDRESS,
+          to: CANVASSING_REWARDER_PROXY_ADDRESS,
           data,
         });
 
-        logger.info("Achievement claim transaction submitted (V2)", { txHash });
+        logger.info("[V2] Achievement claim transaction submitted", { txHash });
 
         const receipt = await PUBLIC_CLIENT.waitForTransactionReceipt({
           hash: txHash,
         });
 
         const bundleTxnHash = receipt.transactionHash;
-        logger.info("Achievement claim transaction confirmed (V2)", {
+        logger.info("[V2] Achievement claim transaction confirmed", {
           bundleTxnHash,
           achievementId,
         });
@@ -242,7 +242,7 @@ export const processAchievementClaim = onCall(
 
         return { success: true, txnHash: bundleTxnHash };
       } else {
-        logger.info("Using V1 Pimlico achievement claim flow", {
+        logger.info("[V1] Using V1 Pimlico achievement claim flow", {
           userId,
           achievementId,
           paxAccountContractAddress,
@@ -266,7 +266,7 @@ export const processAchievementClaim = onCall(
 
         const recipientAddress = smartAccountContractAddress;
 
-        logger.info("Preparing V1 achievement claim transaction", {
+        logger.info("[V1] Preparing V1 achievement claim transaction", {
           recipientAddress,
           amountEarned: amountEarned.toString(),
           rewardTokenAddress: REWARD_TOKEN_ADDRESS,
@@ -281,7 +281,7 @@ export const processAchievementClaim = onCall(
           },
         });
 
-        logger.info("V1 Smart Account Address:", {
+        logger.info("[V1] V1 Smart Account Address:", {
           address: paxMasterSmartAccount.address,
         });
 
@@ -292,7 +292,7 @@ export const processAchievementClaim = onCall(
           args: [recipientAddress],
         })) as bigint;
 
-        logger.info("G$ Balance before transfer:", {
+        logger.info("[V1] G$ Balance before transfer:", {
           address: recipientAddress,
           balance: balanceBefore.toString(),
         });
@@ -303,7 +303,7 @@ export const processAchievementClaim = onCall(
           args: [recipientAddress, parseEther(amountEarned.toString())],
         });
 
-        logger.info("Encoded V1 achievement claim transaction data");
+        logger.info("[V1] Encoded V1 achievement claim transaction data");
 
         const smartAccountClient = createSmartAccountClient({
           account: paxMasterSmartAccount,
@@ -328,7 +328,7 @@ export const processAchievementClaim = onCall(
           ],
         });
 
-        logger.info("V1 user operation submitted", { userOpTxnHash });
+        logger.info("[V1] V1 user operation submitted", { userOpTxnHash });
 
         const userOpReceipt =
           await smartAccountClient.waitForUserOperationReceipt({
@@ -336,7 +336,7 @@ export const processAchievementClaim = onCall(
           });
 
         if (!userOpReceipt.success) {
-          logger.error("User operation failed in processAchievementClaim (V1)", {
+          logger.error("[V1] User operation failed in processAchievementClaim", {
             userOpReceipt,
           });
           throw new HttpsError(
@@ -346,7 +346,7 @@ export const processAchievementClaim = onCall(
         }
 
         const bundleTxnHash = userOpReceipt.receipt.transactionHash;
-        logger.info("V1 bundle transaction confirmed", { bundleTxnHash });
+        logger.info("[V1] V1 bundle transaction confirmed", { bundleTxnHash });
 
         await firestore.collection("achievements").doc(achievementId).update({
           txnHash: bundleTxnHash,
@@ -360,7 +360,7 @@ export const processAchievementClaim = onCall(
           args: [recipientAddress],
         })) as bigint;
 
-        logger.info("G$ Balance after transfer:", {
+        logger.info("[V1] G$ Balance after transfer:", {
           address: recipientAddress,
           balance: balanceAfter.toString(),
         });

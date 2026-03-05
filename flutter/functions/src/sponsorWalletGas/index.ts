@@ -14,8 +14,8 @@ import {
   PUBLIC_CLIENT,
   DRPC_URL,
   AUTH,
-  CANVASSING_GAS_SPONSOR_ADDRESS,
-  CANVASSING_WALLET_REGISTRY_ADDRESS,
+  CANVASSING_GAS_SPONSOR_PROXY_ADDRESS,
+  CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
   DB,
 } from "../../utils/config";
 import { canvassingGasSponsorABI } from "../../utils/abis/new/canvassingGasSponsor";
@@ -34,7 +34,7 @@ export const sponsorWalletGas = onCall(
   async (request) => {
     try {
       if (!request.auth) {
-        logger.error("Unauthenticated request to sponsorWalletGas");
+        logger.error("[V2] Unauthenticated request to sponsorWalletGas");
         throw new HttpsError(
           "unauthenticated",
           "The function must be called by an authenticated user."
@@ -61,7 +61,7 @@ export const sponsorWalletGas = onCall(
 
       if (serverWalletId) {
         logger.error(
-          "V1 user attempted to call sponsorWalletGas (serverWalletId present)",
+          "[V2] V1 user attempted to call sponsorWalletGas (serverWalletId present)",
           { userId, serverWalletId }
         );
         throw new HttpsError(
@@ -82,10 +82,10 @@ export const sponsorWalletGas = onCall(
       }
 
       if (
-        !CANVASSING_GAS_SPONSOR_ADDRESS ||
-        CANVASSING_GAS_SPONSOR_ADDRESS === "0x"
+        !CANVASSING_GAS_SPONSOR_PROXY_ADDRESS ||
+        CANVASSING_GAS_SPONSOR_PROXY_ADDRESS === "0x"
       ) {
-        logger.error("CANVASSING_GAS_SPONSOR_ADDRESS not configured");
+        logger.error("[V2] CANVASSING_GAS_SPONSOR_PROXY_ADDRESS not configured");
         throw new HttpsError(
           "failed-precondition",
           "Gas sponsorship not configured."
@@ -95,14 +95,14 @@ export const sponsorWalletGas = onCall(
       const eoAddress = eoWalletAddress as Address;
 
       const isLogged = (await PUBLIC_CLIENT.readContract({
-        address: CANVASSING_WALLET_REGISTRY_ADDRESS,
+        address: CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
         abi: canvassingWalletRegistryABI,
         functionName: "isWalletLogged",
         args: [eoAddress],
       })) as boolean;
 
       if (!isLogged) {
-        logger.error("Wallet not in registry, cannot sponsor", {
+        logger.error("[V2] Wallet not in registry, cannot sponsor", {
           eoWalletAddress,
           userId,
         });
@@ -114,7 +114,7 @@ export const sponsorWalletGas = onCall(
 
       const amountWei = parseEther(DEFAULT_SPONSOR_AMOUNT_CELO);
 
-      logger.info("Sponsoring wallet gas", {
+      logger.info("[V2] Sponsoring wallet gas", {
         eoWalletAddress,
         userId,
         amountWei: amountWei.toString(),
@@ -133,11 +133,11 @@ export const sponsorWalletGas = onCall(
       });
 
       const txHash = await walletClient.sendTransaction({
-        to: CANVASSING_GAS_SPONSOR_ADDRESS,
+        to: CANVASSING_GAS_SPONSOR_PROXY_ADDRESS,
         data,
       });
 
-      logger.info("sponsorWalletGas tx submitted", {
+      logger.info("[V2] sponsorWalletGas tx submitted", {
         txHash,
         userId,
         eoWalletAddress,
@@ -147,7 +147,7 @@ export const sponsorWalletGas = onCall(
         hash: txHash,
       });
 
-      logger.info("sponsorWalletGas tx confirmed", {
+      logger.info("[V2] sponsorWalletGas tx confirmed", {
         blockNumber: receipt.blockNumber,
         userId,
         eoWalletAddress,
@@ -160,7 +160,7 @@ export const sponsorWalletGas = onCall(
         blockNumber: receipt.blockNumber.toString(),
       };
     } catch (error: unknown) {
-      logger.error("sponsorWalletGas error:", error);
+      logger.error("[V2] sponsorWalletGas error:", error);
       if (error instanceof HttpsError) {
         throw error;
       }

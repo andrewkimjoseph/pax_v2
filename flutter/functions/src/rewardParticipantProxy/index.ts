@@ -20,7 +20,7 @@ import {
   DB,
   AUTH,
   DRPC_URL,
-  CANVASSING_REWARDER_ADDRESS,
+  CANVASSING_REWARDER_PROXY_ADDRESS,
   REWARD_TOKEN_ADDRESS,
   PIMLICO_URL,
 } from "../../utils/config";
@@ -208,7 +208,7 @@ export const rewardParticipantProxy = onCall(
         !!encryptedPrivateKey && !!sessionKey && !!eoWalletAddress;
 
       if (!isV2) {
-        logger.info("Using V1 Pimlico reward flow", {
+        logger.info("[V1] Using V1 Pimlico reward flow", {
           taskCompletionId,
           taskId,
           participantId,
@@ -216,7 +216,7 @@ export const rewardParticipantProxy = onCall(
 
         if (!taskManagerContractAddress || !taskMasterId) {
           logger.error(
-            "Task missing managerContractAddress or taskMasterId in V1 reward flow",
+            "[V1] Task missing managerContractAddress or taskMasterId in V1 reward flow",
             { taskId, taskData }
           );
           throw new HttpsError(
@@ -227,7 +227,7 @@ export const rewardParticipantProxy = onCall(
 
         if (!contractAddress || !serverWalletId) {
           logger.error(
-            "Participant PaxAccount missing contractAddress or serverWalletId in V1 reward flow",
+            "[V1] Participant PaxAccount missing contractAddress or serverWalletId in V1 reward flow",
             { participantId, participantPaxAccountData }
           );
           throw new HttpsError(
@@ -242,7 +242,7 @@ export const rewardParticipantProxy = onCall(
           .get();
         if (!taskMasterPaxAccountDoc.exists) {
           logger.error(
-            "PaxAccount record not found for task master in rewardParticipantProxy (V1)",
+            "[V1] PaxAccount record not found for task master in rewardParticipantProxy",
             { taskMasterId }
           );
           throw new HttpsError(
@@ -254,7 +254,7 @@ export const rewardParticipantProxy = onCall(
         const taskMasterPaxAccountData = taskMasterPaxAccountDoc.data();
         if (!taskMasterPaxAccountData?.serverWalletId) {
           logger.error(
-            "Task master PaxAccount missing serverWalletId in rewardParticipantProxy (V1)",
+            "[V1] Task master PaxAccount missing serverWalletId in rewardParticipantProxy",
             { taskMasterId, taskMasterPaxAccountData }
           );
           throw new HttpsError(
@@ -288,7 +288,7 @@ export const rewardParticipantProxy = onCall(
 
         if (!serverWallet) {
           logger.error(
-            "Server wallet not found in rewardParticipantProxy (V1)",
+            "[V1] Server wallet not found in rewardParticipantProxy",
             {
               serverWalletId,
             }
@@ -298,7 +298,7 @@ export const rewardParticipantProxy = onCall(
 
         if (!taskMasterWallet) {
           logger.error(
-            "Task master wallet not found in rewardParticipantProxy (V1)",
+            "[V1] Task master wallet not found in rewardParticipantProxy",
             {
               taskMasterServerWalletId,
             }
@@ -322,11 +322,11 @@ export const rewardParticipantProxy = onCall(
         });
 
         const participantProxy = smartAccount.address;
-        logger.info("V1 smart account created", { participantProxy });
+        logger.info("[V1] V1 smart account created", { participantProxy });
 
         const nonce = generateRandomNonce();
 
-        logger.info("Generating V1 reward claim signature", {
+        logger.info("[V1] Generating V1 reward claim signature", {
           participantProxy,
           taskCompletionId,
           nonce: nonce.toString(),
@@ -343,7 +343,7 @@ export const rewardParticipantProxy = onCall(
 
         if (!signaturePackage.isValid) {
           logger.error(
-            "Signature validation failed in rewardParticipantProxy (V1)",
+            "[V1] Signature validation failed in rewardParticipantProxy",
             {
               signaturePackage,
             }
@@ -380,7 +380,7 @@ export const rewardParticipantProxy = onCall(
           ],
         });
 
-        logger.info("Submitting V1 reward claim transaction");
+        logger.info("[V1] Submitting V1 reward claim transaction");
 
         const userOpTxnHash = await smartAccountClient.sendUserOperation({
           calls: [
@@ -392,7 +392,7 @@ export const rewardParticipantProxy = onCall(
           ],
         });
 
-        logger.info("V1 transaction submitted", { userOpTxnHash });
+        logger.info("[V1] V1 transaction submitted", { userOpTxnHash });
 
         const userOpReceipt =
           await smartAccountClient.waitForUserOperationReceipt({
@@ -401,7 +401,7 @@ export const rewardParticipantProxy = onCall(
 
         if (!userOpReceipt.success) {
           logger.error(
-            "User operation failed in rewardParticipantProxy (V1)",
+            "[V1] User operation failed in rewardParticipantProxy",
             {
               userOpReceipt,
             }
@@ -413,7 +413,7 @@ export const rewardParticipantProxy = onCall(
         }
 
         const bundleTxnHash = userOpReceipt.receipt.transactionHash;
-        logger.info("V1 bundle transaction confirmed", { bundleTxnHash });
+        logger.info("[V1] V1 bundle transaction confirmed", { bundleTxnHash });
 
         const rewardRecordId = await createRewardRecord({
           taskId,
@@ -423,12 +423,13 @@ export const rewardParticipantProxy = onCall(
           nonce: nonceString,
           amount: rewardAmountPerParticipant,
           rewardCurrencyId,
+          logPrefix: "V1",
         });
 
-        await updateRewardWithTxnHash(rewardRecordId, bundleTxnHash);
+        await updateRewardWithTxnHash(rewardRecordId, bundleTxnHash, "V1");
 
         logger.info(
-          "V1 reward record created and updated with transaction hash",
+          "[V1] V1 reward record created and updated with transaction hash",
           {
             rewardRecordId,
             bundleTxnHash,
@@ -451,22 +452,22 @@ export const rewardParticipantProxy = onCall(
         };
       }
 
-      if (!CANVASSING_REWARDER_ADDRESS || CANVASSING_REWARDER_ADDRESS === "0x") {
-        logger.error("CANVASSING_REWARDER_ADDRESS not configured");
+      if (!CANVASSING_REWARDER_PROXY_ADDRESS || CANVASSING_REWARDER_PROXY_ADDRESS === "0x") {
+        logger.error("[V2] CANVASSING_REWARDER_PROXY_ADDRESS not configured");
         throw new HttpsError(
           "failed-precondition",
-          "Reward service not configured. Missing CANVASSING_REWARDER_ADDRESS."
+          "Reward service not configured. Missing CANVASSING_REWARDER_PROXY_ADDRESS."
         );
       }
 
-      logger.info("Using V2 CanvassingRewarder reward flow", {
+      logger.info("[V2] Using V2 CanvassingRewarder reward flow", {
         taskCompletionId,
         taskId,
         participantId,
       });
 
       if (userId !== participantId) {
-        logger.error("Caller is not the participant (V2 reward)", {
+        logger.error("[V2] Caller is not the participant (V2 reward)", {
           userId,
           participantId,
         });
@@ -477,7 +478,7 @@ export const rewardParticipantProxy = onCall(
       }
       if (!encryptedPrivateKey || !sessionKey || !eoWalletAddress) {
         logger.error(
-          "V2 participant missing encryptedPrivateKey, sessionKey, or eoWalletAddress in rewardParticipantProxy",
+          "[V2] V2 participant missing encryptedPrivateKey, sessionKey, or eoWalletAddress in rewardParticipantProxy",
           { participantId }
         );
         throw new HttpsError(
@@ -497,7 +498,7 @@ export const rewardParticipantProxy = onCall(
           privateKeyHex = "0x" + privateKeyHex;
         }
       } catch (error) {
-        logger.error("Failed to decrypt private key (V2 reward)", { error });
+        logger.error("[V2] Failed to decrypt private key (V2 reward)", { error });
         throw new HttpsError(
           "invalid-argument",
           "Failed to decrypt private key. Invalid session key or corrupted data."
@@ -505,7 +506,7 @@ export const rewardParticipantProxy = onCall(
       }
       const account = privateKeyToAccount(privateKeyHex as `0x${string}`);
       if (account.address.toLowerCase() !== eoWalletAddress.toLowerCase()) {
-        logger.error("EOA address mismatch (V2 reward)", {
+        logger.error("[V2] EOA address mismatch (V2 reward)", {
           derived: account.address,
           provided: eoWalletAddress,
         });
@@ -518,14 +519,14 @@ export const rewardParticipantProxy = onCall(
       eoAddress = eoWalletAddress as Address;
       privateKeyHex = "";
 
-      logger.info("EOA resolved for reward claim", { eoAddress });
+      logger.info("[V2] EOA resolved for reward claim", { eoAddress });
 
       const amountWei = parseEther(String(rewardAmountPerParticipant));
       const nonce = generateRandomNonce();
 
       const signaturePackage =
         await createTaskRewardClaimSignaturePackageCanvassing(
-          CANVASSING_REWARDER_ADDRESS,
+          CANVASSING_REWARDER_PROXY_ADDRESS,
           eoAddress,
           paxAccountPayoutAddress,
           taskId,
@@ -535,7 +536,7 @@ export const rewardParticipantProxy = onCall(
         );
 
       if (!signaturePackage.isValid) {
-        logger.error("Signature validation failed in rewardParticipantProxy", {
+        logger.error("[V2] Signature validation failed in rewardParticipantProxy", {
           signaturePackage,
         });
         throw new HttpsError("internal", "Signature validation failed");
@@ -564,21 +565,21 @@ export const rewardParticipantProxy = onCall(
         ],
       });
 
-      logger.info("Submitting reward claim transaction (CanvassingRewarder)");
+      logger.info("[V2] Submitting reward claim transaction (CanvassingRewarder)");
 
       const txHash = await walletClient.sendTransaction({
-        to: CANVASSING_REWARDER_ADDRESS,
+        to: CANVASSING_REWARDER_PROXY_ADDRESS,
         data: rewardClaimData,
       });
 
-      logger.info("Transaction submitted", { txHash });
+      logger.info("[V2] Transaction submitted", { txHash });
 
       const receipt = await PUBLIC_CLIENT.waitForTransactionReceipt({
         hash: txHash,
       });
 
       const bundleTxnHash = receipt.transactionHash;
-      logger.info("Bundle transaction confirmed", { bundleTxnHash });
+      logger.info("[V2] Bundle transaction confirmed", { bundleTxnHash });
 
       const rewardRecordId = await createRewardRecord({
         taskId,
@@ -588,11 +589,12 @@ export const rewardParticipantProxy = onCall(
         nonce: nonceString,
         amount: rewardAmountPerParticipant,
         rewardCurrencyId,
+        logPrefix: "V2",
       });
 
-      await updateRewardWithTxnHash(rewardRecordId, bundleTxnHash);
+      await updateRewardWithTxnHash(rewardRecordId, bundleTxnHash, "V2");
 
-      logger.info("Reward record created and updated with transaction hash", {
+      logger.info("[V2] Reward record created and updated with transaction hash", {
         rewardRecordId,
         bundleTxnHash,
       });
