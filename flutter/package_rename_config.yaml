@@ -1,0 +1,15 @@
+package_rename_config:
+  android:
+    app_name: "Pax"
+    package_name: "app.thepax.android"
+    override_old_package: 
+    lang: "kotlin"
+
+  ios:
+    app_name: "Pax"
+    bundle_name: "Pax"
+    package_name: "app.thepax.ios"
+
+  web:
+    app_name: "Pax"
+    description: "micro tasks rewarded in tokens"

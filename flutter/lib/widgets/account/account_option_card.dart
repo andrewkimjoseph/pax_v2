@@ -1,0 +1,160 @@
+import 'package:flutter/material.dart' show Badge;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:pax/theming/colors.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:intl/intl.dart' show toBeginningOfSentenceCase;
+import 'package:pax/providers/account/account_type_provider.dart';
+import 'package:pax/providers/db/achievement/achievement_provider.dart';
+import 'package:pax/utils/achievement_constants.dart';
+
+class AccountOptionCard extends ConsumerStatefulWidget {
+  const AccountOptionCard(this.option, this.isEarned, {super.key});
+
+  final String option;
+
+  final bool isEarned;
+
+  @override
+  ConsumerState<AccountOptionCard> createState() => _AccountOptionCardState();
+}
+
+class _AccountOptionCardState extends ConsumerState<AccountOptionCard> {
+  @override
+  Widget build(BuildContext context) {
+    final accountType = ref.watch(accountTypeProvider);
+    final isV2 = accountType == AccountType.v2;
+    final achievementState = ref.watch(achievementsProvider);
+    final userAchievementNames =
+        achievementState.achievements
+            .map((a) => a.name)
+            .whereType<String>()
+            .toSet();
+
+    List<String> requiredAchievements = [];
+    if (widget.option == "profile") {
+      requiredAchievements = [AchievementConstants.profilePerfectionist];
+    } else if (widget.option == "payment_methods") {
+      requiredAchievements = [
+        AchievementConstants.payoutConnector,
+        AchievementConstants.verifiedHuman,
+        // AchievementConstants.doublePayoutConnector,
+      ];
+    }
+    final missingCount =
+        requiredAchievements
+            .where((ach) => !userAchievementNames.contains(ach))
+            .length;
+
+    return SizedBox(
+      width: MediaQuery.of(context).size.width,
+
+      // padding: EdgeInsets.all(10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          FaIcon(
+            widget.option == 'profile'
+                ? FontAwesomeIcons.solidCircleUser
+                // : widget.option == 'account'
+                // ? FontAwesomeIcons.moneyBill
+                : widget.option == 'info'
+                ? FontAwesomeIcons.addressCard
+                : widget.option == 'payment_methods'
+                ? FontAwesomeIcons.wallet
+                : widget.option == 'help_and_support'
+                ? FontAwesomeIcons.circleInfo
+                : widget.option == 'developer_options'
+                ? FontAwesomeIcons.code
+                : widget.option == 'logout'
+                ? FontAwesomeIcons.arrowRightFromBracket
+                : FontAwesomeIcons.solidFaceMehBlank,
+
+            size: 20,
+            color: widget.option == 'logout' ? Colors.red : PaxColors.black,
+          ).withPadding(right: 20),
+
+          // SvgPicture.asset(
+          //   'lib/assets/svgs/${widget.option}.svg',
+
+          //   // height: 24,
+          // ).withPadding(right: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.option == 'profile'
+                          ? 'My Profile'
+                          : widget.option == 'account'
+                          ? 'Account & Security'
+                          : widget.option == 'payment_methods'
+                          ? 'Withdrawal Methods'
+                          : widget.option == 'help_and_support'
+                          ? 'Help & Support'
+                          : widget.option == 'developer_options'
+                          ? 'Developer Options'
+                          : widget.option == 'logout'
+                          ? 'Logout'
+                          : widget.option == 'info'
+                          ? 'My Info'
+                          : toBeginningOfSentenceCase(
+                            widget.option.split('_')[0],
+                          ),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                        color:
+                            widget.option == 'logout'
+                                ? Colors.red
+                                : PaxColors.black,
+                      ),
+                    ),
+                    if (!isV2 &&
+                        (widget.option == "profile" ||
+                            widget.option == "payment_methods") &&
+                        achievementState.state == AchievementState.loaded &&
+                        missingCount > 0)
+                      Badge(
+                        isLabelVisible: true,
+                        label: Text(""),
+                        backgroundColor: PaxColors.red,
+                        offset: const Offset(24, -8),
+                        smallSize: 12,
+                        child: SizedBox(width: 0, height: 0),
+                      ),
+                  ],
+                ).withPadding(bottom: 8),
+              ),
+            ],
+          ),
+          Spacer(flex: 1),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    FaIcon(FontAwesomeIcons.chevronRight, size: 12),
+                    // SvgPicture.asset(
+                    //   'lib/assets/svgs/arrow_right.svg',
+
+                    //   // height: 24,
+                    // ),
+                  ],
+                ).withPadding(bottom: 8, right: 2),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}

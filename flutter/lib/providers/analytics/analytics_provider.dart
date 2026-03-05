@@ -1,0 +1,454 @@
+import 'package:flutter/foundation.dart';
+import 'package:pax/services/analytics/analytics_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pax/utils/branch_param_cleaner.dart';
+
+/// A provider class that manages analytics events and user properties.
+class AnalyticsProvider {
+  final AnalyticsService _analyticsService = AnalyticsService();
+
+  /// Initializes the analytics service with the provided API key.
+  Future<void> initialize(String apiKey) async {
+    await _analyticsService.initialize(apiKey);
+  }
+
+  /// Sets the user ID for analytics tracking.
+  Future<void> setUserId(String participantId) async {
+    await _analyticsService.setUserId(participantId);
+
+    if (kDebugMode) {
+      print('Analytics Service: Set user ID: $participantId');
+    }
+  }
+
+  /// Logs an event with optional properties.
+  Future<void> _logEvent(
+    String eventName, {
+    Map<String, dynamic>? properties,
+  }) async {
+    await _analyticsService.logEvent(eventName, properties: properties);
+  }
+
+  /// Logs a user property.
+  Future<void> identifyUser(Map<String, dynamic>? userProperties) async {
+    if (userProperties == null) return;
+
+    await _analyticsService.identifyUser(userProperties);
+  }
+
+  /// Resets the user ID and clears all user properties.
+  Future<void> resetUser() async {
+    await _analyticsService.resetUser();
+  }
+
+  // Event tracking methods with properties
+  Future<void> onboardingSkipTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('onboarding_skip_tapped', properties: properties);
+
+  Future<void> signInWithGoogleTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('sign_in_with_google_tapped', properties: properties);
+
+  Future<void> signInWithGoogleComplete([
+    Map<String, dynamic>? properties,
+  ]) async {
+    Map<String, dynamic> eventProperties =
+        await BranchParamCleaner.mergeWithBranchFirstReferringParams(
+          properties,
+        );
+
+    return _logEvent(
+      'sign_in_with_google_complete',
+      properties: eventProperties,
+    );
+  }
+
+  Future<void> signInWithGoogleFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('sign_in_with_google_failed', properties: properties);
+
+  Future<void> invalidTokenLogoutComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('invalid_token_logout_complete', properties: properties);
+
+  Future<void> dashboardTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('dashboard_tapped', properties: properties);
+
+  Future<void> tasksTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('tasks_tapped', properties: properties);
+
+  Future<void> achievementsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('achievements_tapped', properties: properties);
+
+  Future<void> reportsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('reports_tapped', properties: properties);
+
+  Future<void> publishedReportTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('published_report_tapped', properties: properties);
+
+  Future<void> homeWalletTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('home_wallet_tapped', properties: properties);
+
+  Future<void> walletWithdrawTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('wallet_withdraw_tapped', properties: properties);
+
+  Future<void> continueWithdrawTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('continue_withdraw_tapped', properties: properties);
+
+  Future<void> paymentMethodTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('payment_method_tapped', properties: properties);
+
+  Future<void> continueSelectWalletTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('continue_select_wallet_tapped', properties: properties);
+
+  Future<void> changePaymentMethodTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('change_payment_method_tapped', properties: properties);
+
+  Future<void> reviewSummaryWithdrawTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('review_summary_withdraw_tapped', properties: properties);
+
+  Future<void> withdrawalStarted([Map<String, dynamic>? properties]) =>
+      _logEvent('withdrawal_started', properties: properties);
+
+  Future<void> withdrawalComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('withdrawal_complete', properties: properties);
+
+  Future<void> withdrawalFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('withdrawal_failed', properties: properties);
+
+  Future<void> joinTribeTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('join_tribe_tapped', properties: properties);
+
+  Future<void> taskTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('task_tapped', properties: properties);
+
+  Future<void> taskLoadingComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('task_loading_complete', properties: properties);
+
+  Future<void> continueWithTaskTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('continue_with_task_tapped', properties: properties);
+
+  Future<void> screeningStarted([Map<String, dynamic>? properties]) =>
+      _logEvent('screening_started', properties: properties);
+
+  Future<void> screeningFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('screening_failed', properties: properties);
+
+  Future<void> screeningComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('screening_complete', properties: properties);
+
+  Future<void> taskCompletionStarted([Map<String, dynamic>? properties]) =>
+      _logEvent('task_completion_started', properties: properties);
+
+  Future<void> taskCompletionComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('task_completion_complete', properties: properties);
+
+  Future<void> taskCompletionFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('task_completion_failed', properties: properties);
+
+  Future<void> markTaskAsCompleteTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('mark_task_as_complete_tapped', properties: properties);
+
+  Future<void> completeTaskTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('complete_task_tapped', properties: properties);
+
+  Future<void> continueDoingTheTaskTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('continue_doing_the_task_tapped', properties: properties);
+
+  Future<void> rewardingStarted([Map<String, dynamic>? properties]) =>
+      _logEvent('rewarding_started', properties: properties);
+
+  Future<void> rewardingComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('rewarding_complete', properties: properties);
+
+  Future<void> rewardingFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('rewarding_failed', properties: properties);
+
+  Future<void> taskCompletionsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('task_completions_tapped', properties: properties);
+
+  Future<void> rewardsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('rewards_tapped', properties: properties);
+
+  Future<void> withdrawalsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('withdrawals_tapped', properties: properties);
+
+  Future<void> myProfileTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('my_profile_tapped', properties: properties);
+
+  Future<void> saveProfileChangesTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('save_profile_changes_tapped', properties: properties);
+
+  Future<void> profileUpdateComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('profile_update_complete', properties: properties);
+
+  Future<void> profileUpdateFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('profile_update_failed', properties: properties);
+
+  Future<void> accountAndSecurityTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('account_and_security_tapped', properties: properties);
+
+  Future<void> deleteAccountTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('delete_account_tapped', properties: properties);
+
+  Future<void> accountDeletionComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('account_deletion_complete', properties: properties);
+
+  Future<void> paymentMethodsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('payment_methods_tapped', properties: properties);
+
+  // Future<void> minipayWithdrawalMethodCardTapped([
+  //   Map<String, dynamic>? properties,
+  // ]) => _logEvent(
+  //   'minipay_withdrawal_method_card_tapped',
+  //   properties: properties,
+  // );
+
+  // Future<void> connectMinipayTapped([Map<String, dynamic>? properties]) =>
+  //     _logEvent('connect_minipay_tapped', properties: properties);
+
+  Future<void> withdrawalMethodConnectionTapped([
+    Map<String, dynamic>? properties,
+  ]) async {
+    Map<String, dynamic> eventProperties =
+        await BranchParamCleaner.mergeWithBranchFirstReferringParams(
+          properties,
+        );
+
+    return _logEvent(
+      'withdrawal_method_connection_complete',
+      properties: eventProperties,
+    );
+  }
+
+  Future<void> withdrawalMethodConnectionComplete([
+    Map<String, dynamic>? properties,
+  ]) async {
+    Map<String, dynamic> eventProperties =
+        await BranchParamCleaner.mergeWithBranchFirstReferringParams(
+          properties,
+        );
+
+    return _logEvent(
+      'withdrawal_method_connection_complete',
+      properties: eventProperties,
+    );
+  }
+
+  Future<void> withdrawalMethodConnectionFailed([
+    Map<String, dynamic>? properties,
+  ]) =>
+      _logEvent('withdrawal_method_connection_failed', properties: properties);
+
+  Future<void> helpAndSupportTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('help_and_support_tapped', properties: properties);
+
+  Future<void> faqTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('faq_tapped', properties: properties);
+
+  Future<void> contactSupportTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('contact_support_tapped', properties: properties);
+
+  Future<void> privacyPolicyTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('privacy_policy_tapped', properties: properties);
+
+  Future<void> termsOfServiceTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('terms_of_service_tapped', properties: properties);
+
+  Future<void> aboutUsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('about_us_tapped', properties: properties);
+
+  Future<void> logoutTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('logout_tapped', properties: properties);
+
+  Future<void> logoutComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('logout_complete', properties: properties);
+
+  Future<void> achievementCreated([Map<String, dynamic>? properties]) =>
+      _logEvent('achievement_created', properties: properties);
+
+  Future<void> achievementUpdated(Map<String, dynamic> params) =>
+      _logEvent('achievement_updated', properties: params);
+
+  Future<void> achievementComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('achievement_complete', properties: properties);
+
+  Future<void> claimAchievementTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_achievement_tapped', properties: properties);
+
+  Future<void> claimAchievementComplete([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_achievement_complete', properties: properties);
+
+  Future<void> claimAchievementFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_achievement_failed', properties: properties);
+
+  Future<void> okOnTaskCompleteTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('ok_on_task_complete_tapped', properties: properties);
+
+  Future<void> updateNowTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('update_now_tapped', properties: properties);
+
+  Future<void> okMaintenanceTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('ok_maintenance_tapped', properties: properties);
+
+  Future<void> unrewardedTaskCompletionTapped(Map<String, String?> map) =>
+      _logEvent('unrewarded_task_completion_tapped', properties: map);
+
+  Future<void> claimRewardTapped(Map<String, String?> map) =>
+      _logEvent('claim_reward_tapped', properties: map);
+  Future<void> claimRewardComplete(Map<String, String?> map) =>
+      _logEvent('claim_reward_complete', properties: map);
+  Future<void> claimRewardFailed(Map<String, String?> map) =>
+      _logEvent('claim_reward_failed', properties: map);
+
+  Future<void> incompleteTaskCompletionTapped(Map<String, String?> map) =>
+      _logEvent('incomplete_task_tapped', properties: map);
+
+  Future<void> goHomeToCompleteTaskTapped(Map<String, String?> map) =>
+      _logEvent('go_home_to_complete_task_tapped', properties: map);
+
+  Future<void> refreshBalancesTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('refresh_balances_tapped', properties: properties);
+
+  Future<void> raiseTicketTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('raise_ticket_tapped', properties: properties);
+
+  Future<void> websiteTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('website_tapped', properties: properties);
+
+  Future<void> contactSupportXTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('contact_support_x_tapped', properties: properties);
+
+  Future<void> whatsappTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('whatsapp_tapped', properties: properties);
+
+  Future<void> telegramTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('telegram_tapped', properties: properties);
+
+  Future<void> goodWalletTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('good_wallet_tapped', properties: properties);
+
+  Future<void> goodDollarTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('good_dollar_tapped', properties: properties);
+
+  Future<void> goodPaxAppTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('good_pax_app_tapped', properties: properties);
+
+  Future<void> miniappTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('miniapp_tapped', properties: properties);
+
+  Future<void> customDappOpened([Map<String, dynamic>? properties]) =>
+      _logEvent('custom_dapp_opened', properties: properties);
+
+  // Future<void> goodWalletWithdrawalMethodCardTapped([
+  //   Map<String, dynamic>? properties,
+  // ]) => _logEvent(
+  //   'good_wallet_withdrawal_method_card_tapped',
+  //   properties: properties,
+  // );
+
+  // Future<void> connectGoodWalletTapped([Map<String, dynamic>? properties]) =>
+  //     _logEvent('connect_good_wallet_tapped', properties: properties);
+
+  Future<void> setUpWithdrawalMethodTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('set_up_withdrawal_method_tapped', properties: properties);
+
+  Future<void> checkOutCopyWalletAddressStepsTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent(
+    'check_out_copy_wallet_address_steps_tapped',
+    properties: properties,
+  );
+
+  Future<void> drpcTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('drpc_tapped', properties: properties);
+
+  Future<void> optionsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('options_tapped', properties: properties);
+
+  Future<void> esiTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('esi_tapped', properties: properties);
+
+  // V2 Onboarding events
+  Future<void> v2WalletCreationInitiated([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_wallet_creation_initiated', properties: properties);
+
+  Future<void> v2WalletCreationSuccess([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_wallet_creation_success', properties: properties);
+
+  Future<void> v2WalletCreationFailed([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_wallet_creation_failed', properties: properties);
+
+  Future<void> v2FaceVerificationStarted([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_face_verification_started', properties: properties);
+
+  Future<void> v2FaceVerificationSuccess([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_face_verification_success', properties: properties);
+
+  Future<void> v2FaceVerificationFailed([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_face_verification_failed', properties: properties);
+
+  Future<void> v2ProfileCompletionStarted([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_profile_completion_started', properties: properties);
+
+  Future<void> v2ProfileCompletionSuccess([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_profile_completion_success', properties: properties);
+
+  // V1 user events
+  Future<void> v2AvailabilityBannerShown([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_availability_banner_shown', properties: properties);
+
+  Future<void> v2UpgradeEligibilityChecked([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_upgrade_eligibility_checked', properties: properties);
+
+  Future<void> v2UpgradeInitiated([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_upgrade_initiated', properties: properties);
+
+  Future<void> v2UpgradeCompleted([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_upgrade_completed', properties: properties);
+
+  Future<void> v1FeaturesShelved([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v1_features_shelved', properties: properties);
+
+  // V2 usage events
+  Future<void> v2FirstWalletTransaction([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_first_wallet_transaction', properties: properties);
+
+  Future<void> v2PaxWalletRouteVisited([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_pax_wallet_route_visited', properties: properties);
+
+  Future<void> v2WithdrawalMethodAdded([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_withdrawal_method_added', properties: properties);
+
+  Future<void> v2FaceVerificationPromptShown([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_face_verification_prompt_shown', properties: properties);
+
+  Future<void> v2FaceVerificationPromptTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('v2_face_verification_prompt_tapped', properties: properties);
+
+  // Onboarding questionnaire
+  Future<void> onboardingQuestionnaireCompleted([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('onboarding_questionnaire_completed', properties: properties);
+}
+
+final analyticsProvider = Provider<AnalyticsProvider>((ref) {
+  return AnalyticsProvider();
+});
