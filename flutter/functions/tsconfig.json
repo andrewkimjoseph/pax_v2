@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "esModuleInterop": true,
+    "moduleResolution": "nodenext",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "ES2017",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["utils/*"]
+    },
+    "resolveJsonModule": true
+  },
+  "compileOnSave": true,
+  "include": [
+    "src",
+    "utils"
+  ]
+}
