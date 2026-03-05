@@ -16,7 +16,7 @@ import {
   PIMLICO_URL,
   DB,
   AUTH,
-  CANVASSING_TASK_MANAGER_ADDRESS,
+  CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
 import {
@@ -125,11 +125,11 @@ export const screenParticipantProxy = onCall(
         );
       }
 
-      if (!CANVASSING_TASK_MANAGER_ADDRESS || CANVASSING_TASK_MANAGER_ADDRESS === "0x") {
-        logger.error("CANVASSING_TASK_MANAGER_ADDRESS not configured");
+      if (!CANVASSING_TASK_MANAGER_PROXY_ADDRESS || CANVASSING_TASK_MANAGER_PROXY_ADDRESS === "0x") {
+        logger.error("CANVASSING_TASK_MANAGER_PROXY_ADDRESS not configured");
         throw new HttpsError(
           "failed-precondition",
-          "Screening service not configured. Missing CANVASSING_TASK_MANAGER_ADDRESS."
+          "Screening service not configured. Missing CANVASSING_TASK_MANAGER_PROXY_ADDRESS."
         );
       }
 
@@ -159,7 +159,7 @@ export const screenParticipantProxy = onCall(
           id: serverWalletId!,
         });
         if (!serverWallet) {
-          logger.error("Server wallet not found in screenParticipantProxy", {
+          logger.error("[V1] Server wallet not found in screenParticipantProxy", {
             serverWalletId,
           });
           throw new HttpsError("not-found", "Server wallet not found");
@@ -189,7 +189,7 @@ export const screenParticipantProxy = onCall(
             privateKeyHex = "0x" + privateKeyHex;
           }
         } catch (error) {
-          logger.error("Failed to decrypt private key (V2 screening)", {
+          logger.error("[V2] Failed to decrypt private key (V2 screening)", {
             error,
           });
           throw new HttpsError(
@@ -201,7 +201,7 @@ export const screenParticipantProxy = onCall(
         if (
           eoaAccount.address.toLowerCase() !== eoWalletAddress!.toLowerCase()
         ) {
-          logger.error("EOA address mismatch (V2 screening)", {
+          logger.error("[V2] EOA address mismatch (V2 screening)", {
             derived: eoaAccount.address,
             provided: eoWalletAddress,
           });
@@ -222,27 +222,29 @@ export const screenParticipantProxy = onCall(
       }
 
       const participantProxy = smartAccount.address;
-      logger.info("Smart account created", { participantProxy });
+      const logPrefix = isV2 ? "[V2]" : "[V1]";
+      logger.info(`${logPrefix} Smart account created`, { participantProxy });
 
       // Step 2: Generate screening signature
       const nonce = generateRandomNonce();
 
-      logger.info("Generating screening signature", {
+      logger.info(`${logPrefix} Generating screening signature`, {
         participantProxy,
         taskId,
         nonce: nonce.toString(),
       });
 
       const signaturePackage = await createScreeningSignaturePackageCanvassing(
-        CANVASSING_TASK_MANAGER_ADDRESS,
+        CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
         participantProxy,
         taskId,
-        nonce
+        nonce,
+        isV2 ? "V2" : "V1"
       );
 
       if (!signaturePackage.isValid) {
         logger.error(
-          "Generated signature failed verification in screenParticipantProxy",
+          `${logPrefix} Generated signature failed verification in screenParticipantProxy`,
           { signaturePackage }
         );
         throw new HttpsError(
@@ -275,19 +277,19 @@ export const screenParticipantProxy = onCall(
         args: [participantProxy, taskId, nonce, signature],
       });
 
-      logger.info("Submitting screening transaction");
+      logger.info(`${logPrefix} Submitting screening transaction`);
 
       const userOpTxnHash = await smartAccountClient.sendUserOperation({
         calls: [
           {
-            to: CANVASSING_TASK_MANAGER_ADDRESS,
+            to: CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
             value: BigInt(0),
             data: (screeningData + referralTag) as Address,
           },
         ],
       });
 
-      logger.info("Transaction submitted", { userOpTxnHash });
+      logger.info(`${logPrefix} Transaction submitted`, { userOpTxnHash });
 
       const userOpReceipt =
         await smartAccountClient.waitForUserOperationReceipt({
@@ -295,7 +297,7 @@ export const screenParticipantProxy = onCall(
         });
 
       if (!userOpReceipt.success) {
-        logger.error("User operation failed in screenParticipantProxy", {
+        logger.error(`${logPrefix} User operation failed in screenParticipantProxy`, {
           userOpReceipt,
         });
         throw new HttpsError(
@@ -308,7 +310,7 @@ export const screenParticipantProxy = onCall(
       // logger.info("Transaction confirmed", { txnHash });
 
       const bundleTxnHash = userOpReceipt.receipt.transactionHash;
-      logger.info("Bundle transaction confirmed", { bundleTxnHash });
+      logger.info(`${logPrefix} Bundle transaction confirmed`, { bundleTxnHash });
 
       // Step 4: Create screening record using the utility function
       const screeningId = await createScreeningRecord({
@@ -317,9 +319,9 @@ export const screenParticipantProxy = onCall(
         signature,
         nonce: nonceString,
         txnHash: bundleTxnHash,
-      });
+      }, isV2 ? "V2" : "V1");
 
-      logger.info("Screening record created", { screeningId });
+      logger.info(`${logPrefix} Screening record created`, { screeningId });
 
       // Step 5: Create task completion record directly
       const firestore = DB();
@@ -341,7 +343,7 @@ export const screenParticipantProxy = onCall(
         timeUpdated: FieldValue.serverTimestamp(),
       });
 
-      logger.info("Task completion created successfully", {
+      logger.info(`${logPrefix} Task completion created successfully`, {
         taskCompletionId,
         screeningId,
         taskId,

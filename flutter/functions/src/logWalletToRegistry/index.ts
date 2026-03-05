@@ -8,7 +8,7 @@ import {
   PUBLIC_CLIENT,
   DRPC_URL,
   AUTH,
-  CANVASSING_WALLET_REGISTRY_ADDRESS,
+  CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
 } from "../../utils/config";
 import { canvassingWalletRegistryABI } from "../../utils/abis/new/canvassingWalletRegistry";
 
@@ -17,7 +17,7 @@ export const logWalletToRegistry = onCall(
   async (request) => {
     try {
       if (!request.auth) {
-        logger.error("Unauthenticated request to logWalletToRegistry");
+        logger.error("[V2] Unauthenticated request to logWalletToRegistry");
         throw new HttpsError(
           "unauthenticated",
           "The function must be called by an authenticated user."
@@ -43,7 +43,7 @@ export const logWalletToRegistry = onCall(
       }
 
       logger.info(
-        `logWalletToRegistry: logging wallet ${eoWalletAddress} for user ${userId}`
+        `[V2] logWalletToRegistry: logging wallet ${eoWalletAddress} for user ${userId}`
       );
 
       const walletClient = createWalletClient({
@@ -59,12 +59,12 @@ export const logWalletToRegistry = onCall(
       });
 
       const txHash = await walletClient.sendTransaction({
-        to: CANVASSING_WALLET_REGISTRY_ADDRESS,
+        to: CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
         data,
       });
 
       logger.info(
-        `logWalletToRegistry: tx submitted ${txHash} for user ${userId}`
+        `[V2] logWalletToRegistry: tx submitted ${txHash} for user ${userId}`
       );
 
       const receipt = await PUBLIC_CLIENT.waitForTransactionReceipt({
@@ -72,7 +72,7 @@ export const logWalletToRegistry = onCall(
       });
 
       logger.info(
-        `logWalletToRegistry: tx confirmed in block ${receipt.blockNumber} for user ${userId}`
+        `[V2] logWalletToRegistry: tx confirmed in block ${receipt.blockNumber} for user ${userId}`
       );
 
       return {
@@ -81,7 +81,7 @@ export const logWalletToRegistry = onCall(
         blockNumber: receipt.blockNumber.toString(),
       };
     } catch (error: any) {
-      logger.error("logWalletToRegistry error:", error);
+      logger.error("[V2] logWalletToRegistry error:", error);
       if (error instanceof HttpsError) {
         throw error;
       }
