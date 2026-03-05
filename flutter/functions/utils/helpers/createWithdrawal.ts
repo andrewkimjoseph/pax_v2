@@ -15,7 +15,10 @@ interface WithdrawalParams {
 /**
  * Function to create a withdrawal record in the database
  */
-export async function createWithdrawalRecord(params: WithdrawalParams): Promise<string> {
+export async function createWithdrawalRecord(
+  params: WithdrawalParams,
+  logPrefix?: "V1" | "V2"
+): Promise<string> {
   try {
     const { 
       participantId, 
@@ -24,8 +27,9 @@ export async function createWithdrawalRecord(params: WithdrawalParams): Promise<
       rewardCurrencyId,
       txnHash
     } = params;
-    
-    logger.info("Creating withdrawal record", {
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+
+    logger.info(`${prefix}Creating withdrawal record`, {
       participantId,
       paymentMethodId,
       amountRequested
@@ -51,8 +55,8 @@ export async function createWithdrawalRecord(params: WithdrawalParams): Promise<
       timeRequested: FieldValue.serverTimestamp(),
       timeUpdated: FieldValue.serverTimestamp(),
     });
-    
-    logger.info("Withdrawal record created successfully", {
+
+    logger.info(`${prefix}Withdrawal record created successfully`, {
       withdrawalId,
       participantId,
       paymentMethodId
@@ -60,7 +64,8 @@ export async function createWithdrawalRecord(params: WithdrawalParams): Promise<
     
     return withdrawalId;
   } catch (error) {
-    logger.error("Error creating withdrawal record", { error });
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+    logger.error(`${prefix}Error creating withdrawal record`, { error });
     throw error;
   }
 } 

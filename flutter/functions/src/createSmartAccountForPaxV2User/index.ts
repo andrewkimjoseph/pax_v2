@@ -31,7 +31,7 @@ export const createSmartAccountForPaxV2User = onCall(
 
       if (!request.auth) {
         logger.error(
-          "Unauthenticated request to createSmartAccountForPaxV2User"
+          "[V2] Unauthenticated request to createSmartAccountForPaxV2User"
         );
         throw new HttpsError(
           "unauthenticated",
@@ -56,7 +56,7 @@ export const createSmartAccountForPaxV2User = onCall(
         );
       }
 
-      logger.info("Creating smart account for v2 user", {
+      logger.info("[V2] Creating smart account for v2 user", {
         userId,
         eoWalletAddress,
       });
@@ -68,7 +68,7 @@ export const createSmartAccountForPaxV2User = onCall(
           privateKeyHex = "0x" + privateKeyHex;
         }
       } catch (error) {
-        logger.error("Failed to decrypt private key", {error});
+        logger.error("[V2] Failed to decrypt private key", {error});
         throw new HttpsError(
           "invalid-argument",
           "Failed to decrypt private key. " +
@@ -79,7 +79,7 @@ export const createSmartAccountForPaxV2User = onCall(
       const eoaAccount = privateKeyToAccount(privateKeyHex as Address);
 
       if (eoaAccount.address.toLowerCase() !== eoWalletAddress.toLowerCase()) {
-        logger.error("EOA address mismatch", {
+        logger.error("[V2] EOA address mismatch", {
           derived: eoaAccount.address,
           provided: eoWalletAddress,
         });
@@ -110,13 +110,13 @@ export const createSmartAccountForPaxV2User = onCall(
         },
       });
 
-      logger.info("Smart Account Client created", {
+      logger.info("[V2] Smart Account Client created", {
         chain: smartAccountClient.chain?.name,
         accountAddress: smartAccountClient.account?.address,
         entryPointAddress: smartAccountClient.account?.entryPoint?.address,
       });
 
-      logger.info("Smart Account Address", {
+      logger.info("[V2] Smart Account Address", {
         smartAccountAddress: smartAccount.address,
       });
 
@@ -127,7 +127,7 @@ export const createSmartAccountForPaxV2User = onCall(
         smartAccountAddress: smartAccount.address,
       };
     } catch (error) {
-      logger.error("Error creating smart account", {error});
+      logger.error("[V2] Error creating smart account", {error});
 
       let errorMessage = "Unknown error occurred";
       if (error instanceof Error) {

@@ -22,7 +22,7 @@ export const createPrivyServerWallet = onCall(
       const { toSimpleSmartAccount } = await import("permissionless/accounts");
       // Ensure the user is authenticated
       if (!request.auth) {
-        logger.error("Unauthenticated request to createPrivyServerWallet", {
+        logger.error("[V1] Unauthenticated request to createPrivyServerWallet", {
           requestAuth: request.auth,
         });
         throw new HttpsError(
@@ -40,14 +40,14 @@ export const createPrivyServerWallet = onCall(
       }
 
       // Log the operation start
-      logger.info("Creating Privy server wallet", { userId });
+      logger.info("[V1] Creating Privy server wallet", { userId });
 
       // Create a new wallet using Privy wallet API
       const wallet = await PRIVY_CLIENT.walletApi.createWallet({
         chainType: "ethereum",
       });
 
-      logger.info("Created Privy wallet", {
+      logger.info("[V1] Created Privy wallet", {
         walletId: wallet.id,
         address: wallet.address,
       });
@@ -69,7 +69,7 @@ export const createPrivyServerWallet = onCall(
         },
       });
 
-      logger.info("Created Safe Smart Account", {
+      logger.info("[V1] Created Safe Smart Account", {
         safeAddress: smartAccount.address,
       });
 
@@ -80,7 +80,7 @@ export const createPrivyServerWallet = onCall(
         smartAccountWalletAddress: smartAccount.address,
       };
     } catch (error) {
-      logger.error("Error creating server wallet", { error });
+      logger.error("[V1] Error creating server wallet", { error });
 
       let errorMessage = "Unknown error occurred";
       if (error instanceof Error) {

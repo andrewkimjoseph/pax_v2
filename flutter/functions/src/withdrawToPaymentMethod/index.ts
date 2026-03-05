@@ -88,13 +88,13 @@ export const withdrawToPaymentMethod = onCall(
         paymentMethodAddress?: string;
       };
 
-      // V2 first: if all V2 params are present, this is a V2 withdraw (serverWalletId not required)
       const isV2 =
         !!encryptedPrivateKey &&
         !!sessionKey &&
         !!eoWalletAddress &&
         !!paymentMethodAddress;
       const isV1 = !isV2 && !!serverWalletId;
+      const logPrefix = isV2 ? "[V2]" : "[V1]";
 
       if (!paxAccountAddress) {
         throw new HttpsError(
@@ -170,7 +170,7 @@ export const withdrawToPaymentMethod = onCall(
         );
       }
 
-      logger.info("Withdrawing tokens to payment method", {
+      logger.info(`${logPrefix} Withdrawing tokens to payment method`, {
         userId,
         paxAccountAddress,
         paymentMethodId,
@@ -216,7 +216,7 @@ export const withdrawToPaymentMethod = onCall(
             privateKeyHex = "0x" + privateKeyHex;
           }
         } catch (error) {
-          logger.error("Failed to decrypt private key (V2 withdraw)", { error });
+          logger.error("[V2] Failed to decrypt private key (V2 withdraw)", { error });
           throw new HttpsError(
             "invalid-argument",
             "Failed to decrypt private key. Invalid session key or corrupted data."
@@ -242,7 +242,7 @@ export const withdrawToPaymentMethod = onCall(
         privateKeyHex = "";
       }
 
-      logger.info("Using Smart Account", {
+      logger.info(`${logPrefix} Using Smart Account`, {
         address: smartAccount.address,
       });
 
@@ -294,7 +294,7 @@ export const withdrawToPaymentMethod = onCall(
         });
       }
 
-      logger.info("User operation submitted", { userOpTxnHash });
+      logger.info(`${logPrefix} User operation submitted`, { userOpTxnHash });
 
       // Wait for user operation receipt
       const userOpReceipt =
@@ -303,7 +303,7 @@ export const withdrawToPaymentMethod = onCall(
         });
 
       if (!userOpReceipt.success) {
-        logger.error("User operation failed in withdrawToPaymentMethod", {
+        logger.error(`${logPrefix} User operation failed in withdrawToPaymentMethod`, {
           userOpReceipt,
         });
         throw new HttpsError("internal", "User operation failed");
@@ -313,7 +313,7 @@ export const withdrawToPaymentMethod = onCall(
       // logger.info("Transaction confirmed", { txnHash });
 
       const bundleTxnHash = userOpReceipt.receipt.transactionHash;
-      logger.info("Bundle transaction confirmed", { bundleTxnHash });
+      logger.info(`${logPrefix} Bundle transaction confirmed`, { bundleTxnHash });
 
       // Create withdrawal record
       const withdrawalId = await createWithdrawalRecord({
@@ -322,7 +322,7 @@ export const withdrawToPaymentMethod = onCall(
         amountRequested: parseFloat(amountRequested),
         rewardCurrencyId: tokenId,
         txnHash: bundleTxnHash,
-      });
+      }, isV2 ? "V2" : "V1");
 
       // Return the transaction hash and details
       return {

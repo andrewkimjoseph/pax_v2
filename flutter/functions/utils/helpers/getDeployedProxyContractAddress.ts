@@ -1,4 +1,4 @@
-import { logger } from "firebase-functions";
+import { logger } from "firebase-functions/v2";
 import { calculateEventSignature } from "./calculateEventSignature";
 import { PUBLIC_CLIENT } from "../config";
 import { Address } from "viem";
@@ -26,7 +26,7 @@ export async function getDeployedProxyContractAddress(
           // The contract address is in log.address
           const contractAddress = log.address as Address;
   
-          logger.info(`Found PaxAccount contract at address: ${contractAddress}`);
+          logger.info(`[V1] Found PaxAccount contract at address: ${contractAddress}`);
   
           // Additional verification: the contract address should also be in the indexed parameter
           if (log.topics[1]) {
@@ -36,11 +36,11 @@ export async function getDeployedProxyContractAddress(
   
             if (contractAddress.toLowerCase() === indexedAddress.toLowerCase()) {
               logger.info(
-                `Verified: The indexed parameter matches the contract address`
+                `[V1] Verified: The indexed parameter matches the contract address`
               );
             } else {
               logger.warn(
-                `Warning: Contract address ${contractAddress} doesn't match indexed parameter ${indexedAddress}`
+                `[V1] Warning: Contract address ${contractAddress} doesn't match indexed parameter ${indexedAddress}`
               );
             }
           }
@@ -51,7 +51,7 @@ export async function getDeployedProxyContractAddress(
   
       return undefined;
     } catch (error) {
-      logger.error("Error retrieving contract address from logs", {
+      logger.error("[V1] Error retrieving contract address from logs", {
         error,
         txHash,
       });
