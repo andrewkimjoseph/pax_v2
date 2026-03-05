@@ -1,6 +1,33 @@
-# Pax - Blockchain-Powered Canvassing & Task Platform
+# Pax V2 - Blockchain-Powered Canvassing & Task Platform
+
+> This repository (`pax_v2`) is the evolution of the original `pax` monorepo (Pax V1). V1’s last tagged state in the legacy repo is commit `6f5d580` (`chore: Bump version to 1.4.4+87`). The code in this repo was migrated from that state and extended with a new contract stack and wallet experience.
 
 Pax is a comprehensive platform that enables organizations to create and manage micro-tasks while rewarding participants with cryptocurrency tokens. The platform combines a modern Flutter mobile application with blockchain technology, Firebase backend services, and smart contracts to create a secure, scalable, and user-friendly task management ecosystem.
+
+## Migration: Pax V1 → Pax V2
+
+Pax V2 keeps the same core architecture as V1 (Flutter app + Firebase Functions + Hardhat contracts) but introduces a number of upgrades:
+
+- **New smart-contract stack (Hardhat)**
+  - Adds `contracts/new/CanvassingGasSponsor.sol`, `CanvassingRewarder.sol`, `CanvassingTaskManager.sol`, and `CanvassingWalletRegistry.sol` on top of the existing `PaxAccountV1` and `TaskManagerV1–V3` contracts.
+  - Formalizes gas sponsorship and reward distribution for on-chain canvassing flows.
+  - Keeps the existing UUPS upgradeable pattern and Hardhat test suite from V1.
+
+- **Wallet and account experience (Flutter + Functions)**
+  - Introduces `createSmartAccountForPaxV2User` and `logWalletToRegistry` Firebase functions for provisioning V2 smart accounts and registering them on-chain.
+  - Expands the Flutter wallet layer (`wallet_service`, `smart_account_service`, `wallet_registry_service`, etc.) to support V2 smart wallets and registry-based lookup.
+  - Preserves the existing ERC‑4337 / Pimlico-based account abstraction from V1 but aligns it with the new canvassing contracts.
+
+- **Operational scripts**
+  - Migrates the separate `scripts` TypeScript project (under `scripts/`) into this monorepo.
+  - Includes scripts for upgrading Pax accounts, distributing tokens, withdrawing from the TaskManager, and writing operational data to spreadsheets using the new contract layouts.
+
+- **Monorepo structure**
+  - Consolidates all components under `pax_v2`:
+    - `flutter/` – mobile app and Firebase Functions
+    - `hardhat/` – smart contracts and tests (including new canvassing contracts)
+    - `scripts/` – operational Node/TypeScript tooling
+  - The legacy `pax` repository is preserved separately as Pax V1 for historical reference only.
 
 ## Project Overview
 
