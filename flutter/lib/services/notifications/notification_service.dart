@@ -65,16 +65,18 @@ class NotificationService {
 
   /// Requests notification permission and fetches the FCM token.
   /// Call this after the user has signed in so the permission prompt appears post-login.
-  Future<void> requestPermissionAndEnsureFcmToken() async {
+  /// Returns the [AuthorizationStatus] after the request, or null if already initialized.
+  Future<AuthorizationStatus?> requestPermissionAndEnsureFcmToken() async {
     if (_isFcmInitialized) {
       if (kDebugMode) print('Notification Service: FCM already initialized');
-      return;
+      return null;
     }
 
     try {
-      await _initializeFirebaseMessaging();
+      final status = await _initializeFirebaseMessaging();
       _isFcmInitialized = true;
       if (kDebugMode) print('Notification Service: FCM permission and token ready');
+      return status;
     } catch (e) {
       if (kDebugMode) print('Notification Service: Error initializing FCM: $e');
       rethrow;
@@ -127,7 +129,8 @@ class NotificationService {
   }
 
   /// Initializes Firebase Cloud Messaging and requests notification permissions
-  Future<void> _initializeFirebaseMessaging() async {
+  /// Returns the [AuthorizationStatus] from the permission request.
+  Future<AuthorizationStatus> _initializeFirebaseMessaging() async {
     final settings = await _messaging.requestPermission(
       alert: true,
       badge: true,
@@ -151,10 +154,10 @@ class NotificationService {
     );
 
     _currentToken = await _messaging.getToken();
-    _isFcmInitialized = true;
     if (kDebugMode) {
       print('FCM Token: ${_currentToken?.substring(0, 10)}...');
     }
+    return settings.authorizationStatus;
   }
 
   /// Retrieves the current FCM token. Returns null if permission has not yet been

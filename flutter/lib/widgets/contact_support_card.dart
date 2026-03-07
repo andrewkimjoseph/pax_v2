@@ -28,7 +28,7 @@ class ContactSupportCard extends ConsumerWidget {
             FaIcon(
               faIcon,
               size: 18,
-              color: PaxColors.deepPurple,
+              color: PaxColors.black,
             ).withPadding(right: 12)
           else
             SvgPicture.asset(

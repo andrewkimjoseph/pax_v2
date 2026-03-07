@@ -30,6 +30,7 @@ class FaceVerificationView extends ConsumerStatefulWidget {
 
 class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
   bool _restoreAttempted = false;
+  bool _hasLoggedVerificationStarted = false;
 
   Future<void> _restoreWallet() async {
     if (!mounted) return;
@@ -223,6 +224,15 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
           ),
         ),
       );
+    }
+
+    if (!_hasLoggedVerificationStarted) {
+      _hasLoggedVerificationStarted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(analyticsProvider).v2FaceVerificationStarted();
+        }
+      });
     }
 
     return Scaffold(

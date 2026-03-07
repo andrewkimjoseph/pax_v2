@@ -38,64 +38,68 @@ class _AchievementsViewState extends ConsumerState<AchievementsView> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            Container(
-              height: 130,
-              decoration: BoxDecoration(
-                color: PaxColors.white,
-                borderRadius: BorderRadius.circular(7),
-                boxShadow: [
-                  BoxShadow(
-                    color: PaxColors.lightGrey,
-                    spreadRadius: 1,
-                    blurRadius: 2,
-                    offset: Offset(0, 1),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    height: 20,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(7),
-                        topRight: Radius.circular(7),
-                      ),
-                      gradient: LinearGradient(
-                        colors: PaxColors.orangeToPinkGradient,
-                      ),
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "Canvassing x GoodDollar - Achievements",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: PaxColors.deepPurple,
-                            ),
-                          ),
-                        ],
-                      ).withPadding(bottom: 8),
-                      Row(
-                        children: [
-                          Text(
-                            "Earn G\$ tokens by completing tasks and reaching milestones. The tokens are added to your GoodDollar balance and can be withdrawn anytime.",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: PaxColors.black,
-                            ),
-                          ).expanded(),
-                        ],
-                      ),
-                    ],
-                  ).withPadding(all: 8),
-                ],
-              ),
-            ).withPadding(bottom: 8),
-
+            // Container(
+            //   height: 130,
+            //   decoration: BoxDecoration(
+            //     color: PaxColors.white,
+            //     borderRadius: BorderRadius.circular(7),
+            //     boxShadow: [
+            //       BoxShadow(
+            //         color: PaxColors.lightGrey,
+            //         spreadRadius: 1,
+            //         blurRadius: 2,
+            //         offset: Offset(0, 1),
+            //       ),
+            //     ],
+            //   ),
+            //   child: Column(
+            //     children: [
+            //       Container(
+            //         height: 20,
+            //         decoration: BoxDecoration(
+            //           borderRadius: BorderRadius.only(
+            //             topLeft: Radius.circular(7),
+            //             topRight: Radius.circular(7),
+            //           ),
+            //           gradient: LinearGradient(
+            //             colors: PaxColors.orangeToPinkGradient,
+            //           ),
+            //         ),
+            //       ),
+            //       SizedBox(
+            //         width: MediaQuery.of(context).size.width,
+            //         child: Column(
+            //           mainAxisSize: MainAxisSize.min,
+            //           crossAxisAlignment: CrossAxisAlignment.start,
+            //           children: [
+            //             Row(
+            //               children: [
+            //                 Text(
+            //                   "Canvassing x GoodDollar - Achievements",
+            //                   style: TextStyle(
+            //                     fontSize: 18,
+            //                     color: PaxColors.deepPurple,
+            //                   ),
+            //                 ),
+            //               ],
+            //             ).withPadding(bottom: 8),
+            //             Row(
+            //               children: [
+            //                 Text(
+            //                   "Earn G\$ tokens by completing tasks and reaching milestones. The tokens are added to your GoodDollar balance and can be withdrawn anytime.",
+            //                   style: TextStyle(
+            //                     fontSize: 14,
+            //                     color: PaxColors.black,
+            //                   ),
+            //                 ).expanded(),
+            //               ],
+            //             ),
+            //           ],
+            //         ),
+            //       ).withPadding(all: 8),
+            //     ],
+            //   ),
+            // ).withPadding(bottom: 8),
             Container(
               decoration: BoxDecoration(
                 border: Border.all(color: PaxColors.deepPurple, width: 0.1),

@@ -21,7 +21,7 @@ class HelpAndSupportCard extends ConsumerWidget {
             FaIcon(
               icon!,
               size: 18,
-              color: PaxColors.deepPurple,
+              color: PaxColors.black,
             ).withPadding(right: 12),
           Expanded(
             child: Text(

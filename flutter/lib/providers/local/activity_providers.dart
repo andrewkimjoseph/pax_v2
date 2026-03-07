@@ -200,6 +200,29 @@ final unclaimedTaskCompletionsCountProvider = Provider<AsyncValue<int>>((ref) {
   );
 });
 
+// Provider for count of expired task completions (incomplete and past deadline)
+final expiredTaskCompletionsCountProvider = Provider<AsyncValue<int>>((ref) {
+  final userId = ref.watch(authProvider).user.uid;
+  final allActivitiesAsync = ref.watch(allActivitiesProvider(userId));
+
+  return allActivitiesAsync.when(
+    data: (allActivities) {
+      final taskCompletions = allActivities
+          .where((a) => a.type == ActivityType.taskCompletion)
+          .toList();
+      final expired =
+          filterTaskCompletionActivities(
+            taskCompletions,
+            allActivities,
+            CompletionFilter.expired,
+          );
+      return AsyncValue.data(expired.length);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+  );
+});
+
 // Provider for total G$ tokens earned
 final totalGoodDollarTokensEarnedProvider = Provider<AsyncValue<double>>((ref) {
   final userId = ref.watch(authProvider).user.uid;

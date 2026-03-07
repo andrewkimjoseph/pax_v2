@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pax/exports/shadcn.dart';
 import 'package:pax/models/faq.dart';
 import 'package:flutter/gestures.dart';
@@ -5,13 +6,13 @@ import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/regex.dart';
 import 'package:pax/utils/url_handler.dart';
 
-class FAQAccordionItem extends StatelessWidget {
+class FAQAccordionItem extends ConsumerWidget {
   final FAQ faq;
 
   const FAQAccordionItem({super.key, required this.faq});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isLink = urlRegex.hasMatch(faq.answer.trim());
     return AccordionItem(
       trigger: AccordionTrigger(

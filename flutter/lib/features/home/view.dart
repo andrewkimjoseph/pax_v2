@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/exports/views.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
@@ -45,6 +46,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
   Widget build(BuildContext context) {
     final featureFlags = ref.watch(featureFlagsProvider);
     final index = ref.watch(homeSelectedIndexProvider);
+    final accountType = ref.watch(accountTypeProvider);
+    final isV2 = accountType == AccountType.v2;
     // final primaryWithdrawalMethod = ref.watch(primaryWithdrawalMethodProvider);
     return Scaffold(
       headers: [
@@ -64,146 +67,126 @@ class _HomeViewState extends ConsumerState<HomeView> {
                 ),
               ),
 
-              // InkWell(
-              //   onTap:
-              //       () => Navigator.push(
-              //         context,
-              //         MaterialPageRoute(
-              //           builder: (context) => NotificationsView(),
-              //         ),
-              //       ),
+              if (!isV2)
+                IconButton(
+                  // style: ButtonStyle.primary(
+                  //   density: ButtonDensity.icon,
+                  // ).withBackgroundColor(color: PaxColors.goodDollarBlue),
+                  onPressed: () async {
+                    ref.read(analyticsProvider).optionsTapped();
+                    Drawer.open(context, ref);
+                  },
+                  icon: FaIcon(FontAwesomeIcons.bars),
+                  variance: ButtonStyle.ghost(),
 
-              //   child: SvgPicture.asset(
-              //     'lib/assets/svgs/active_notification.svg',
-              //   ),
-              // ),
-              // Badge(
-              //   offset: const Offset(5, -5),
-              //   // backgroundColor: PaxColors.green,
-              //   isLabelVisible: true,
-              //   backgroundColor: PaxColors.red,
-              //   smallSize: 15,
-              //   label: Text(""),
-              //   child: ,
-              // ),
-              IconButton(
-                // style: ButtonStyle.primary(
-                //   density: ButtonDensity.icon,
-                // ).withBackgroundColor(color: PaxColors.goodDollarBlue),
-                onPressed: () async {
-                  ref.read(analyticsProvider).optionsTapped();
-                  Drawer.open(context, ref);
-                },
-                icon: FaIcon(FontAwesomeIcons.bars),
-                variance: ButtonStyle.ghost(),
-
-                // child: Image.asset(
-                //   'lib/assets/images/good_dollar.png',
-                //   height: 30,
-                // ),
-              ),
+                  // child: Image.asset(
+                  //   'lib/assets/images/good_dollar.png',
+                  //   height: 30,
+                  // ),
+                ),
             ],
           ).withPadding(bottom: 8),
-          subtitle: Column(
-            children: [
-              Row(
-                children: [
-                  _homeTabButton(
-                    label: 'Dashboard',
-                    isActive: index == 0,
-                    onPressed: _onDashboardPressed,
-                  ),
-                  featureFlags.when(
-                    data:
-                        (flags) =>
-                            kDebugMode ||
-                                    flags[RemoteConfigKeys.areTasksAvailable] ==
-                                        true
-                                ? Consumer(
-                                  builder: (context, ref, child) {
-                                    final participant =
-                                        ref
-                                            .watch(participantProvider)
-                                            .participant;
-                                    final tasksStream = ref.watch(
-                                      availableTasksStreamProvider(
-                                        participant?.id,
-                                      ),
-                                    );
+          subtitle: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.zero,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _homeTabButton(
+                  label: 'Dashboard',
+                  isActive: index == 0,
+                  onPressed: _onDashboardPressed,
+                ),
+                featureFlags.when(
+                  data:
+                      (flags) =>
+                          kDebugMode ||
+                                  flags[RemoteConfigKeys.areTasksAvailable] ==
+                                      true
+                              ? Consumer(
+                                builder: (context, ref, child) {
+                                  final participant =
+                                      ref
+                                          .watch(participantProvider)
+                                          .participant;
+                                  final tasksStream = ref.watch(
+                                    availableTasksStreamProvider(
+                                      participant?.id,
+                                    ),
+                                  );
 
-                                    return tasksStream.when(
-                                      data:
-                                          (tasks) => _homeTabButton(
-                                            label: 'Tasks',
-                                            isActive: index == 1,
-                                            onPressed: _onTasksPressed,
-                                            badgeCount:
-                                                // primaryWithdrawalMethod != null
-                                                // ?
-                                                tasks.length,
-                                            // : null,
-                                          ),
-                                      loading:
-                                          () => _homeTabButton(
-                                            label: 'Tasks',
-                                            isActive: index == 1,
-                                            isLoading: true,
-                                            onPressed: _onTasksPressed,
-                                          ),
-                                      error:
-                                          (_, __) => _homeTabButton(
-                                            label: 'Tasks',
-                                            isActive: index == 1,
-                                            isError: true,
-                                            onPressed: _onTasksPressed,
-                                          ),
-                                    );
-                                  },
-                                )
-                                : const SizedBox.shrink(),
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-                  featureFlags.when(
-                    data:
-                        (flags) =>
-                            kDebugMode ||
-                                    flags[RemoteConfigKeys
-                                            .areAchievementsAvailable] ==
-                                        true
-                                ? Consumer(
-                                  builder: (context, ref, child) {
-                                    final achievementState = ref.watch(
-                                      achievementsProvider,
-                                    );
-                                    final earnedNotClaimedCount =
-                                        achievementState.achievements
-                                            .where(
-                                              (a) =>
-                                                  achievementStatusName(
-                                                    a.status,
-                                                  ) ==
-                                                  AchievementStatusNames.earned,
-                                            )
-                                            .length;
-                                    return _homeTabButton(
-                                      label: 'Achievements',
-                                      isActive: index == 2,
-                                      onPressed: _onAchievementsPressed,
-                                      badgeCount:
-                                          earnedNotClaimedCount > 0
-                                              ? earnedNotClaimedCount
-                                              : null,
-                                    );
-                                  },
-                                )
-                                : const SizedBox.shrink(),
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            ],
+                                  return tasksStream.when(
+                                    data:
+                                        (tasks) => _homeTabButton(
+                                          label: 'Tasks',
+                                          isActive: index == 1,
+                                          onPressed: _onTasksPressed,
+                                          badgeCount:
+                                              // primaryWithdrawalMethod != null
+                                              // ?
+                                              tasks.length,
+                                          // : null,
+                                        ),
+                                    loading:
+                                        () => _homeTabButton(
+                                          label: 'Tasks',
+                                          isActive: index == 1,
+                                          isLoading: true,
+                                          onPressed: _onTasksPressed,
+                                        ),
+                                    error:
+                                        (_, __) => _homeTabButton(
+                                          label: 'Tasks',
+                                          isActive: index == 1,
+                                          isError: true,
+                                          onPressed: _onTasksPressed,
+                                        ),
+                                  );
+                                },
+                              )
+                              : const SizedBox.shrink(),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+                featureFlags.when(
+                  data:
+                      (flags) =>
+                          kDebugMode ||
+                                  flags[RemoteConfigKeys
+                                          .areAchievementsAvailable] ==
+                                      true
+                              ? Consumer(
+                                builder: (context, ref, child) {
+                                  final achievementState = ref.watch(
+                                    achievementsProvider,
+                                  );
+                                  final earnedNotClaimedCount =
+                                      achievementState.achievements
+                                          .where(
+                                            (a) =>
+                                                achievementStatusName(
+                                                  a.status,
+                                                ) ==
+                                                AchievementStatusNames.earned,
+                                          )
+                                          .length;
+                                  return _homeTabButton(
+                                    label: 'Achievements',
+                                    isActive: index == 2,
+                                    onPressed: _onAchievementsPressed,
+                                    badgeCount:
+                                        earnedNotClaimedCount > 0
+                                            ? earnedNotClaimedCount
+                                            : null,
+                                  );
+                                },
+                              )
+                              : const SizedBox.shrink(),
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
+              ],
+            ),
           ),
         ),
         Divider(color: PaxColors.lightGrey),
