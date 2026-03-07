@@ -159,6 +159,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
           Row(
             children: [
               SizedBox(
+                    height: 40,
                     width: 150,
                     child: Select<String>(
                       itemBuilder: (context, item) {
