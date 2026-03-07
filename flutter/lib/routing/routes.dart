@@ -17,5 +17,6 @@ class Routes {
   static const checkV2Eligibility = "/check-v2-eligibility";
   static const v2WebBlocked = "/v2-web-blocked";
   static const miniappWebView = "/miniapp-webview";
+  static const webviewConverter = "/webview-converter";
   static const loading = "/loading";
 }

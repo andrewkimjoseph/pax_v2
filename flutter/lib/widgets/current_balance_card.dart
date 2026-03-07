@@ -17,7 +17,6 @@ import 'package:pax/utils/remote_config_constants.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/widgets/select_currency_button.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
-import 'package:pax/providers/local/refresh_time_provider.dart';
 // import 'dart:math' as math;
 
 class CurrentBalanceCard extends ConsumerStatefulWidget {
@@ -29,30 +28,7 @@ class CurrentBalanceCard extends ConsumerStatefulWidget {
   ConsumerState<CurrentBalanceCard> createState() => _CurrentBalanceCardState();
 }
 
-class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
-// with SingleTickerProviderStateMixin
-{
-  // late AnimationController _animationController;
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _animationController = AnimationController(
-  //     vsync: this,
-  //     duration: const Duration(milliseconds: 800),
-  //   );
-
-  //   if (widget.nextLocation == "/wallet") {
-  //     _animationController.repeat();
-  //   }
-  // }
-
-  // @override
-  // void dispose() {
-  //   _animationController.dispose();
-  //   super.dispose();
-  // }
-
+class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
   @override
   Widget build(BuildContext context) {
     final paxAccount = ref.watch(paxAccountProvider);
@@ -60,11 +36,6 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
         ref.watch(rewardCurrencyContextProvider).selectedCurrency;
     final tokenId = TokenBalanceUtil.getTokenIdForCurrency(selectedCurrency);
     final currentBalance = paxAccount.balances[tokenId];
-
-    final lastRefreshTime = ref.watch(refreshTimeProvider);
-    final canRefresh =
-        lastRefreshTime == null ||
-        DateTime.now().difference(lastRefreshTime) > const Duration(minutes: 5);
 
     final isFetching =
         paxAccount.state == PaxAccountState.initial ||
@@ -90,7 +61,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
           Row(
             children: [
               Text(
-                'Current Balance',
+                'PaxAccount Balance',
                 style: TextStyle(
                   fontWeight: FontWeight.normal,
                   fontSize: 20,
@@ -102,11 +73,9 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
               if (widget.nextLocation == "/wallet")
                 IconButton.outline(
                   onPressed:
-                      !canRefresh || paxAccount.state == PaxAccountState.syncing
+                      paxAccount.state == PaxAccountState.syncing
                           ? null
                           : () {
-                            ref.read(refreshTimeProvider.notifier).setNow();
-
                             ref.read(analyticsProvider).refreshBalancesTapped({
                               "tokenId": tokenId,
                               "currentBalance": currentBalance,
@@ -115,7 +84,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
 
                             ref
                                 .read(paxAccountProvider.notifier)
-                                .syncBalancesFromBlockchain();
+                                .syncBalancesFromBlockchain(silent: false);
                           },
                   density: ButtonDensity.icon,
                   icon:
@@ -125,12 +94,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
                             FontAwesomeIcons.arrowsRotate,
                             color: PaxColors.deepPurple,
                           ),
-                ).withToolTip(
-                  lastRefreshTime == null
-                      ? "You can refresh now"
-                      : "You can refresh again in ${5 - DateTime.now().difference(lastRefreshTime).inMinutes} min(s)",
-                  showTooltip: !canRefresh,
-                ),
+                ).withToolTip("Refresh on-chain balances", showTooltip: false),
             ],
           ),
 
@@ -165,7 +129,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
                     ),
                     SvgPicture.asset(
                       'lib/assets/svgs/currencies/$selectedCurrency.svg',
-                      height: tokenId == 1 ? 25 : 20,
+                      height: tokenId == 2 ? 30 : (tokenId == 1 ? 25 : 20),
                     ),
                   ],
                 ).withPadding(bottom: 16),
@@ -194,102 +158,19 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
 
           Row(
             children: [
-              // if (widget.nextLocation == "/wallet")
-              //   AnimatedBuilder(
-              //     animation: _animationController,
-              //     builder: (context, child) {
-              //       return Container(
-              //         width: 150,
-              //         decoration: BoxDecoration(
-              //           color: PaxColors.white,
-              //           borderRadius: BorderRadius.circular(12),
-              //           border: Border.all(width: 2, color: Colors.transparent),
-              //           gradient: SweepGradient(
-              //             colors: [
-              //               PaxColors.blue,
-              //               PaxColors.blue,
-              //               PaxColors.blue.withAlpha((0.5 * 255).toInt()),
-              //               Colors.transparent,
-              //               Colors.transparent,
-              //             ],
-              //             stops: const [0.0, 0.2, 0.4, 0.6, 0.8],
-              //             transform: GradientRotation(
-              //               _animationController.value * 2 * math.pi,
-              //             ),
-              //           ),
-              //         ),
-              //         child: Container(
-              //           decoration: BoxDecoration(
-              //             color: PaxColors.white,
-              //             borderRadius: BorderRadius.circular(10),
-              //           ),
-              //           child: child,
-              //         ),
-              //       );
-              //     },
-              //     child: Select<String>(
-              //       itemBuilder: (context, item) {
-              //         return Row(
-              //           children: [
-              //             SvgPicture.asset(
-              //               'lib/assets/svgs/currencies/$item.svg',
-              //               height: 20,
-              //             ).withPadding(right: 8),
-              //             Text(CurrencySymbolUtil.getSymbolForCurrency(item)),
-              //           ],
-              //         );
-              //       },
-              //       onChanged: (value) {
-              //         if (value != null) {
-              //           ref
-              //               .read(rewardCurrencyContextProvider.notifier)
-              //               .setSelectedCurrency(value);
-
-              //           ref
-              //               .read(withdrawContextProvider.notifier)
-              //               .setWithdrawContext(
-              //                 tokenId ?? 1,
-              //                 currentBalance ?? 0,
-              //               );
-              //         }
-              //       },
-              //       value: selectedCurrency,
-              //       placeholder: const Text('Change currency'),
-              //       popup:
-              //           (context) => SelectPopup(
-              //             items: SelectItemList(
-              //               children: [
-              //                 SelectCurrencyButton(
-              //                   'good_dollar',
-              //                   selectedCurrency == 'good_dollar',
-              //                 ),
-              //                 SelectCurrencyButton(
-              //                   'celo_dollar',
-              //                   selectedCurrency == 'celo_dollar',
-              //                 ),
-              //                 SelectCurrencyButton(
-              //                   'tether_usd',
-              //                   selectedCurrency == 'tether_usd',
-              //                 ),
-              //                 SelectCurrencyButton(
-              //                   'usd_coin',
-              //                   selectedCurrency == 'usd_coin',
-              //                 ).withPadding(bottom: kIsWeb ? 0 : 30),
-              //               ],
-              //             ),
-              //           ),
-              //     ),
-              //   ).withPadding(right: 8)
-              // else
               SizedBox(
                     width: 150,
                     child: Select<String>(
                       itemBuilder: (context, item) {
+                        final height =
+                            item == 'usdm'
+                                ? 28.5
+                                : (item == 'good_dollar' ? 25.0 : 20.0);
                         return Row(
                           children: [
                             SvgPicture.asset(
                               'lib/assets/svgs/currencies/$item.svg',
-                              height: 20,
+                              height: height,
                             ).withPadding(right: 8),
                             Text(CurrencySymbolUtil.getSymbolForCurrency(item)),
                           ],
@@ -320,8 +201,8 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard>
                                   selectedCurrency == 'good_dollar',
                                 ),
                                 SelectCurrencyButton(
-                                  'celo_dollar',
-                                  selectedCurrency == 'celo_dollar',
+                                  'usdm',
+                                  selectedCurrency == 'usdm',
                                 ),
                                 SelectCurrencyButton(
                                   'tether_usd',

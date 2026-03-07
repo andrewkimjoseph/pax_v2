@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_custom_tabs/flutter_custom_tabs.dart' as custom_tabs;
 import 'package:go_router/go_router.dart';
+import 'package:pax/features/webview/webview_converter_payload.dart';
+import 'package:pax/routing/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+/// Coinbase G$ to USD converter page URL (GoodDollar base amount).
+const String coinbaseGdConverterUrl =
+    r'https://www.coinbase.com/converter/g$/usd';
 
 /// Handles launching URLs either in an external browser or in-app WebView
 class UrlHandler {
@@ -34,6 +40,27 @@ class UrlHandler {
       throw ArgumentError('URL cannot be empty');
     }
     context.push('/webview', extra: url);
+  }
+
+  /// Opens the G$ converter in an in-app WebView and injects [balance]
+  /// into the page's base amount input (default selector: [selector]).
+  static void launchGdConverterWebView(
+    BuildContext context,
+    String url,
+    num balance, {
+    String selector = '#base',
+  }) {
+    if (url.isEmpty) {
+      throw ArgumentError('URL cannot be empty');
+    }
+    context.push(
+      Routes.webviewConverter,
+      extra: WebViewConverterPayload(
+        url: url,
+        valueToInject: balance,
+        selector: selector,
+      ),
+    );
   }
 
   static Future<void> launchCustomTab(BuildContext context, String url) async {

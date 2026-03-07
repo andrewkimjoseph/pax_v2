@@ -67,6 +67,7 @@ class PaxAccountRepository {
       for (final token in TokenBalanceUtil.getAllTokens()) {
         await LocalDBHelper().upsertBalance(userId, token.id, 0);
       }
+      await LocalDBHelper().setWalletBalances(userId, {1: 0, 2: 0, 3: 0, 4: 0});
 
       return newAccount;
     } catch (e) {
@@ -136,6 +137,9 @@ class PaxAccountRepository {
       }
       // Update balance in local DB only
       await LocalDBHelper().upsertBalance(userId, tokenId, amount);
+      final balances = await LocalDBHelper().getBalances(userId);
+      balances[tokenId] = amount;
+      await LocalDBHelper().setWalletBalances(userId, balances);
     } catch (e) {
       if (kDebugMode) {
         print('Error updating balance: $e');
@@ -172,6 +176,10 @@ class PaxAccountRepository {
           entry.value as num,
         );
       }
+      await LocalDBHelper().setWalletBalances(
+        participantId,
+        updatedBalances.map((k, v) => MapEntry(k, v as num)),
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Error syncing balances from blockchain: $e');
