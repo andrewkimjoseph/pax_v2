@@ -19,6 +19,13 @@ export const PAXACCOUNT_V1_IMPLEMENTATION_ADDRESS = process.env.PAXACCOUNT_V1_IM
 export const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 export const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
 
+export const ETHERSCAN_API_KEY_1 = process.env.ETHERSCAN_API_KEY_1 || '';
+export const ETHERSCAN_API_KEY_2 = process.env.ETHERSCAN_API_KEY_2 || '';
+
+/** Etherscan v2 API base URL and Celo chain id for txList. */
+export const ETHERSCAN_V2_BASE_URL = 'https://api.etherscan.io/v2/api';
+export const ETHERSCAN_CHAIN_ID_CELO = 42220;
+
 
 export const FUNCTION_RUNTIME_OPTS: CallableOptions = {
   // timeoutSeconds: 60,

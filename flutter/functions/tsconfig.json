@@ -13,7 +13,8 @@
     "paths": {
       "@shared/*": ["utils/*"]
     },
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
   "compileOnSave": true,
   "include": [
