@@ -4,11 +4,15 @@
 
 **Pax** is a mobile-first micro-task and rewards platform that connects researchers/organizations with participants who complete surveys and tasks in exchange for cryptocurrency rewards. The platform features identity verification, multi-currency wallet management, achievement gamification, and seamless withdrawal to external crypto wallets.
 
+**Pax V2** introduces an improved wallet and rewards system: participants can have a **Pax Wallet** (EOA + smart account) with client-side key custody backed by Google Drive, gas sponsored via Canvassing contracts, and rewards/achievements paid through the **CanvassingRewarder** contract. V1 users (legacy proxy contract) continue to be supported; V1 users may see an upgrade path to V2 when the feature flag is enabled.
+
 ---
 
 ## Core Concept
 
 Pax enables organizations ("Task Masters") to create micro-tasks (primarily surveys) that verified participants complete to earn cryptocurrency tokens. The platform ensures only real, verified humans participate through face verification integration with GoodDollar's identity system, preventing bots and fraud.
+
+**V2:** New users typically onboard as V2 and create a Pax Wallet (no contract deployment). Rewards and achievements for V2 are distributed via the CanvassingRewarder contract to the participant's smart account. V1 (legacy) users use a server-managed proxy contract and existing flows until they upgrade.
 
 ---
 
@@ -45,6 +49,8 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 - profilePictureURI: string (from Google auth)
 - goodDollarIdentityTimeLastAuthenticated: timestamp
 - goodDollarIdentityExpiryDate: timestamp
+- accountType: string ("v1" | "v2") — V1 = legacy proxy contract; V2 = Pax Wallet / smart account
+- onboardingType: string | null ("v1_legacy" | "v2_native" | "mixed" | null) — set after onboarding questionnaire
 - timeCreated: timestamp
 - timeUpdated: timestamp
 ```
@@ -117,13 +123,33 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 ```
 
 ### Pax Account (User's Blockchain Wallet)
+
+**V1 (Legacy):** Server-managed proxy contract. Identified by `contractAddress != null`.
+**V2:** No proxy contract; user has EOA + smart account. Identified by `contractAddress == null && eoWalletAddress != null`. Payout address for V2 is `smartAccountWalletAddress`.
+
 ```
 - id: string (same as participantId)
-- contractAddress: string (smart contract address)
-- contractCreationTxnHash: string
-- serverWalletId: string
-- serverWalletAddress: string
-- smartAccountWalletAddress: string
+- contractAddress: string | null (V1 only; proxy contract address)
+- contractCreationTxnHash: string | null (V1 only)
+- serverWalletId: string | null (V1 server wallet)
+- serverWalletAddress: string | null (V1 server wallet address)
+- smartAccountWalletAddress: string | null (V2 smart account; payout address for V2)
+- eoWalletAddress: string | null (V2 EOA address)
+- timeCreated: timestamp
+- timeUpdated: timestamp
+```
+
+### Pax Wallet (V2 Only — in-app wallet document)
+
+Stores the V2 user's EOA and smart account addresses. Backed by client-side encrypted key (e.g. Google Drive). Balances are read from chain for the EOA; rewards are sent to the smart account.
+
+```
+- id: string (document ID in pax_wallets collection)
+- participantId: string (reference)
+- eoAddress: string (EOA address)
+- smartAccountAddress: string (smart account contract address)
+- logTxnHash: string | null (optional onboarding log)
+- logTimeCreated: timestamp | null
 - timeCreated: timestamp
 - timeUpdated: timestamp
 ```
@@ -191,10 +217,11 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 | Task Starter | Complete 1 task | 100 |
 | Task Expert | Complete 10 tasks | 1000 |
 | Double Payout Connector | Connect 2 withdrawal methods | 500 |
+| Triple Payout Connector | Connect 3 withdrawal methods | 500 |
 
 ### Achievement States
 - **In Progress**: User is working toward the goal
-- **Earned**: Goal completed, reward available to claimYEs
+- **Earned**: Goal completed, reward available to claim
 - **Claimed**: Reward has been claimed and transferred
 
 ---
@@ -220,12 +247,18 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 
 ```
 /onboarding                              - Welcome screens (3 pages) + Sign in
-/home                                    - Main hub with tabs
-  ├── Dashboard (index 0)                - Balance card, carousel, published reports
-  ├── Tasks (index 1)                    - Available tasks list
-  └── Achievements (index 2)             - Achievement cards with filters
+/onboarding-questionnaire                - V2: GoodDollar usage + wallet access questions → create-v2-wallet | withdrawal-methods | home
+/loading                                 - Resolves account type and redirects (e.g. to questionnaire, create-v2-wallet, home, v2-web-blocked)
+/home                                    - Main hub with tabs (tab set depends on V1 vs V2)
+  V1 tabs: Home (Dashboard, Tasks, Achievements) | Activity | Account
+  V2 tabs: Home (Dashboard, Tasks, Achievements) | Wallet (Pax Wallet) | Apps (Miniapps) | Activity | Account
 
-/wallet                                  - Balance view + withdrawal methods
+/create-v2-wallet                        - V2 wallet creation (Drive backup, EOA + smart account, register Pax Wallet as withdrawal method)
+/pax-wallet                              - V2: Pax Wallet balance card + address (embedded in Wallet tab for V2)
+/check-v2-eligibility                    - V1: Check if user can upgrade to V2
+/v2-web-blocked                          - Shown when V2 user tries to use web app (must use mobile)
+
+/wallet                                  - Balance view + withdrawal methods (V1; V2 uses Wallet tab + Pax Wallet)
 /wallet/withdraw                         - Enter withdrawal amount
 /wallet/withdraw/select-wallet           - Select withdrawal destination
 /wallet/withdraw/select-wallet/review    - Confirm withdrawal
@@ -236,11 +269,14 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 
 /claim-reward                            - Claim earned task reward
 
-/withdrawal-methods                      - Manage connected wallets
+/withdrawal-methods                      - Manage connected wallets (V1 primary; V2 shows Pax Wallet card + MiniPay/GoodWallet when verified)
 /withdrawal-methods/minipay-connection   - Connect MiniPay wallet
 /withdrawal-methods/minipay-connection/copy-wallet-address
 /withdrawal-methods/good-wallet-connection    - Connect GoodWallet
 /withdrawal-methods/good-wallet-connection/copy-wallet-address
+
+/complete-gooddollar-face-verification   - Face verification (V2: registers Pax Wallet after verification)
+/complete-profile                        - Complete profile (country, gender, DOB)
 
 /profile                                 - Edit profile details
 /account-and-security                    - Account settings, delete account
@@ -249,8 +285,12 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 /help-and-support/faq                    - Frequently asked questions
 /help-and-support/contact-support        - Contact form
 
+/miniapp-webview                         - V2: WebView for miniapp or custom URL
+/webview-converter                       - Converter WebView
+
 /canvassing-x-gooddollar                 - Partnership info page
 /report-page                             - View published research reports
+/reports                                 - Reports list
 /notifications                           - Notification center
 ```
 
@@ -265,27 +305,37 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 2. **Welcome Screen 2**: "We value your voice. We pay for your opinion." - Value proposition
 3. **Welcome Screen 3**: "Sign in with Google" - Authentication
 
+**Post sign-in (V2):**
+4. **Onboarding Questionnaire** ("Let's get to know you"): Asks whether user has used G$ or UBI payouts before (Yes / Heard of it / No, first time). If "Yes", asks "Still have access to that wallet?" (Yes / No). Outcomes:
+   - **v2_native** (e.g. "No, first time") → Create V2 wallet flow
+   - **v1_legacy** (Yes + can access wallet) → Withdrawal methods (legacy)
+   - **mixed** → Create V2 wallet flow
+5. **Create V2 Wallet** (when v2_native or mixed): Google Drive scopes for backup → create EOA + encrypted key → create `pax_wallets` doc → create smart account via backend → update Participant `accountType: "v2"` → register "PaxWallet" as withdrawal method → redirect to complete profile or home.
+
 **Functionality:**
-- Swipeable page carousel with dot indicators
+- Swipeable page carousel with dot indicators (welcome)
 - Skip button (jumps to last page)
 - Continue button (advances one page)
 - Google Sign-In integration
-- Automatic user creation in database on first sign-in
+- Automatic user creation in database on first sign-in (with default `accountType: "v1"`, `onboardingType: null`)
 - Progress indicators (3 dots)
+- V1 users may see **V2 availability banner** (when `is_v2_upgrade_available` is true) linking to Check V2 Eligibility
 
 ---
 
 ### 2. Dashboard
 
 **Components:**
-- Current Balance Card (shows selected currency balance)
+- Current Balance Card (shows selected currency balance) — V1 uses pax_account balances; V2 home tab shows dashboard balance card
+- **V2:** Bottom nav includes **Wallet** (Pax Wallet view) and **Apps** (Miniapps) tabs
 - Social Links Carousel (X, Telegram, WhatsApp links)
 - Image Carousel (5 rotating promotional images)
 - Published Reports Section (links to research reports)
+- **V2:** V1 users may see "V2 is Available!" banner (when flag enabled) → Check V2 Eligibility
 
 **Balance Card Features:**
 - Currency selector dropdown (4 currencies)
-- Balance refresh button (5-minute cooldown)
+- Balance refresh button (5-minute cooldown for V1; V2 Pax Wallet has its own refresh)
 - Wallet/Withdraw button
 - Loading skeleton during fetch
 
@@ -400,19 +450,16 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 ### 6. Wallet & Withdrawals
 
 **Wallet View:**
-- Current balance card with currency selector
-- Refresh balance button
-- Available Withdrawal Methods section
-- MiniPay card (connected/not connected)
-- GoodWallet card (connected/not connected)
+- **V1:** Current balance card with currency selector, refresh balance button, Available Withdrawal Methods (MiniPay, GoodWallet).
+- **V2:** Dedicated **Wallet** tab shows **Pax Wallet** view: balance card (G$ hero + cUSD/USDT pills), wallet address, "Check G$ exchange rate" link, refresh. Withdrawal methods screen shows **Pax Wallet** card first (connected once wallet created); MiniPay and GoodWallet cards shown only after Pax Wallet address is verified (GoodDollar identity). V2 withdrawal uses encrypted params (encryptedPrivateKey, sessionKey, eoWalletAddress) passed to backend.
 
 **Withdrawal Flow:**
 1. Select currency to withdraw
 2. Enter amount (validates: >0, ≤ balance, max 2 decimals)
-3. Select destination wallet (MiniPay or GoodWallet)
+3. Select destination wallet (MiniPay or GoodWallet; V2 also has Pax Wallet as source)
 4. Review summary (amount, fees, destination)
 5. Confirm withdrawal
-6. Processing dialog
+6. Processing dialog (V2: backend decrypts key, executes via Canvassing contracts as needed)
 7. Blockchain transaction
 8. Success confirmation
 
@@ -424,11 +471,45 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 
 ---
 
+### 6a. Pax Wallet (V2 Only)
+
+**Pax Wallet** is the in-app wallet for V2 users: an EOA (key encrypted and backed up to Google Drive) plus a smart account (gas-sponsored). Rewards and achievement payouts are sent to the smart account; balances are read from the EOA for display (G$, cUSD, USDT, USDC). Cached in local DB for quick load; refresh fetches from chain.
+
+**Creation (Create V2 Wallet flow):**
+- Google Sign-In with Drive scope for backup
+- Generate EOA and encrypt private key with session key (e.g. Google account id)
+- Create `pax_wallets` document with `eoAddress`; backend `createSmartAccountForPaxV2User` creates smart account and returns address; app updates doc with `smartAccountAddress`
+- Register "PaxWallet" as a withdrawal method (payment_methods)
+- Participant `accountType` set to `"v2"`; pax_accounts doc has `eoWalletAddress` and `smartAccountWalletAddress` (no `contractAddress`)
+
+**Pax Wallet tab (V2):**
+- Balance card with currency pills, address row, exchange link, refresh
+- Face verification required for tasks/withdrawals; after verification, Pax Wallet EOA is whitelisted with GoodDollar Identity and MiniPay/GoodWallet options become available
+
+**Web:** V2 users opening the app on web are redirected to `/v2-web-blocked` ("Your account uses Pax Wallet. Please sign in on the mobile app to continue.").
+
+---
+
+### 6b. Miniapps (V2 Only)
+
+**Apps** tab is shown only for V2 users. If V2 user has not completed face verification, they see a prompt to verify identity before using PaxWallet apps.
+
+**Features:**
+- List of miniapps from Remote Config (`miniapps_config`: `are_miniapps_available` + `miniapps` array with id, name, title, imageURI, url, etc.)
+- Optional "Open by URL" (custom dapp) when `is_custom_app_access_feature_available` is true — dialog to paste URL, then open in miniapp WebView
+- Tapping a miniapp opens `/miniapp-webview` with the app URL; WebView can use `window.PaxWallet` (ethereum provider) for dapp interactions
+- Converter WebView route (`/webview-converter`) for conversion flows
+
+---
+
 ### 7. Withdrawal Methods Connection
 
 **Supported Methods:**
-1. **MiniPay** - Celo mobile wallet
-2. **GoodWallet** - GoodDollar ecosystem wallet
+1. **Pax Wallet** (V2 only) — In-app EOA + smart account; registered automatically when V2 wallet is created; shown as first card on withdrawal methods for V2.
+2. **MiniPay** - Celo mobile wallet
+3. **GoodWallet** - GoodDollar ecosystem wallet
+
+**V2 behaviour:** For V2 users, MiniPay and GoodWallet cards are only shown when the Pax Wallet address is verified (GoodDollar Identity whitelist). Until then, only the Pax Wallet card is shown (and user is prompted to complete face verification for tasks/withdrawals).
 
 **Connection Flow (Both Methods):**
 1. User navigates to withdrawal methods
@@ -545,47 +626,57 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 ### Cloud Functions
 
 1. **createPrivyServerWallet**
-   - Creates secure server-managed wallet for new users
+   - Creates secure server-managed wallet for new users (V1)
 
 2. **createPaxAccountV1Proxy**
-   - Deploys smart contract account for user
+   - Deploys smart contract account for user (V1)
    - Links withdrawal method
 
 3. **addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy**
-   - Adds secondary withdrawal method to existing account
+   - Adds secondary withdrawal method to existing account (V1)
 
-4. **screenParticipantProxy**
+4. **createSmartAccountForPaxV2User** (V2)
+   - Called by app after EOA and encrypted key are created
+   - Decrypts private key with session key, creates smart account via Pimlico/permissionless (EntryPoint 0.7), writes smart account address to pax_accounts (and optionally pax_wallets)
+   - Requires: encryptedPrivateKey, eoWalletAddress, sessionKey
+
+5. **screenParticipantProxy**
    - Verifies participant eligibility for task
    - Creates screening record
    - Generates cryptographic signature
 
-5. **markTaskCompletionAsComplete**
+6. **markTaskCompletionAsComplete**
    - Marks task as completed after survey submission
 
-6. **rewardParticipantProxy**
-   - Processes reward claim
-   - Executes blockchain reward transfer
-   - Records reward transaction
+7. **rewardParticipantProxy**
+   - **V1:** Processes reward claim via legacy flow, executes blockchain reward transfer, records reward transaction.
+   - **V2:** Uses CanvassingRewarder proxy: validates backend signature, decrypts participant key, submits reward claim to CanvassingRewarder contract (tokens to participant's smart account), records reward with bundle txn hash. Requires client to pass encryptedPrivateKey, sessionKey, eoWalletAddress.
 
-7. **withdrawToPaymentMethod**
-   - Processes withdrawal request
-   - Transfers tokens to external wallet
-   - Records withdrawal
+8. **withdrawToPaymentMethod**
+   - Processes withdrawal request (V1 or V2)
+   - V2: accepts paymentMethodAddress and v2EncryptedParams (encryptedPrivateKey, sessionKey, eoWalletAddress) for signing and sending from EOA/smart account
+   - Transfers tokens to external wallet, records withdrawal
 
-8. **processAchievementClaim**
-   - Verifies achievement completion
-   - Processes reward payout
-   - Updates achievement status
+9. **processAchievementClaim**
+   - **V1:** Legacy achievement payout flow.
+   - **V2:** Verifies achievement completion, decrypts key, submits claim to CanvassingRewarder proxy (achievement reward to smart account), updates achievement status. Requires eoWalletAddress, encryptedPrivateKey, sessionKey when V2.
 
-9. **deleteParticipantOnRequest**
-   - Handles GDPR deletion requests
-   - Removes user data
+10. **deleteParticipantOnRequest**
+    - Handles GDPR deletion requests
+    - Removes user data
 
-10. **sendNotification**
+11. **sendNotification**
     - Sends push notifications via FCM
 
-11. **notifyPaxTotifierAboutNewUser**
+12. **notifyPaxTotifierAboutNewUser**
     - Alerts admin bot about new registrations
+
+### V2 Blockchain Contracts (Hardhat)
+
+- **CanvassingTaskManager** — Screening and task state (e.g. has participant been screened for task).
+- **CanvassingRewarder** — Holds ERC20 balances; distributes task and achievement rewards to participants' smart accounts based on backend-signed payloads; gated by TaskManager for task rewards and by signature for achievement rewards.
+- **CanvassingWalletRegistry** — Registry for wallet/account linkage (as used by backend).
+- **CanvassingGasSponsor** — Gas sponsorship for user operations (e.g. paymaster).
 
 ---
 
@@ -597,6 +688,9 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 | areAchievementsAvailable | Enable/disable achievements tab |
 | isWalletAvailable | Enable/disable wallet access |
 | isWithdrawalMethodConnectionAvailable | Enable/disable wallet connection |
+| is_v2_upgrade_available | Show "V2 is Available!" banner to V1 users and allow Check V2 Eligibility flow |
+| is_custom_app_access_feature_available | Show "Open by URL" (custom dapp) in Apps (Miniapps) view for V2 |
+| are_miniapps_available | Enable miniapps list for V2 (inside miniapps_config) |
 
 ---
 
@@ -631,6 +725,16 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 - withdrawalMethodConnectionTapped
 - setUpWithdrawalMethodTapped
 
+### V2 / Pax Wallet / Miniapps
+- v2PaxWalletRouteVisited
+- v2WalletCreationInitiated
+- v2AvailabilityBannerShown
+- v2UpgradeEligibilityChecked
+- v2FaceVerificationPromptShown / v2FaceVerificationPromptTapped
+- onboardingQuestionnaireCompleted (with onboardingType, usageAnswer, walletAccessAnswer)
+- miniappTapped (miniapp_id, miniapp_name, miniapp_title, miniapp_url)
+- customDappOpened (custom_dapp_url)
+
 ### Profile
 - saveProfileChangesTapped
 
@@ -652,8 +756,8 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 
 ### Design Patterns
 - Card-based layouts
-- Bottom navigation (via drawer)
-- Tab navigation in home
+- Bottom navigation: **V1** — Home, Activity, Account; **V2** — Home, Wallet (Pax Wallet), Apps (Miniapps), Activity, Account
+- Tab navigation in home (Dashboard, Tasks, Achievements)
 - Pull-to-refresh on lists
 - Skeleton loading states
 - Toast notifications
@@ -681,7 +785,8 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 - Identity verification via GoodDollar
 
 ### Blockchain Security
-- Server-managed wallets (no private keys on client)
+- **V1:** Server-managed wallets (no private keys on client)
+- **V2:** Client-side EOA key encrypted with session key (e.g. Google account id), backed up to Google Drive; backend decrypts only when processing reward claim or withdrawal (encryptedPrivateKey + sessionKey + eoWalletAddress). Smart account creation and reward distribution via CanvassingRewarder; gas sponsored.
 - Cryptographic signatures for all transactions
 - Transaction verification before reward distribution
 
@@ -725,7 +830,7 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 ### Mobile Support
 - iOS
 - Android
-- Web (responsive)
+- Web (responsive; V2 users are blocked on web with message to use mobile app)
 
 ### Minimum Requirements
 - Internet connection
@@ -738,12 +843,14 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 ## Integration Points
 
 ### External Services
-- Google Sign-In (Authentication)
-- GoodDollar (Identity verification, G$ token)
+- Google Sign-In (Authentication; V2 also uses Drive scope for wallet backup)
+- GoodDollar (Identity verification, G$ token; V2: direct RPC for whitelist check)
 - MiniPay (Celo wallet)
 - GoodWallet (GoodDollar wallet)
 - Firebase (Database, Auth, Functions, Messaging, Analytics, Remote Config)
 - Celo Blockchain (Smart contracts, token transfers)
+- **V2:** Pimlico (bundler/paymaster API for smart account creation and gas sponsorship)
+- **V2:** permissionless / viem (EntryPoint 0.7, simple smart account)
 
 ### Social Links
 - X (Twitter): Follow for updates
@@ -757,14 +864,16 @@ Pax enables organizations ("Task Masters") to create micro-tasks (primarily surv
 1. **Task Frequency**: Once weekly (4 tasks/month), dependent on researchers
 2. **Task Time**: 8:00 AM UTC / 9:00 AM WAT / 10:00 AM CAT / 11:00 AM EAT
 3. **Task Day**: Tuesdays (PaxDay)
-4. **Face Verification**: Required for fraud prevention via GoodDollar Identity
-5. **Task Availability**: First-come-first-served, high volume causes quick closure
-6. **G$ to cUSD Conversion**: Guide available via Medium article
-7. **Task Types**: Currently surveys only, more coming
-8. **Questions per Task**: 10-15 questions
-9. **Slot Booking**: Grants immediate access to task
-10. **Account Ban**: Disabled accounts cannot do tasks or withdraw
-11. **Achievement Claiming Hours**: Daily 8AM-3PM UTC window
+4. **Pax V2 / What's new**: Pax V2 is the latest version with an improved wallet and rewards system. Users get the same tasks and rewards; the in-app wallet is created differently (Pax Wallet: EOA + smart account, key backed up to Google Drive) and gas is handled via Canvassing contracts. No action needed from existing users—use the app as usual. New users typically onboard as V2 and create a Pax Wallet.
+5. **Face Verification**: Required for fraud prevention via GoodDollar Identity
+6. **Task Availability**: First-come-first-served, high volume causes quick closure
+7. **G$ to cUSD Conversion**: Guide available via Medium article
+8. **Task Types**: Currently surveys only, more coming
+9. **Questions per Task**: 10-15 questions
+10. **Slot Booking**: Grants immediate access to task
+11. **Account Ban**: Disabled accounts cannot do tasks or withdraw
+12. **Notifications**: Why we ask after sign-in (new tasks, rewards, withdrawals; optional)
+13. **Achievement Claiming Hours**: Daily 8AM-3PM UTC window
 
 ---
 
