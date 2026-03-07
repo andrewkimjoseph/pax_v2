@@ -25,8 +25,8 @@ class BlockchainService {
       id: 2,
       address: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
       decimals: 18,
-      name: "celo_dollar",
-      symbol: CurrencySymbolUtil.getSymbolForCurrency('celo_dollar'),
+      name: "usdm",
+      symbol: CurrencySymbolUtil.getSymbolForCurrency('usdm'),
     ),
     3: TokenInfo(
       id: 3,
@@ -46,6 +46,44 @@ class BlockchainService {
 
   // Get the full API URL with key
   static String get _fullApiUrl => '$_apiUrl$_apiKey';
+
+  /// Returns a friendly network label (e.g. "Celo") from chain ID, or null on failure.
+  /// Uses eth_chainId RPC only; no balance or other calls.
+  static Future<String?> getNetworkLabel() async {
+    final requestBody = jsonEncode({
+      'method': 'eth_chainId',
+      'params': [],
+      'id': '1',
+      'jsonrpc': '2.0',
+    });
+    try {
+      final response = await http.post(
+        Uri.parse(_fullApiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: requestBody,
+      );
+      if (response.statusCode != 200) return null;
+      final data = jsonDecode(response.body);
+      final result = data['result'];
+      if (result == null) return null;
+      final chainIdHex = result is String ? result : result.toString();
+      final chainId = int.tryParse(
+        chainIdHex.startsWith('0x')
+            ? chainIdHex.substring(2)
+            : chainIdHex,
+        radix: 16,
+      );
+      if (chainId == null) return null;
+      // Celo Mainnet
+      if (chainId == 42220) return 'Celo';
+      // Celo Alfajores testnet
+      if (chainId == 44787) return 'Celo (testnet)';
+      return 'Network $chainId';
+    } catch (e) {
+      if (kDebugMode) print('BlockchainService.getNetworkLabel: $e');
+      return null;
+    }
+  }
 
   // Fetch balance for a single token
   static Future<double> fetchTokenBalance(
