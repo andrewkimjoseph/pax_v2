@@ -24,7 +24,8 @@ class _RootViewState extends ConsumerState<RootView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      restoreWalletIfNeeded(ref, silentOnly: true);
+      final isV2 = ref.read(accountTypeProvider) == AccountType.v2;
+      if (isV2) restoreWalletIfNeeded(ref, silentOnly: true);
     });
   }
 
@@ -159,7 +160,7 @@ class _RootViewState extends ConsumerState<RootView> {
       AchievementConstants.profilePerfectionist,
       AchievementConstants.verifiedHuman,
       AchievementConstants.doublePayoutConnector,
-      AchievementConstants.triplePayoutConnector,
+      // AchievementConstants.triplePayoutConnector,
     ];
     final userAchievementNames =
         achievementState.achievements

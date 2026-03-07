@@ -4,6 +4,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/services/branch_service.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 
@@ -62,7 +63,9 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         ref.read(authProvider.notifier).refreshUserState();
       } else {
         // Preload wallet credentials for V2 users so miniapps open quickly
-        restoreWalletIfNeeded(ref, silentOnly: true);
+        if (ref.read(accountTypeProvider) == AccountType.v2) {
+          restoreWalletIfNeeded(ref, silentOnly: true);
+        }
       }
     }
   }
