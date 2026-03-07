@@ -282,10 +282,11 @@ final paxWalletProvider =
     });
 
 /// True if user has a PaxWallet whose EOA is not yet whitelisted in GoodDollar Identity.
+/// When wallet/EOA is missing, returns true (needs verification) so miniapps are not shown.
 final paxWalletNeedsVerificationProvider = FutureProvider<bool>((ref) async {
   final state = ref.watch(paxWalletProvider);
   final eoAddress = state.wallet?.eoAddress;
-  if (eoAddress == null || eoAddress.isEmpty) return false;
+  if (eoAddress == null || eoAddress.isEmpty) return true;
   final whitelisted = await GoodDollarIdentityService.isWhitelisted(eoAddress);
   return !whitelisted;
 });

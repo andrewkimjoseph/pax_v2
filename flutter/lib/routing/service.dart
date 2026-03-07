@@ -12,9 +12,11 @@ import 'package:pax/features/report_page/view.dart';
 import 'package:pax/features/task/task_itself/check_out_app/view.dart';
 import 'package:pax/features/task/task_itself/fill_a_form/view.dart';
 import 'package:pax/features/wallet_creation/view.dart';
-import 'package:pax/features/miniapps/webview/miniapp_webview_page.dart';
+import 'package:pax/features/home/miniapps/webview/miniapp_webview.dart';
 import 'package:pax/models/remote_config/miniapps_config.dart';
 import 'package:pax/features/webview/view.dart';
+import 'package:pax/features/webview/converter_view.dart';
+import 'package:pax/features/webview/webview_converter_payload.dart';
 import 'package:pax/features/withdrawal_methods/good-wallet-connection/copy-wallet-address/view.dart';
 import 'package:pax/features/withdrawal_methods/good-wallet-connection/view.dart';
 import 'package:pax/features/withdrawal_methods/minipay-connection/copy-wallet-address/view.dart';
@@ -207,6 +209,12 @@ final routerProvider = Provider((ref) {
         builder: (context, state) => WebViewPage(url: state.extra as String),
       ),
       GoRoute(
+        path: Routes.webviewConverter,
+        builder: (context, state) => WebViewConverterPage(
+          payload: state.extra as WebViewConverterPayload,
+        ),
+      ),
+      GoRoute(
         path: Routes.miniappWebView,
         builder: (context, state) {
           final extra = state.extra;
@@ -219,7 +227,7 @@ final routerProvider = Provider((ref) {
             url = extra is String ? extra : '';
             title = null;
           }
-          return MiniAppWebViewPage(url: url, title: title);
+          return MiniAppWebView(url: url, title: title);
         },
       ),
       GoRoute(

@@ -119,8 +119,11 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       // Handle signup - create or get account
       final account = await _repository.handleUserSignup(authState!.user.uid);
 
-      // Fetch balances from local DB
-      final balances = await LocalDBHelper().getBalances(account.id);
+      // Fetch balances from local DB (prefer wallet_balances for the four currencies)
+      var balances = await LocalDBHelper().getWalletBalances(account.id);
+      if (balances.isEmpty) {
+        balances = await LocalDBHelper().getBalances(account.id);
+      }
 
       // Update state with loaded account and balances
       state = state.copyWith(
@@ -156,8 +159,10 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       }
       state = state.copyWith(state: PaxAccountState.loading, isBalanceSynced: false);
       await _repository.updateBalance(authState.user.uid, tokenId, amount);
-      // Fetch balances from local DB using current account id
-      final balances = await LocalDBHelper().getBalances(state.account!.id);
+      var balances = await LocalDBHelper().getWalletBalances(state.account!.id);
+      if (balances.isEmpty) {
+        balances = await LocalDBHelper().getBalances(state.account!.id);
+      }
       state = state.copyWith(balances: balances, state: PaxAccountState.loaded, isBalanceSynced: true);
     } catch (e) {
       state = state.copyWith(
@@ -179,7 +184,10 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
         authState.user.uid,
         data,
       );
-      final balances = await LocalDBHelper().getBalances(updatedAccount.id);
+      var balances = await LocalDBHelper().getWalletBalances(updatedAccount.id);
+      if (balances.isEmpty) {
+        balances = await LocalDBHelper().getBalances(updatedAccount.id);
+      }
       state = state.copyWith(
         account: updatedAccount,
         balances: balances,
@@ -202,16 +210,46 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       if (authState.state != AuthState.authenticated || state.account == null) {
         throw Exception('User must be authenticated to sync balances');
       }
+
+      // Skip if refreshed too recently (within 30 seconds) based on local DB.
+      final accountId = state.account!.id;
+      if (accountId.isNotEmpty) {
+        try {
+          final info =
+              await LocalDBHelper().getRefreshments(accountId);
+          final lastMillis = info['accountRefreshTime'];
+          if (lastMillis != null) {
+            final last =
+                DateTime.fromMillisecondsSinceEpoch(lastMillis);
+            if (DateTime.now().difference(last) <
+                const Duration(seconds: 30)) {
+              return;
+            }
+          }
+        } catch (_) {
+          // If refreshments lookup fails, fall back to normal behavior.
+        }
+      }
+
       if (!silent) {
         state = state.copyWith(state: PaxAccountState.syncing, isBalanceSynced: false);
       }
       await _repository.syncBalancesFromBlockchain(authState.user.uid);
-      final balances = await LocalDBHelper().getBalances(state.account!.id);
+      var balances = await LocalDBHelper().getWalletBalances(state.account!.id);
+      if (balances.isEmpty) {
+        balances = await LocalDBHelper().getBalances(state.account!.id);
+      }
       state = state.copyWith(
         balances: balances,
         state: PaxAccountState.loaded,
         isBalanceSynced: true,
       );
+      if (accountId.isNotEmpty) {
+        await LocalDBHelper().upsertRefreshments(
+          participantId: accountId,
+          accountRefreshTime: DateTime.now().millisecondsSinceEpoch,
+        );
+      }
     } catch (e) {
       if (silent) {
         if (kDebugMode) {
@@ -269,8 +307,10 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       final account = await _repository.getAccount(authState.user.uid);
 
       if (account != null) {
-        // Fetch balances from local DB
-        final balances = await LocalDBHelper().getBalances(account.id);
+        var balances = await LocalDBHelper().getWalletBalances(account.id);
+        if (balances.isEmpty) {
+          balances = await LocalDBHelper().getBalances(account.id);
+        }
 
         // Update state with refreshed account and balances
         state = state.copyWith(

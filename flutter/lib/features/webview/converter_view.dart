@@ -4,19 +4,21 @@ import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:pax/features/webview/webview_converter_payload.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-class WebViewPage extends ConsumerStatefulWidget {
-  final String url;
+class WebViewConverterPage extends ConsumerStatefulWidget {
+  const WebViewConverterPage({super.key, required this.payload});
 
-  const WebViewPage({super.key, required this.url});
+  final WebViewConverterPayload payload;
 
   @override
-  ConsumerState<WebViewPage> createState() => _WebViewPageState();
+  ConsumerState<WebViewConverterPage> createState() =>
+      _WebViewConverterPageState();
 }
 
-class _WebViewPageState extends ConsumerState<WebViewPage> {
+class _WebViewConverterPageState extends ConsumerState<WebViewConverterPage> {
   bool isLoading = true;
   InAppWebViewController? _controller;
   bool _canGoBack = false;
@@ -48,6 +50,24 @@ class _WebViewPageState extends ConsumerState<WebViewPage> {
       return;
     }
     if (mounted) context.pop();
+  }
+
+  Future<void> _injectBalance(InAppWebViewController controller) async {
+    final value = widget.payload.valueToInject.toDouble();
+    // Escape selector for use inside a double-quoted JS string (backslash and quote)
+    final selectorEscaped = widget.payload.selector
+        .replaceAll(r'\', r'\\')
+        .replaceAll('"', r'\"');
+    final script = '''
+(function() {
+  var el = document.querySelector("$selectorEscaped");
+  if (el) {
+    el.value = $value;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+})();
+''';
+    await controller.evaluateJavascript(source: script);
   }
 
   @override
@@ -87,7 +107,9 @@ class _WebViewPageState extends ConsumerState<WebViewPage> {
               child: Stack(
                 children: [
                   InAppWebView(
-                    initialUrlRequest: URLRequest(url: WebUri(widget.url)),
+                    initialUrlRequest: URLRequest(
+                      url: WebUri(widget.payload.url),
+                    ),
                     initialSettings: InAppWebViewSettings(
                       javaScriptEnabled: true,
                       useWideViewPort: true,
@@ -97,10 +119,13 @@ class _WebViewPageState extends ConsumerState<WebViewPage> {
                       setState(() => isLoading = true);
                       _updateNavigationState();
                     },
-                    onLoadStop: (controller, url) {
+                    onLoadStop: (controller, url) async {
                       _controller ??= controller;
-                      setState(() => isLoading = false);
-                      _updateNavigationState();
+                      await _injectBalance(controller);
+                      if (mounted) {
+                        setState(() => isLoading = false);
+                        _updateNavigationState();
+                      }
                     },
                   ),
                   if (isLoading)
