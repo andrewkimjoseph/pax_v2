@@ -56,6 +56,7 @@ export const publicClient = createPublicClient({
 });
 
 const pimlicoUrl = `https://api.pimlico.io/v2/42220/rpc?apikey=${PIMLICO_API_KEY}`;
+export { pimlicoUrl };
 
 export const pimlicoClient = createPimlicoClient({
   transport: http(pimlicoUrl),
