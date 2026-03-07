@@ -216,7 +216,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => _buildVerificationPrompt(context),
         data: (needsVerification) {
-          if (!needsVerification) {
+          if (needsVerification) {
             return _buildVerificationPrompt(context);
           }
 
