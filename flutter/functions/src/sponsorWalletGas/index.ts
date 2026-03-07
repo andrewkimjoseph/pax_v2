@@ -22,7 +22,7 @@ import { canvassingGasSponsorABI } from "../../utils/abis/new/canvassingGasSpons
 import { canvassingWalletRegistryABI } from "../../utils/abis/new/canvassingWalletRegistry";
 
 /** Default CELO amount to sponsor per wallet (in ether). */
-const DEFAULT_SPONSOR_AMOUNT_CELO = "0.01";
+const DEFAULT_SPONSOR_AMOUNT_CELO = "0.025";
 
 /**
  * Callable to sponsor gas for a registered wallet.
