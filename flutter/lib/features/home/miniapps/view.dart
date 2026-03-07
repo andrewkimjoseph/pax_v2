@@ -10,6 +10,7 @@ import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
+import 'package:pax/utils/remote_config_constants.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class MiniAppsView extends ConsumerStatefulWidget {
@@ -54,6 +55,46 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
           },
         ).withPadding(top: 8);
       },
+    );
+  }
+
+  Widget _buildVerificationPrompt(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Verify your identity to use PaxWallet apps.',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: PaxColors.deepPurple,
+              ),
+              textAlign: TextAlign.center,
+            ).withPadding(bottom: 12),
+            Text(
+              'A quick verification step is required before you can open apps.',
+              style: TextStyle(fontSize: 14, color: PaxColors.darkGrey),
+              textAlign: TextAlign.center,
+            ).withPadding(bottom: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: PrimaryButton(
+                onPressed: () {
+                  context.push(
+                    Routes.completeGoodDollarFaceVerification,
+                    extra: 'dashboard',
+                  );
+                },
+                child: const Text('Continue'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -139,15 +180,33 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
                   color: PaxColors.black,
                 ),
               ),
-              Button(
-                onPressed: () => _showOpenCustomDappDialog(context, ref),
-                style: const ButtonStyle.ghost(density: ButtonDensity.icon),
-                child: FaIcon(
-                  FontAwesomeIcons.link,
-                  size: 22,
-                  color: PaxColors.deepPurple,
-                ),
-              ),
+              ref
+                  .watch(featureFlagsProvider)
+                  .when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data:
+                        (flags) =>
+                            (flags[RemoteConfigKeys
+                                        .isCustomAppAccessFeatureAvailable] ==
+                                    true)
+                                ? Button(
+                                  onPressed:
+                                      () => _showOpenCustomDappDialog(
+                                        context,
+                                        ref,
+                                      ),
+                                  style: const ButtonStyle.ghost(
+                                    density: ButtonDensity.icon,
+                                  ),
+                                  child: FaIcon(
+                                    FontAwesomeIcons.link,
+                                    size: 22,
+                                    color: PaxColors.deepPurple,
+                                  ),
+                                )
+                                : const SizedBox.shrink(),
+                  ),
             ],
           ),
         ),
@@ -155,46 +214,10 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
       ],
       child: paxWalletNeedsVerificationAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => _buildMiniappsList(configAsync),
+        error: (_, __) => _buildVerificationPrompt(context),
         data: (needsVerification) {
           if (!needsVerification) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Verify your identity to use PaxWallet apps.',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: PaxColors.deepPurple,
-                      ),
-                      textAlign: TextAlign.center,
-                    ).withPadding(bottom: 12),
-                    Text(
-                      'A quick verification step is required before you can open apps.',
-                      style: TextStyle(fontSize: 14, color: PaxColors.darkGrey),
-                      textAlign: TextAlign.center,
-                    ).withPadding(bottom: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: PrimaryButton(
-                        onPressed: () {
-                          context.push(
-                            Routes.completeGoodDollarFaceVerification,
-                            extra: 'dashboard',
-                          );
-                        },
-                        child: const Text('Continue'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            return _buildVerificationPrompt(context);
           }
 
           return _buildMiniappsList(configAsync);
@@ -215,7 +238,9 @@ class _OpenCustomDappDialog extends StatefulWidget {
 }
 
 class _OpenCustomDappDialogState extends State<_OpenCustomDappDialog> {
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _controller = TextEditingController(
+    text: "https://",
+  );
   String? _errorText;
 
   @override
@@ -242,15 +267,24 @@ class _OpenCustomDappDialogState extends State<_OpenCustomDappDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Open custom dapp'),
+      title: const Text(
+        'Open Mini App',
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: PaxColors.deepPurple,
+        ),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextField(
             controller: _controller,
-            placeholder: const Text('Paste dapp URL (e.g. https://…)'),
+            placeholder: const Text('Paste app URL (e.g. https://…)'),
             keyboardType: TextInputType.url,
+            autocorrect: false,
+            textCapitalization: TextCapitalization.none,
             onChanged: (_) {
               if (_errorText != null) setState(() => _errorText = null);
             },
@@ -265,7 +299,7 @@ class _OpenCustomDappDialogState extends State<_OpenCustomDappDialog> {
       actions: [
         Button(
           onPressed: widget.onCancel,
-          style: const ButtonStyle.ghost(),
+          style: const ButtonStyle.outline(),
           child: const Text('Cancel'),
         ),
         PrimaryButton(onPressed: _submit, child: const Text('Open')),
