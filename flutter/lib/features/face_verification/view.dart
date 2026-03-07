@@ -38,7 +38,10 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
     await restoreWalletIfNeeded(ref, silentOnly: false);
   }
 
-  void _onVerificationResult({required bool verified, required String chain}) {
+  Future<void> _onVerificationResult({
+    required bool verified,
+    required String chain,
+  }) async {
     final viewModel = ref.read(faceVerificationProvider.notifier);
     if (verified) {
       viewModel.setSuccess(chain);
@@ -47,13 +50,21 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
         UserPropertyConstants.goodDollarIdentityTimeLastAuthenticated:
             DateTime.now().toIso8601String(),
       });
-      ref
-          .read(participantProvider.notifier)
-          .updateGoodDollarLastAuthTime(Timestamp.now());
-      ref
-          .read(paxWalletProvider.notifier)
-          .registerPaxWalletAfterFaceVerification();
-      _showResultDialog(verified: true, chain: chain);
+      try {
+        await ref
+            .read(participantProvider.notifier)
+            .updateGoodDollarLastAuthTime(Timestamp.now());
+        await ref
+            .read(paxWalletProvider.notifier)
+            .registerPaxWalletAfterFaceVerification();
+        if (!mounted) return;
+        _showResultDialog(verified: true, chain: chain);
+      } catch (e) {
+        if (!mounted) return;
+        viewModel.setFailed();
+        ref.read(analyticsProvider).v2FaceVerificationFailed();
+        _showResultDialog(verified: false, chain: chain);
+      }
     } else {
       viewModel.setFailed();
       ref.read(analyticsProvider).v2FaceVerificationFailed();
