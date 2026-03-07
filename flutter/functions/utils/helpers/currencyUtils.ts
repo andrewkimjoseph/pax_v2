@@ -9,8 +9,9 @@ export function getSymbolForCurrency(currencyLabel: string): string {
   switch (currencyLabel.toLowerCase()) {
     case 'good_dollar':
       return 'G$';
+    case 'usdm':
     case 'celo_dollar':
-      return 'cUSD';
+      return 'USDm';
     case 'tether_usd':
       return 'USDT';
     case 'usd_coin':
@@ -30,7 +31,7 @@ export function getNameForCurrency(tokenId?: number): string {
     case 1:
       return "good_dollar";
     case 2:
-      return 'celo_dollar';
+      return 'usdm';
     case 3:
       return 'tether_usd';
     case 4:

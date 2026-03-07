@@ -12,3 +12,4 @@ export { addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy } from './addNonPrimar
 export { logWalletToRegistry } from './logWalletToRegistry';
 export { sponsorWalletGas } from './sponsorWalletGas';
 export { createSmartAccountForPaxV2User } from './createSmartAccountForPaxV2User';
+export { getWalletTransactions } from './getWalletTransactions';
