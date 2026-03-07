@@ -290,11 +290,9 @@ class _CompleteProfileViewState extends ConsumerState<CompleteProfileView> {
             ),
           ),
           // Bottom section: button and skip link (pinned to bottom)
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -311,14 +309,11 @@ class _CompleteProfileViewState extends ConsumerState<CompleteProfileView> {
                   ),
                 ),
                 if (profileState.step == CompleteProfileStep.error)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Text(
-                      profileState.errorMessage ?? 'An error occurred',
-                      style: TextStyle(color: PaxColors.red, fontSize: 14),
-                      textAlign: TextAlign.center,
-                    ),
-                  ).withPadding(bottom: 16),
+                  Text(
+                    profileState.errorMessage ?? 'An error occurred',
+                    style: TextStyle(color: PaxColors.red, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ).withPadding(top: 16, bottom: 16),
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -331,8 +326,7 @@ class _CompleteProfileViewState extends ConsumerState<CompleteProfileView> {
                   ),
                 ).withPadding(top: 8, bottom: 16),
               ],
-            ),
-          ),
+            ).withPadding(all: 8),
         ],
       ),
     );

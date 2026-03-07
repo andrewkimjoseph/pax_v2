@@ -42,8 +42,8 @@ class _RootViewState extends ConsumerState<RootView> {
             child: NavigationBar(
               alignment: NavigationBarAlignment.spaceBetween,
               labelType: NavigationLabelType.expanded,
-              expanded: true,
-              expands: false,
+              // expanded: true,
+              expands: true,
               onSelected: (index) {
                 ref.read(rootSelectedIndexProvider.notifier).setIndex(index);
               },

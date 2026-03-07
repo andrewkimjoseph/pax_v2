@@ -94,23 +94,100 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
               bool showTaskCompletions =
                   kDebugMode ||
                   flags['are_tasks_completions_available'] == true;
-              return Row(
-                children: [
-                  if (showTaskCompletions)
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.zero,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showTaskCompletions)
+                      Button(
+                        style: const ButtonStyle.primary(
+                              density: ButtonDensity.dense,
+                            )
+                            .withBackgroundColor(
+                              color:
+                                  selectedIndex == 0
+                                      ? PaxColors.deepPurple
+                                      : Colors.transparent,
+                            )
+                            .withBorder(
+                              border: Border.all(
+                                color:
+                                    selectedIndex == 0
+                                        ? PaxColors.deepPurple
+                                        : PaxColors.lilac,
+                                width: 2,
+                              ),
+                            )
+                            .withBorderRadius(
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                        onPressed: () {
+                          activityNotifier.setFilterType(
+                            ActivityType.taskCompletion,
+                          );
+                          ref.read(analyticsProvider).taskCompletionsTapped();
+                        },
+                        child: () {
+                          final unclaimedCount = ref
+                              .watch(unclaimedTaskCompletionsCountProvider)
+                              .maybeWhen(data: (c) => c, orElse: () => null);
+                          final textColor =
+                              selectedIndex == 0
+                                  ? PaxColors.white
+                                  : PaxColors.black;
+                          final hasBadge =
+                              unclaimedCount != null && unclaimedCount > 0;
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Completions',
+                                style: TextStyle(color: textColor),
+                              ).withPadding(right: 6),
+                              if (hasBadge) ...[
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: PaxColors.orange,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    unclaimedCount > 99
+                                        ? '99+'
+                                        : '$unclaimedCount',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: PaxColors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          );
+                        }(),
+                      ).withPadding(right: 8),
+
                     Button(
                       style: const ButtonStyle.primary(
                             density: ButtonDensity.dense,
                           )
                           .withBackgroundColor(
                             color:
-                                selectedIndex == 0
+                                selectedIndex == 1
                                     ? PaxColors.deepPurple
                                     : Colors.transparent,
                           )
                           .withBorder(
                             border: Border.all(
                               color:
-                                  selectedIndex == 0
+                                  selectedIndex == 1
                                       ? PaxColors.deepPurple
                                       : PaxColors.lilac,
                               width: 2,
@@ -120,130 +197,58 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                             borderRadius: BorderRadius.circular(7),
                           ),
                       onPressed: () {
-                        activityNotifier.setFilterType(
-                          ActivityType.taskCompletion,
-                        );
-                        ref.read(analyticsProvider).taskCompletionsTapped();
+                        activityNotifier.setFilterType(ActivityType.reward);
+                        ref.read(analyticsProvider).rewardsTapped();
                       },
-                      child: () {
-                        final unclaimedCount = ref
-                            .watch(unclaimedTaskCompletionsCountProvider)
-                            .maybeWhen(data: (c) => c, orElse: () => null);
-                        final textColor =
-                            selectedIndex == 0
-                                ? PaxColors.white
-                                : PaxColors.black;
-                        final hasBadge =
-                            unclaimedCount != null && unclaimedCount > 0;
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Completions',
-                              style: TextStyle(color: textColor),
-                            ).withPadding(right: 6),
-                            if (hasBadge) ...[
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: PaxColors.orange,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  unclaimedCount > 99
-                                      ? '99+'
-                                      : '$unclaimedCount',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: PaxColors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        );
-                      }(),
-                    ).withPadding(right: 8),
-
-                  Button(
-                    style: const ButtonStyle.primary(
-                          density: ButtonDensity.dense,
-                        )
-                        .withBackgroundColor(
+                      child: Text(
+                        'Rewards',
+                        style: TextStyle(
                           color:
                               selectedIndex == 1
-                                  ? PaxColors.deepPurple
-                                  : Colors.transparent,
-                        )
-                        .withBorder(
-                          border: Border.all(
-                            color:
-                                selectedIndex == 1
-                                    ? PaxColors.deepPurple
-                                    : PaxColors.lilac,
-                            width: 2,
-                          ),
-                        )
-                        .withBorderRadius(
-                          borderRadius: BorderRadius.circular(7),
+                                  ? PaxColors.white
+                                  : PaxColors.black,
                         ),
-                    onPressed: () {
-                      activityNotifier.setFilterType(ActivityType.reward);
-                      ref.read(analyticsProvider).rewardsTapped();
-                    },
-                    child: Text(
-                      'Rewards',
-                      style: TextStyle(
-                        color:
-                            selectedIndex == 1
-                                ? PaxColors.white
-                                : PaxColors.black,
                       ),
-                    ),
-                  ).withPadding(right: 8),
+                    ).withPadding(right: 8),
 
-                  Button(
-                    style: const ButtonStyle.primary(
-                          density: ButtonDensity.dense,
-                        )
-                        .withBackgroundColor(
-                          color:
-                              selectedIndex == 2
-                                  ? PaxColors.deepPurple
-                                  : Colors.transparent,
-                        )
-                        .withBorder(
-                          border: Border.all(
+                    Button(
+                      style: const ButtonStyle.primary(
+                            density: ButtonDensity.dense,
+                          )
+                          .withBackgroundColor(
                             color:
                                 selectedIndex == 2
                                     ? PaxColors.deepPurple
-                                    : PaxColors.lilac,
-                            width: 2,
+                                    : Colors.transparent,
+                          )
+                          .withBorder(
+                            border: Border.all(
+                              color:
+                                  selectedIndex == 2
+                                      ? PaxColors.deepPurple
+                                      : PaxColors.lilac,
+                              width: 2,
+                            ),
+                          )
+                          .withBorderRadius(
+                            borderRadius: BorderRadius.circular(7),
                           ),
-                        )
-                        .withBorderRadius(
-                          borderRadius: BorderRadius.circular(7),
+                      onPressed: () {
+                        activityNotifier.setFilterType(ActivityType.withdrawal);
+                        ref.read(analyticsProvider).withdrawalsTapped();
+                      },
+                      child: Text(
+                        'Withdrawals',
+                        style: TextStyle(
+                          color:
+                              selectedIndex == 2
+                                  ? PaxColors.white
+                                  : PaxColors.black,
                         ),
-                    onPressed: () {
-                      activityNotifier.setFilterType(ActivityType.withdrawal);
-                      ref.read(analyticsProvider).withdrawalsTapped();
-                    },
-                    child: Text(
-                      'Withdrawals',
-                      style: TextStyle(
-                        color:
-                            selectedIndex == 2
-                                ? PaxColors.white
-                                : PaxColors.black,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             },
             loading: () => const SizedBox.shrink(),
@@ -356,6 +361,14 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                                 onPressed:
                                     () => activityNotifier.setCompletionFilter(
                                       CompletionFilter.expired,
+                                    ),
+                                badgeCount: ref
+                                    .watch(
+                                      expiredTaskCompletionsCountProvider,
+                                    )
+                                    .maybeWhen(
+                                      data: (c) => c,
+                                      orElse: () => null,
                                     ),
                               ),
                             ],

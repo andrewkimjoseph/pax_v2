@@ -12,6 +12,8 @@ import 'package:wallet/wallet.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart' as http;
 import 'package:pax/theming/colors.dart';
+import 'package:pax/providers/local/pax_wallet_view_provider.dart';
+import 'package:pax/providers/local/wallet_transactions_provider.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class Web3WebView extends ConsumerStatefulWidget {
@@ -20,6 +22,10 @@ class Web3WebView extends ConsumerStatefulWidget {
   final void Function(String url)? onUrlChanged;
   final void Function({required bool verified, required String chain})?
   onVerificationResult;
+  final void Function(InAppWebViewController controller)? onControllerCreated;
+
+  /// Called after a transaction is successfully sent (e.g. to refresh wallet balances).
+  final void Function(String eoAddress)? onTransactionSent;
 
   const Web3WebView({
     super.key,
@@ -27,6 +33,8 @@ class Web3WebView extends ConsumerStatefulWidget {
     required this.credentials,
     this.onUrlChanged,
     this.onVerificationResult,
+    this.onControllerCreated,
+    this.onTransactionSent,
   });
 
   @override
@@ -370,27 +378,27 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     final hexTx = bytesToHex(signedTransaction, include0x: true);
 
     if (kDebugMode) {
-      debugPrint('Web3WebView: ==== TRANSACTION DEBUG ====');
-      debugPrint('Web3WebView: Sending to: $_rpcUrl');
+      debugPrint('[Web3WebView]: ==== TRANSACTION DEBUG ====');
+      debugPrint('[Web3WebView]: Sending to: $_rpcUrl');
       debugPrint(
-        'Web3WebView: Raw TX length: ${signedTransaction.length} bytes',
+        '[Web3WebView]: Raw TX length: ${signedTransaction.length} bytes',
       );
 
       // Check transaction type from first byte
       final txType = signedTransaction[0];
       if (txType == 0x02) {
         debugPrint(
-          'Web3WebView: ⚠️ Transaction type: EIP-1559 (Type 2) - This may not work on Celo!',
+          '[Web3WebView]: ⚠️ Transaction type: EIP-1559 (Type 2) - This may not work on Celo!',
         );
       } else if (txType >= 0xc0) {
-        debugPrint('Web3WebView: ✓ Transaction type: Legacy (RLP encoded)');
+        debugPrint('[Web3WebView]: ✓ Transaction type: Legacy (RLP encoded)');
       } else {
         debugPrint(
-          'Web3WebView: Transaction type byte: 0x${txType.toRadixString(16)}',
+          '[Web3WebView]: Transaction type byte: 0x${txType.toRadixString(16)}',
         );
       }
 
-      debugPrint('Web3WebView: Full signed TX: $hexTx');
+      debugPrint('[Web3WebView]: Full signed TX: $hexTx');
     }
 
     final rpcRequest = {
@@ -407,8 +415,8 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     );
 
     if (kDebugMode) {
-      debugPrint('Web3WebView: RPC response status: ${response.statusCode}');
-      debugPrint('Web3WebView: RPC response body: ${response.body}');
+      debugPrint('[Web3WebView]: RPC response status: ${response.statusCode}');
+      debugPrint('[Web3WebView]: RPC response body: ${response.body}');
     }
 
     final responseData = jsonDecode(response.body) as Map<String, dynamic>;
@@ -421,7 +429,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
               : error.toString();
 
       if (kDebugMode) {
-        debugPrint('Web3WebView: ❌ RPC error: $errorMessage');
+        debugPrint('[Web3WebView]: ❌ RPC error: $errorMessage');
       }
 
       throw Exception('RPC Error: $errorMessage');
@@ -430,8 +438,8 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     final txHash = responseData['result'] as String;
 
     if (kDebugMode) {
-      debugPrint('Web3WebView: ✓ TX hash: $txHash');
-      debugPrint('Web3WebView: Check: https://celoscan.io/tx/$txHash');
+      debugPrint('[Web3WebView]: ✓ TX hash: $txHash');
+      debugPrint('[Web3WebView]: Check: https://celoscan.io/tx/$txHash');
       debugPrint('Web3WebView: ==========================');
     }
 
@@ -504,10 +512,10 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
       );
 
       if (kDebugMode) {
-        debugPrint('Web3WebView: Creating transaction:');
-        debugPrint('  Nonce: $nonce');
-        debugPrint('  Gas: $maxGas');
-        debugPrint('  Gas Price: ${gasPrice.getInWei}');
+        debugPrint('[Web3WebView]: Creating transaction:');
+        debugPrint('[Web3WebView]: Nonce: $nonce');
+        debugPrint('[Web3WebView]: Gas: $maxGas');
+        debugPrint('[Web3WebView]: Gas Price: ${gasPrice.getInWei}');
       }
 
       // Sign transaction
@@ -519,6 +527,24 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
 
       // Send transaction
       final txHash = await _sendRawTransaction(signedTx);
+
+      // Refresh wallet balances and transactions. Use parent callback when set so
+      // refresh runs with the correct ref; also refresh both providers here so
+      // transactions always update after a send. Balance refreshes immediately;
+      // transaction refresh is delayed so the chain/indexer can include the new tx.
+      final eoAddress = _credentials.address.with0x;
+      if (mounted) {
+        ref
+            .read(paxWalletViewProvider.notifier)
+            .fetchBalance(eoAddress, forceRefresh: true);
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted) return;
+          ref.read(walletTransactionsProvider.notifier).refresh(eoAddress);
+        });
+        if (widget.onTransactionSent != null) {
+          widget.onTransactionSent!(eoAddress);
+        }
+      }
 
       return {'id': id, 'result': txHash};
     } catch (e) {
@@ -623,7 +649,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Web3WebView: Error injecting provider: $e');
+        debugPrint('[Web3WebView]: Error injecting provider: $e');
       }
     }
   }
@@ -685,114 +711,117 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
 
   @override
   Widget build(BuildContext context) {
+    // Show bottom nav bar from first frame so it doesn't pop in after _initializeWeb3().
+    final Widget content;
     if (_currentAddress == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    final webView = InAppWebView(
-      initialUrlRequest: URLRequest(url: WebUri(widget.url)),
-      initialSettings: InAppWebViewSettings(
-        javaScriptEnabled: true,
-        domStorageEnabled: true,
-        allowsInlineMediaPlayback: true,
-        mediaPlaybackRequiresUserGesture: false,
-      ),
-      initialUserScripts: UnmodifiableListView<UserScript>([
-        UserScript(
-          source: _injectedJavaScript,
-          injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+      content = const Center(child: CircularProgressIndicator());
+    } else {
+      final webview = InAppWebView(
+        initialUrlRequest: URLRequest(url: WebUri(widget.url)),
+        initialSettings: InAppWebViewSettings(
+          javaScriptEnabled: true,
+          domStorageEnabled: true,
+          allowsInlineMediaPlayback: true,
+          mediaPlaybackRequiresUserGesture: false,
         ),
-      ]),
-      onWebViewCreated: (controller) {
-        _controller = controller;
-        controller.addJavaScriptHandler(
-          handlerName: 'web3Request',
-          callback: (args) async {
-            dynamic requestId;
-            Map<String, dynamic>? responseToSend;
-            try {
-              final request = args[0] as Map<String, dynamic>;
-              requestId = request['id'];
-              final method = request['method'] as String?;
-              if (method != null && _requiresUserConfirmation(method)) {
-                if (!mounted) {
-                  responseToSend = {
-                    'id': requestId,
-                    'error': 'User rejected the request',
-                  };
-                } else {
-                  final approved = await _showWeb3ConfirmationDialog(method);
-                  if (approved != true) {
+        initialUserScripts: UnmodifiableListView<UserScript>([
+          UserScript(
+            source: _injectedJavaScript,
+            injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+          ),
+        ]),
+        onWebViewCreated: (controller) {
+          _controller = controller;
+          widget.onControllerCreated?.call(controller);
+          controller.addJavaScriptHandler(
+            handlerName: 'web3Request',
+            callback: (args) async {
+              dynamic requestId;
+              Map<String, dynamic>? responseToSend;
+              try {
+                final request = args[0] as Map<String, dynamic>;
+                requestId = request['id'];
+                final method = request['method'] as String?;
+                if (method != null && _requiresUserConfirmation(method)) {
+                  if (!mounted) {
                     responseToSend = {
                       'id': requestId,
                       'error': 'User rejected the request',
                     };
+                  } else {
+                    final approved = await _showWeb3ConfirmationDialog(method);
+                    if (approved != true) {
+                      responseToSend = {
+                        'id': requestId,
+                        'error': 'User rejected the request',
+                      };
+                    }
                   }
                 }
-              }
 
-              if (responseToSend == null) {
-                final response = await _handleWeb3Request(request);
-                responseToSend = Map<String, dynamic>.from(response);
-              }
-            } catch (e) {
-              if (kDebugMode) {
-                debugPrint('Web3WebView: Error handling web3 request: $e');
-              }
-              responseToSend = {
-                'id': requestId,
-                'error': e is Exception ? e.toString() : 'Unknown error',
-              };
-            } finally {
-              if (responseToSend != null) {
-                try {
-                  await controller.evaluateJavascript(
-                    source:
-                        'window.handleWeb3Response(${jsonEncode(responseToSend)})',
-                  );
-                } catch (e) {
-                  if (kDebugMode) {
-                    debugPrint(
-                      'Web3WebView: Failed to send response to page: $e',
+                if (responseToSend == null) {
+                  final response = await _handleWeb3Request(request);
+                  responseToSend = Map<String, dynamic>.from(response);
+                }
+              } catch (e) {
+                if (kDebugMode) {
+                  debugPrint('[Web3WebView]: Error handling web3 request: $e');
+                }
+                responseToSend = {
+                  'id': requestId,
+                  'error': e is Exception ? e.toString() : 'Unknown error',
+                };
+              } finally {
+                if (responseToSend != null) {
+                  try {
+                    await controller.evaluateJavascript(
+                      source:
+                          'window.handleWeb3Response(${jsonEncode(responseToSend)})',
                     );
+                  } catch (e) {
+                    if (kDebugMode) {
+                      debugPrint(
+                        '[Web3WebView]: Failed to send response to page: $e',
+                      );
+                    }
                   }
                 }
               }
-            }
-          },
-        );
-        _updateNavigationState();
-      },
-      onLoadStart: (controller, url) async {
-        if (mounted) setState(() => _isPageLoading = true);
-        _checkUrlForVerificationParams(url?.toString());
-        await _injectWeb3Provider(controller);
-        _updateNavigationState();
-      },
-      onLoadStop: (controller, url) async {
-        _checkUrlForVerificationParams(url?.toString());
-        await _injectWeb3Provider(controller);
-        _updateNavigationState();
-        if (mounted) setState(() => _isPageLoading = false);
-      },
-    );
+            },
+          );
+          _updateNavigationState();
+        },
+        onLoadStart: (controller, url) async {
+          if (mounted) setState(() => _isPageLoading = true);
+          _checkUrlForVerificationParams(url?.toString());
+          await _injectWeb3Provider(controller);
+          _updateNavigationState();
+        },
+        onLoadStop: (controller, url) async {
+          _checkUrlForVerificationParams(url?.toString());
+          await _injectWeb3Provider(controller);
+          _updateNavigationState();
+          if (mounted) setState(() => _isPageLoading = false);
+        },
+      );
+
+      content = Stack(
+        children: [
+          webview,
+          if (_isPageLoading)
+            Positioned.fill(
+              child: Container(
+                color: PaxColors.white,
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+        ],
+      );
+    }
 
     return Column(
       children: [
-        Expanded(
-          child: Stack(
-            children: [
-              webView,
-              if (_isPageLoading)
-                Positioned.fill(
-                  child: Container(
-                    color: PaxColors.white,
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        Expanded(child: content),
         const Divider(height: 1).withPadding(bottom: 8),
 
         Container(
@@ -806,7 +835,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
                 children: [
                   IconButton.outline(
                     onPressed:
-                        _canGoBack
+                        _canGoBack && _controller != null
                             ? () {
                               _controller?.goBack();
                               _updateNavigationState();
@@ -823,10 +852,13 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
                     ),
                   ),
                   IconButton.outline(
-                    onPressed: () {
-                      _controller?.reload();
-                      _updateNavigationState();
-                    },
+                    onPressed:
+                        _controller != null
+                            ? () {
+                              _controller?.reload();
+                              _updateNavigationState();
+                            }
+                            : null,
                     density: ButtonDensity.icon,
                     variance: const ButtonStyle.outline(
                       density: ButtonDensity.icon,
@@ -839,7 +871,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
                   ),
                   IconButton.outline(
                     onPressed:
-                        _canGoForward
+                        _canGoForward && _controller != null
                             ? () {
                               _controller?.goForward();
                               _updateNavigationState();

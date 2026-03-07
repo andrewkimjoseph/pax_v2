@@ -7,7 +7,7 @@ class TokenBalanceUtil {
   /// Maps token IDs to their corresponding currency names
   static final Map<int, String> _tokenToCurrency = {
     1: 'good_dollar',
-    2: 'celo_dollar',
+    2: 'usdm',
     3: 'tether_usd',
     4: 'usd_coin',
   };
@@ -15,6 +15,7 @@ class TokenBalanceUtil {
   /// Maps currency names to their corresponding token IDs
   static final Map<String, int> _currencyToToken = {
     'good_dollar': 1,
+    'usdm': 2,
     'celo_dollar': 2,
     'tether_usd': 3,
     'usd_coin': 4,
@@ -31,8 +32,8 @@ class TokenBalanceUtil {
     ),
     2: TokenInfo(
       id: 2,
-      name: 'celo_dollar',
-      symbol: CurrencySymbolUtil.getSymbolForCurrency('celo_dollar'),
+      name: 'usdm',
+      symbol: CurrencySymbolUtil.getSymbolForCurrency('usdm'),
       address: '0x765de816845861e75a25fca122bb6898b8b1282a',
       decimals: 18,
     ),
@@ -187,6 +188,13 @@ class TokenBalanceUtil {
     final formattedNumber = formatter.format(amount);
 
     return formattedNumber;
+  }
+
+  /// Formats [amount] with exactly two decimal places (e.g. 0.00, 0.10).
+  static String getLocaleFormattedAmountTwoDecimals(num amount) {
+    final locale = Intl.getCurrentLocale();
+    final NumberFormat formatter = NumberFormat('#,##0.00', locale);
+    return formatter.format(amount);
   }
 
   /// Returns the symbol for a given token ID

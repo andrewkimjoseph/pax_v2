@@ -104,13 +104,11 @@ class _TaskCompleteViewState extends ConsumerState<TaskCompleteView> {
           children: [
             // Fixed-size content area (not scrollable)
             Expanded(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset('lib/assets/svgs/task_complete.svg'),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SvgPicture.asset('lib/assets/svgs/task_complete.svg'),
 
                     // Reduced padding
                     Column(
@@ -158,8 +156,7 @@ class _TaskCompleteViewState extends ConsumerState<TaskCompleteView> {
 
                     Spacer(),
                   ],
-                ),
-              ),
+                ).withPadding(all: 16),
             ),
 
             // Fixed button at the bottom

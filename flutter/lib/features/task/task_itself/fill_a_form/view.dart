@@ -235,7 +235,11 @@ class _TaskItselfViewState extends ConsumerState<FillAFormView> {
                 onTap: () {
                   context.go('/home');
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               Spacer(),
               Text(

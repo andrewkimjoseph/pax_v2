@@ -346,12 +346,10 @@ class _GoodWalletConnectionViewState
           child: Column(
             children: [
               // Fixed-size content area (not scrollable)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: SvgPicture.asset(
@@ -639,8 +637,7 @@ class _GoodWalletConnectionViewState
                       const GoodWalletLinkingStepsWithoutFaceVerification()
                           .withPadding(vertical: 8),
                   ],
-                ),
-              ),
+                ).withPadding(all: 16),
             ],
           ),
         ),

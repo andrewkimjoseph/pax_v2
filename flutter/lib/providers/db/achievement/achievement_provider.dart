@@ -39,11 +39,10 @@ class AchievementStateModel {
 
 // Notifier for achievement state
 class AchievementNotifier extends Notifier<AchievementStateModel> {
-  late final AchievementRepository _repository;
+  AchievementRepository get _repository => ref.read(achievementsRepositoryProvider);
 
   @override
   AchievementStateModel build() {
-    _repository = ref.watch(achievementsRepositoryProvider);
     return AchievementStateModel();
   }
 

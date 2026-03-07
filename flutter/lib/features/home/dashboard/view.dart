@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pax/data/forum_reports.dart';
 import 'package:pax/models/firestore/achievement/achievement_model.dart';
 import 'package:pax/routing/routes.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
@@ -34,6 +35,8 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     final totalGoodDollars = ref.watch(totalGoodDollarTokensEarnedProvider);
     final unclaimedCount = ref.watch(unclaimedTaskCompletionsCountProvider);
     final achievementState = ref.watch(achievementsProvider);
+    final accountType = ref.watch(accountTypeProvider);
+    final isV2 = accountType == AccountType.v2;
 
     final earnedCount =
         achievementState.achievements
@@ -51,7 +54,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
           children: [
             const V2AvailabilityBanner(),
 
-            const FaceVerificationPromptBanner(),
+            if (isV2) const FaceVerificationPromptBanner(),
 
             const ProfileCompletionPromptBanner(),
 
@@ -157,7 +160,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                           fontWeight: FontWeight.w600,
                           color: PaxColors.deepPurple,
                         ),
-                      ).withPadding(right: 4),
+                      ).withPadding(right: 8),
                       FaIcon(
                         FontAwesomeIcons.chevronRight,
                         size: 12,

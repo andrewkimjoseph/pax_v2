@@ -52,7 +52,7 @@ class BranchService {
 
     if (_isListening) {
       if (kDebugMode) {
-        print('BranchService: Already listening to deep links');
+        print('Already listening to deep links');
       }
       return;
     }
