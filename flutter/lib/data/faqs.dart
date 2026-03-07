@@ -16,6 +16,11 @@ class FAQs {
       answer: "Tuesday - Tuesday is PaxDay 🥳",
     ),
     FAQ(
+      question: "What is Pax V2? What's new in the app?",
+      answer:
+          "Pax V2 is the latest version of Pax with an improved wallet and rewards system. You get the same tasks and rewards; we've updated how your in-app wallet is created and how gas is handled so the experience is smoother. No action needed from you—just use the app as usual.",
+    ),
+    FAQ(
       question: "What does GoodDollar Face Verification Required mean?",
       answer:
           "This means that you need to verify your face before you can complete registration and do micro tasks. We are using the GoodDollar Identity mechanism to avoid fraud and ensure that only real people are completing the tasks, not just bots or random Ethereum addresses.",
@@ -27,7 +32,7 @@ class FAQs {
           "Tasks are available on a first come, first served basis. Because of the high volumes, once a task is listed, people rush and thus, the task closes faster. You just need to be quick enough.",
     ),
     FAQ(
-      question: "How do I convert my G\$ tokens to cUSD from within Minipay",
+      question: "How do I convert my G\$ tokens to USDm (Mento Dollar) from within Minipay",
       answer:
           "https://thecanvassing.medium.com/guide-swapping-g-for-cusd-in-minipay-step-by-step-video-walkthrough-c1514151c2ba",
     ),
@@ -50,6 +55,11 @@ class FAQs {
           "I keep getting a message that I have been banned from the platform. What does this mean?",
       answer:
           "This means that your account has been disabled. You will not be able to complete any tasks and you will not be able to withdraw your funds. Contact support if you think this is a mistake.",
+    ),
+    FAQ(
+      question: "Why am I asked to allow notifications after I sign in?",
+      answer:
+          "We ask for notification permission after you sign in so we can tell you when new tasks are available, when rewards are ready to claim, and when withdrawals complete. You can decline; the app will still work, but you might miss task alerts.",
     ),
     FAQ(
       question:
