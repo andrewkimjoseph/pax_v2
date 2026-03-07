@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
 import 'package:pax/providers/local/wallet_transactions_provider.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
@@ -55,10 +56,13 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
     // Trigger restore once when we're on this page and wallet isn't loaded yet
     // (e.g. user opened miniapp before Apps tab ran restore, or restore never ran)
     if (isWaitingForWallet && !_restoreTriggered) {
-      _restoreTriggered = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        restoreWalletIfNeeded(ref, silentOnly: true);
-      });
+      final isV2 = ref.read(accountTypeProvider) == AccountType.v2;
+      if (isV2) {
+        _restoreTriggered = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          restoreWalletIfNeeded(ref, silentOnly: true);
+        });
+      }
     }
 
     if (isWaitingForWallet) {
@@ -152,7 +156,9 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
                           .read(walletCredentialsProvider.notifier)
                           .clearCredentials();
                       WidgetsBinding.instance.addPostFrameCallback((_) {
-                        restoreWalletIfNeeded(ref, silentOnly: false);
+                        if (ref.read(accountTypeProvider) == AccountType.v2) {
+                          restoreWalletIfNeeded(ref, silentOnly: false);
+                        }
                       });
                     },
                     child: const Text('Retry'),

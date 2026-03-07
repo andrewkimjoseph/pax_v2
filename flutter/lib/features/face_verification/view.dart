@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' show Divider, InkWell, PopScope;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/local/face_verification_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
@@ -34,6 +35,7 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
 
   Future<void> _restoreWallet() async {
     if (!mounted) return;
+    if (ref.read(accountTypeProvider) != AccountType.v2) return;
     _restoreAttempted = true;
     await restoreWalletIfNeeded(ref, silentOnly: false);
   }
