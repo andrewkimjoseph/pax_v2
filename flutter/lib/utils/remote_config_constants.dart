@@ -33,6 +33,12 @@ class RemoteConfigKeys {
   /// Key: 'is_v2_upgrade_available'
   static const String isV2UpgradeAvailable = 'is_v2_upgrade_available';
 
+  /// Controls whether the "open custom app by URL" link in the Apps view is shown.
+  /// When false, the link icon is hidden.
+  /// Key: 'is_custom_app_access_feature_available'
+  static const String isCustomAppAccessFeatureAvailable =
+      'is_custom_app_access_feature_available';
+
   // App version config keys
   /// The minimum version of the app that users must have installed.
   /// Users with versions below this will be prompted to update.

@@ -15,6 +15,8 @@ class PaxColors {
   /// Deep purple - primary brand color, used for main actions and important UI elements
   static const Color deepPurple = Color(0xFF363062);
 
+  static const Color darkPurple = Color(0xFF3d0c6d);
+
   /// Accent orange - used for highlights, CTAs, and interactive elements
   static const Color orange = Color(0xFFFF9C4C);
 

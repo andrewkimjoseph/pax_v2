@@ -66,19 +66,19 @@ class OnboardingViewModel extends Notifier<OnboardingModel> {
           imageAsset: 'lib/assets/images/onboarding_1.jpg',
           title: 'Get Paid for Your Insights',
           description:
-              'Share your opinions through simple surveys and earn rewards seamlessly—no hidden fees, no hassle.',
+              'Share your opinions through simple tasks and earn rewards seamlessly—no hidden fees, no hassle.',
         ),
         OnboardingPage(
           imageAsset: 'lib/assets/images/onboarding_2.jpg',
-          title: 'Fast, Easy, and Transparent Payments',
+          title: 'Fast, Easy, and Transparent Withdrawals',
           description:
-              'Withdraw your earnings with ease. Choose from multiple payment options that work best for you.',
+              'Withdraw your earnings with ease. Choose from multiple withdrawal options that work best for you.',
         ),
         OnboardingPage(
           imageAsset: 'lib/assets/images/onboarding_3.jpg',
-          title: 'Reliable Surveys, Anytime You Need',
+          title: 'Reliable Tasks, Anytime You Need',
           description:
-              'Never miss an opportunity! Get notified when new surveys are available and start earning instantly.',
+              'Never miss an opportunity! Get notified when new tasks are available and start earning instantly.',
         ),
       ],
     );
