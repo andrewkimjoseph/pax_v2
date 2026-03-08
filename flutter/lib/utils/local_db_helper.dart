@@ -422,8 +422,7 @@ class LocalDBHelper {
     for (final tx in transactions) {
       final hash = tx['hash'] as String?;
       if (hash == null || hash.isEmpty) continue;
-      final contractAddress =
-          tx['contractAddress']?.toString().trim() ?? '';
+      final contractAddress = tx['contractAddress']?.toString().trim() ?? '';
       await dbClient.insert('wallet_transactions', {
         'eoAddress': eoAddress,
         'hash': hash,
