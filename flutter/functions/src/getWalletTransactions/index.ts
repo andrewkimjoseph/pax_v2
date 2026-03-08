@@ -35,8 +35,11 @@ export const getWalletTransactions = onCall(
         );
       }
 
+      // Etherscan expects lowercase; normalize so tokentx returns all transfers.
+      const normalizedAddress = `0x${address.trim().toLowerCase().replace(/^0x/, "")}`;
+
       const { status, message, result } = await fetchEtherscanTxList({
-        address,
+        address: normalizedAddress,
         page,
         offset,
       });

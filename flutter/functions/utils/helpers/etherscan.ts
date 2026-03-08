@@ -3,8 +3,8 @@ import {
   ETHERSCAN_API_KEY_1,
   ETHERSCAN_API_KEY_2,
   ETHERSCAN_V2_BASE_URL,
-  ETHERSCAN_CHAIN_ID_CELO,
 } from "../config";
+import { celo } from "viem/chains";
 
 /** Round-robin index for Etherscan API keys. */
 let etherscanKeyIndex = 0;
@@ -103,10 +103,14 @@ export function buildEtherscanTxListUrl(
   params: FetchTxListParams,
   apiKey: string
 ): string {
-  const { address, page = 1, offset = 20 } = params;
+  const { page = 1, offset = 20 } = params;
+  // Etherscan indexes by lowercase address; use normalized form for consistent results.
+  const address = params.address.trim().toLowerCase().startsWith("0x")
+    ? params.address.trim().toLowerCase()
+    : `0x${params.address.trim().toLowerCase()}`;
   const url = new URL(ETHERSCAN_V2_BASE_URL);
   url.searchParams.set("apikey", apiKey);
-  url.searchParams.set("chainid", String(ETHERSCAN_CHAIN_ID_CELO));
+  url.searchParams.set("chainid", String(celo.id));
   url.searchParams.set("address", address);
   url.searchParams.set("module", "account");
   url.searchParams.set("action", "tokentx");
