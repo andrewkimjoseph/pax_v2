@@ -79,6 +79,8 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
     final source = widget.source;
     if (source == 'dashboard') {
       context.pop();
+    } else if (source == 'task_summary') {
+      context.go(Routes.home);
     } else if (source == 'wallet_creation') {
       context.go(Routes.completeProfile);
     } else {

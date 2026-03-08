@@ -3,6 +3,7 @@ class Routes {
   static const onboarding = "/onboarding";
   static const onboardingQuestionnaire = "/onboarding-questionnaire";
   static const activity = "/activity";
+  static const profile = "/profile";
   static const accountAndSecurity = "/account-and-security";
   static const reportPage = "/report-page";
   static const reports = "/reports";

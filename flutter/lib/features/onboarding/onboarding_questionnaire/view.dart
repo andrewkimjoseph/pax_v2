@@ -214,17 +214,23 @@ class _OnboardingQuestionnaireViewState
             ),
           ),
           // Divider().withPadding(top: 10, bottom: 20),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: PrimaryButton(
-              onPressed: !_isComplete || isSaving ? null : _onContinue,
-              child:
-                  isSaving
-                      ? const CircularProgressIndicator(onSurface: true)
-                      : const Text('Continue'),
-            ),
-          ).withPadding(left: 24, right: 24, bottom: 32),
+          SafeArea(
+            bottom: true,
+            left: false,
+            right: false,
+            top: false,
+            child: SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: PrimaryButton(
+                onPressed: !_isComplete || isSaving ? null : _onContinue,
+                child:
+                    isSaving
+                        ? const CircularProgressIndicator(onSurface: true)
+                        : const Text('Continue'),
+              ),
+            ).withPadding(left: 24, right: 24, bottom: 32),
+          ),
         ],
       ),
     );

@@ -39,53 +39,44 @@ class _RootViewState extends ConsumerState<RootView> {
       footers: [
         const Divider(),
         SizedBox(
-          child: IntrinsicHeight(
-            child: NavigationBar(
-              alignment: NavigationBarAlignment.spaceBetween,
-              labelType: NavigationLabelType.expanded,
-              // expanded: true,
-              expands: true,
-              onSelected: (index) {
-                ref.read(rootSelectedIndexProvider.notifier).setIndex(index);
-              },
-              index: selected,
-              children: [
+          child: NavigationBar(
+            alignment: NavigationBarAlignment.spaceBetween,
+            labelType: NavigationLabelType.expanded,
+            onSelected: (index) {
+              ref.read(rootSelectedIndexProvider.notifier).setIndex(index);
+            },
+            index: selected,
+            children: [
+              buildButton('Home', selected == 0, badgeCount: null, isV2: isV2),
+              if (isV2)
                 buildButton(
-                  'Home',
-                  selected == 0,
+                  'Wallet',
+                  selected == 1,
                   badgeCount: null,
                   isV2: isV2,
                 ),
-                if (isV2)
-                  buildButton(
-                    'Wallet',
-                    selected == 1,
-                    badgeCount: null,
-                    isV2: isV2,
-                  ),
-                if (isV2)
-                  buildButton(
-                    'Apps',
-                    selected == 2,
-                    badgeCount: null,
-                    isV2: isV2,
-                  ),
+              if (isV2)
                 buildButton(
-                  'Activity',
-                  selected == (isV2 ? 3 : 1),
-                  badgeCount: ref
-                      .watch(unclaimedTaskCompletionsCountProvider)
-                      .maybeWhen(data: (c) => c, orElse: () => null),
-                  isV2: isV2,
-                ),
-                buildButton(
-                  'Account',
-                  selected == (isV2 ? 4 : 2),
+                  'Apps',
+                  selected == 2,
                   badgeCount: null,
                   isV2: isV2,
                 ),
-              ],
-            ),
+              buildButton(
+                'Activity',
+                selected == (isV2 ? 3 : 1),
+                badgeCount: ref
+                    .watch(unclaimedTaskCompletionsCountProvider)
+                    .maybeWhen(data: (c) => c, orElse: () => null),
+                isV2: isV2,
+              ),
+              buildButton(
+                'Account',
+                selected == (isV2 ? 4 : 2),
+                badgeCount: null,
+                isV2: isV2,
+              ),
+            ],
           ),
         ),
       ],
