@@ -9,7 +9,7 @@ Pax is a comprehensive platform that enables organizations to create and manage 
 Pax V2 keeps the same core architecture as V1 (Flutter app + Firebase Functions + Hardhat contracts) but introduces a number of upgrades:
 
 - **New smart-contract stack (Hardhat)**
-  - Adds `contracts/new/CanvassingGasSponsor.sol`, `CanvassingRewarder.sol`, `CanvassingTaskManager.sol`, and `CanvassingWalletRegistry.sol` on top of the existing `PaxAccountV1` and `TaskManagerV1–V3` contracts.
+  - Canvassing contracts in `hardhat/contracts/`: `CanvassingGasSponsor.sol`, `CanvassingRewarder.sol`, `CanvassingTaskManager.sol`, and `CanvassingWalletRegistry.sol`, alongside existing `PaxAccountV1` and `TaskManagerV1–V3`.
   - Formalizes gas sponsorship and reward distribution for on-chain canvassing flows.
   - Keeps the existing UUPS upgradeable pattern and Hardhat test suite from V1.
 
@@ -23,18 +23,19 @@ Pax V2 keeps the same core architecture as V1 (Flutter app + Firebase Functions 
   - Includes scripts for upgrading Pax accounts, distributing tokens, withdrawing from the TaskManager, and writing operational data to spreadsheets using the new contract layouts.
 
 - **Monorepo structure**
-  - Consolidates all components under `pax_v2`:
-    - `flutter/` – mobile app and Firebase Functions
-    - `hardhat/` – smart contracts and tests (including new canvassing contracts)
-    - `scripts/` – operational Node/TypeScript tooling
-  - The legacy `pax` repository is preserved separately as Pax V1 for historical reference only.
+  - All components live under `pax_v2`:
+    - `flutter/` – mobile app; Firebase Functions live in `flutter/functions/`
+    - `hardhat/` – smart contracts and tests (including Canvassing contracts)
+    - `scripts/` – operational Node/TypeScript tooling (at repo root)
+  - The legacy `pax` repository remains separate as Pax V1 for reference.
 
 ## Project Overview
 
 Pax consists of three main components:
-1. **Mobile Application** (Flutter) - Cross-platform app with authentication, task management, and cryptocurrency integration
-2. **Smart Contracts** (Solidity/Hardhat) - Upgradeable contracts for user accounts and task management on Celo blockchain
-3. **Backend Services** (Firebase Functions) - Server-side logic for blockchain integration, notifications, and data management
+
+1. **Mobile Application** (Flutter) – Cross-platform app with authentication, task management, and cryptocurrency integration. Supports both **V1** (server-managed proxy wallet) and **V2** (user-owned Pax Wallet / smart account) account types.
+2. **Smart Contracts** (Solidity/Hardhat) – Upgradeable contracts for user accounts and task management on Celo (PaxAccountV1, TaskManagerV1, and the Canvassing V2 stack).
+3. **Backend Services** (Firebase Functions in `flutter/functions/`) – Server-side logic for blockchain integration, notifications, and data management, including V2 smart-account creation and wallet registry.
 
 ## System Architecture
 
@@ -58,6 +59,7 @@ Pax implements a modern, layered architecture that combines traditional web2 inf
 ### Blockchain Layer (Celo Network)
 - **PaxAccountV1**: Upgradeable smart contracts for user account management
 - **TaskManagerV1**: Task lifecycle management with cryptographic verification
+- **Canvassing stack (V2)**: `CanvassingWalletRegistry`, `CanvassingGasSponsor`, `CanvassingTaskManager`, `CanvassingRewarder` for V2 smart accounts and rewards
 - **ERC-20 token integration** for multi-currency reward distribution
 - **Proxy pattern** for contract upgradeability and gas optimization
 
@@ -114,8 +116,8 @@ Pax implements a modern, layered architecture that combines traditional web2 inf
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/your-org/pax.git
-cd pax
+git clone https://github.com/andrewkimjoseph/pax_v2.git
+cd pax_v2
 ```
 
 2. **Install Flutter dependencies:**
@@ -132,7 +134,7 @@ npm install
 
 4. **Install Hardhat dependencies:**
 ```bash
-cd ../hardhat
+cd ../../hardhat
 npm install
 ```
 
@@ -145,7 +147,7 @@ npm install
    - Place configuration files in appropriate Flutter directories
 
 2. **Environment Variables:**
-   - Copy `.env.example` to `.env` in the functions directory
+   - Copy `.env.example` to `.env` in `flutter/functions/`
    - Configure Privy API keys, Celo RPC endpoints, and contract addresses
    - Set up Pimlico bundler credentials for account abstraction
 
@@ -164,15 +166,17 @@ flutter run
 
 2. **Deploy Firebase Functions (optional for local development):**
 ```bash
-cd functions
+cd flutter/functions
 npm run deploy
 ```
 
-3. **Deploy Smart Contracts:**
+3. **Run Hardhat / deploy contracts:**
 ```bash
 cd hardhat
-npx hardhat run ignition/modules/TaskManagerV1.ts --network alfajores  # Testnet
-npx hardhat run ignition/modules/TaskManagerV1.ts --network celo       # Mainnet
+npm test
+# Deploy (example; adjust module/network as needed):
+# npx hardhat run ignition/modules/TaskManagerV1.ts --network alfajores
+# npx hardhat run ignition/modules/TaskManagerV1.ts --network celo
 ```
 
 ### Testing
@@ -183,7 +187,7 @@ cd flutter
 flutter test
 ```
 
-2. **Run smart contract tests:**
+2. **Run Hardhat tests:**
 ```bash
 cd hardhat
 npm test
