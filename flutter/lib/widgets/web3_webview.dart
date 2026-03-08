@@ -1,5 +1,3 @@
-// Copy the content from document 5 and add transaction type debugging
-
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';

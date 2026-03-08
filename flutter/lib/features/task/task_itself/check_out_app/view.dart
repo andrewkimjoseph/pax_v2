@@ -266,7 +266,11 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
                 onTap: () {
                   context.go('/home');
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               Spacer(),
               Text(
@@ -361,8 +365,7 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
                             FontAwesomeIcons.solidCommentDots,
                             size: 18,
                             color: PaxColors.white,
-                          ),
-                          SizedBox(width: 8),
+                          ).withPadding(right: 8),
                           Text(
                             'Open feedback form',
                             style: TextStyle(
@@ -398,8 +401,7 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
                             ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 50),
+              ).withPadding(bottom: 50),
             ],
           ),
         ),

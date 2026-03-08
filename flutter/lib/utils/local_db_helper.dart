@@ -30,7 +30,7 @@ class LocalDBHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 7,
       onCreate: (Database db, int version) async {
         await db.execute('''
           CREATE TABLE balances (
@@ -73,6 +73,7 @@ class LocalDBHelper {
           CREATE TABLE wallet_transactions (
             eoAddress TEXT NOT NULL,
             hash TEXT NOT NULL,
+            contractAddress TEXT NOT NULL DEFAULT '',
             blockNumber TEXT,
             timeStamp TEXT,
             "from" TEXT,
@@ -84,12 +85,14 @@ class LocalDBHelper {
             isError TEXT,
             txreceipt_status TEXT,
             input TEXT,
-            contractAddress TEXT,
             cumulativeGasUsed TEXT,
             confirmations TEXT,
             methodId TEXT,
+            tokenName TEXT,
+            tokenSymbol TEXT,
+            tokenDecimal TEXT,
             updatedAt INTEGER NOT NULL,
-            PRIMARY KEY (eoAddress, hash)
+            PRIMARY KEY (eoAddress, hash, contractAddress)
           )
         ''');
       },
@@ -154,6 +157,49 @@ class LocalDBHelper {
               PRIMARY KEY (eoAddress, hash)
             )
           ''');
+        }
+        if (oldVersion < 6) {
+          await db.execute(
+            'ALTER TABLE wallet_transactions ADD COLUMN tokenName TEXT',
+          );
+          await db.execute(
+            'ALTER TABLE wallet_transactions ADD COLUMN tokenSymbol TEXT',
+          );
+          await db.execute(
+            'ALTER TABLE wallet_transactions ADD COLUMN tokenDecimal TEXT',
+          );
+        }
+        if (oldVersion < 7) {
+          await db.execute('''
+            CREATE TABLE wallet_transactions_new (
+              eoAddress TEXT NOT NULL,
+              hash TEXT NOT NULL,
+              contractAddress TEXT NOT NULL DEFAULT '',
+              blockNumber TEXT,
+              timeStamp TEXT,
+              "from" TEXT,
+              "to" TEXT,
+              value TEXT,
+              gasUsed TEXT,
+              gasPrice TEXT,
+              functionName TEXT,
+              isError TEXT,
+              txreceipt_status TEXT,
+              input TEXT,
+              cumulativeGasUsed TEXT,
+              confirmations TEXT,
+              methodId TEXT,
+              tokenName TEXT,
+              tokenSymbol TEXT,
+              tokenDecimal TEXT,
+              updatedAt INTEGER NOT NULL,
+              PRIMARY KEY (eoAddress, hash, contractAddress)
+            )
+          ''');
+          await db.execute('DROP TABLE wallet_transactions');
+          await db.execute(
+            'ALTER TABLE wallet_transactions_new RENAME TO wallet_transactions',
+          );
         }
       },
     );
@@ -376,9 +422,12 @@ class LocalDBHelper {
     for (final tx in transactions) {
       final hash = tx['hash'] as String?;
       if (hash == null || hash.isEmpty) continue;
+      final contractAddress =
+          tx['contractAddress']?.toString().trim() ?? '';
       await dbClient.insert('wallet_transactions', {
         'eoAddress': eoAddress,
         'hash': hash,
+        'contractAddress': contractAddress,
         'blockNumber': tx['blockNumber']?.toString(),
         'timeStamp': tx['timeStamp']?.toString(),
         'from': tx['from']?.toString(),
@@ -390,10 +439,12 @@ class LocalDBHelper {
         'isError': tx['isError']?.toString(),
         'txreceipt_status': tx['txreceipt_status']?.toString(),
         'input': tx['input']?.toString(),
-        'contractAddress': tx['contractAddress']?.toString(),
         'cumulativeGasUsed': tx['cumulativeGasUsed']?.toString(),
         'confirmations': tx['confirmations']?.toString(),
         'methodId': tx['methodId']?.toString(),
+        'tokenName': tx['tokenName']?.toString(),
+        'tokenSymbol': tx['tokenSymbol']?.toString(),
+        'tokenDecimal': tx['tokenDecimal']?.toString(),
         'updatedAt': now,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }

@@ -6,6 +6,7 @@ import 'package:pax/models/local/withdrawal_state_model.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
+import 'package:pax/providers/local/pax_wallet_view_provider.dart';
 import 'package:pax/providers/local/withdrawal_service_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
@@ -19,6 +20,7 @@ import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/utils/currency_symbol.dart';
 import 'package:pax/models/firestore/withdrawal/withdrawal_model.dart';
 import 'package:pax/services/blockchain/blockchain_service.dart';
+import 'package:pax/utils/error_message_util.dart';
 
 class WithdrawNotifier extends Notifier<WithdrawStateModel> {
   late final WithdrawalService _withdrawalService;
@@ -186,6 +188,12 @@ class WithdrawNotifier extends Notifier<WithdrawStateModel> {
       // Refresh activities to show the new withdrawal
       ref.invalidate(activityRepositoryProvider);
       await ref.read(paxAccountProvider.notifier).syncBalancesFromBlockchain();
+      // If wallet is PaxWallet then refresh balance
+      if (isV2 && walletName.toLowerCase().contains('paxwallet')) {
+        await ref
+            .read(paxWalletViewProvider.notifier)
+            .fetchBalance(selectedWalletAddress, forceRefresh: true);
+      }
     } catch (e) {
       if (kDebugMode) {
         print('Error withdrawing tokens: $e');
@@ -200,7 +208,7 @@ class WithdrawNotifier extends Notifier<WithdrawStateModel> {
 
       state = state.copyWith(
         state: WithdrawState.error,
-        errorMessage: e.toString(),
+        errorMessage: ErrorMessageUtil.userFacing(e.toString()),
         isSubmitting: false,
       );
     }

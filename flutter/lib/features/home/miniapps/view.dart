@@ -65,6 +65,11 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Image.asset(
+              'lib/assets/images/goodid_fv_lady.png',
+              height: 160,
+              fit: BoxFit.fitHeight,
+            ).withPadding(bottom: 20),
             Text(
               'Verify your identity to use PaxWallet apps.',
               style: TextStyle(
@@ -216,7 +221,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => _buildVerificationPrompt(context),
         data: (needsVerification) {
-          if (needsVerification) {
+          if (!needsVerification) {
             return _buildVerificationPrompt(context);
           }
 

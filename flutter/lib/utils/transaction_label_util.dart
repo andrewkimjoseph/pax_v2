@@ -1,5 +1,5 @@
 /// Human-friendly labels for wallet transactions (Etherscan-style tx maps).
-/// Use for UI only; never exposes raw function names or technical jargon.
+/// Use for UI only; only shows Sent / Received (or "Transaction" when unknown).
 library;
 
 import 'package:flutter/material.dart' show IconData;
@@ -12,31 +12,9 @@ class TransactionLabelUtil {
   static const String _kFrom = 'from';
   static const String _kTo = 'to';
   static const String _kValue = 'value';
-  static const String _kFunctionName = 'functionName';
 
-  /// Known function name substrings (lowercased) mapped to a friendly label.
-  static bool _matchesAny(String fn, Iterable<String> keys) {
-    for (final k in keys) {
-      if (fn.contains(k)) return true;
-    }
-    return false;
-  }
-
-  static const _approveKeys = [
-    'approve',
-    'increaseallowance',
-    'decreaseallowance',
-  ];
-  static const _swapKeys = [
-    'swap',
-    'swapexact',
-    'multihop',
-    'exactinput',
-    'exactoutput',
-  ];
-
-  /// Returns a friendly label: "Approved", "Swapped", "Sent", "Received", or
-  /// "Transaction" only when direction cannot be determined.
+  /// Returns a friendly label: "Sent", "Received", or "Transaction" only when
+  /// direction cannot be determined. Does not use functionName (e.g. no "Swapped").
   ///
   /// [tx] is the raw transaction map (e.g. from Etherscan txlist).
   /// [myAddress] is the current user's wallet address (EOA). Case-insensitive.
@@ -50,16 +28,7 @@ class TransactionLabelUtil {
         (BigInt.tryParse(valueWei) ?? BigInt.zero) > BigInt.zero;
     final me = _norm(myAddress);
 
-    // 1. Approved / Swapped when we recognize the function (keep these).
-    final functionName = tx[_kFunctionName]?.toString().trim();
-    if (functionName != null && functionName.isNotEmpty) {
-      final fn =
-          functionName.toLowerCase().replaceAll(' ', '').split('(').first;
-      if (_matchesAny(fn, _approveKeys)) return 'Approved';
-      if (_matchesAny(fn, _swapKeys)) return 'Swapped';
-    }
-
-    // 2. Sent / Received whenever we can tell direction (no "Transaction" here).
+    // Sent / Received whenever we can tell direction.
     if (me.isNotEmpty && from.isNotEmpty && to.isNotEmpty) {
       final fromMe = from == me;
       final toMe = to == me;
@@ -74,7 +43,7 @@ class TransactionLabelUtil {
       if (toMe && !fromMe) return 'Received';
     }
 
-    // 3. Only use "Transaction" when we truly can't determine anything.
+    // Only use "Transaction" when we truly can't determine direction.
     return 'Transaction';
   }
 
@@ -85,10 +54,6 @@ class TransactionLabelUtil {
         return FontAwesomeIcons.circleArrowUp;
       case 'Received':
         return FontAwesomeIcons.circleArrowDown;
-      case 'Swapped':
-        return FontAwesomeIcons.retweet;
-      case 'Approved':
-        return FontAwesomeIcons.circleCheck;
       default:
         return FontAwesomeIcons.receipt;
     }
