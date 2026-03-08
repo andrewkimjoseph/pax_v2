@@ -24,8 +24,6 @@ export const ETHERSCAN_API_KEY_2 = process.env.ETHERSCAN_API_KEY_2 || '';
 
 /** Etherscan v2 API base URL and Celo chain id for txList. */
 export const ETHERSCAN_V2_BASE_URL = 'https://api.etherscan.io/v2/api';
-export const ETHERSCAN_CHAIN_ID_CELO = 42220;
-
 
 export const FUNCTION_RUNTIME_OPTS: CallableOptions = {
   // timeoutSeconds: 60,
