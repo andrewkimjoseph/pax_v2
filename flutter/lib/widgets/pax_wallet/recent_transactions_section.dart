@@ -135,9 +135,10 @@ class WalletTransactionTile extends ConsumerWidget {
     final decimals = _decimalsForTx(tx);
     final displayAmount = _formatValue(rawValue, decimals: decimals);
     final tokenSymbol = tx['tokenSymbol']?.toString().trim();
+    final displaySymbol = CurrencySymbolUtil.getDisplaySymbolForTokenSymbol(tokenSymbol);
     final amountWithSymbol =
-        displayAmount != null && tokenSymbol != null && tokenSymbol.isNotEmpty
-            ? '$displayAmount $tokenSymbol'
+        displayAmount != null && displaySymbol.isNotEmpty
+            ? '$displayAmount $displaySymbol'
             : displayAmount;
     final currencyAssetPath =
         CurrencySymbolUtil.getCurrencyAssetPathForTokenContract(
@@ -187,8 +188,7 @@ class WalletTransactionTile extends ConsumerWidget {
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
+                  ).withPadding(bottom: 4),
                   Text(
                     dateStr,
                     style: TextStyle(
@@ -208,8 +208,7 @@ class WalletTransactionTile extends ConsumerWidget {
                       currencyAssetPath,
                       width: currencyAssetPath.endsWith('usdm.svg') ? 30 : 20,
                       height: currencyAssetPath.endsWith('usdm.svg') ? 30 : 20,
-                    ),
-                    const SizedBox(width: 6),
+                    ).withPadding(right: 6),
                   ],
                   Flexible(
                     child: Text(

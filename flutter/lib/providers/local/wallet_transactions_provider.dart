@@ -32,7 +32,7 @@ class WalletTransactionsState {
 }
 
 const _staleThreshold = Duration(minutes: 5);
-const _defaultPageSize = 20;
+const _defaultPageSize = 50;
 
 class WalletTransactionsNotifier extends Notifier<WalletTransactionsState> {
   @override
@@ -58,9 +58,9 @@ class WalletTransactionsNotifier extends Notifier<WalletTransactionsState> {
     if (participantId == null) return;
 
     final lastRefresh = await db.getTransactionsRefreshTime(participantId);
-    // Only fetch when we have a previous refresh time and it's stale (or we have cache and it's stale).
+    // Fetch when never refreshed (first time) or when cache is stale.
     final isStale = lastRefresh == null
-        ? false
+        ? true
         : DateTime.now().millisecondsSinceEpoch - lastRefresh > _staleThreshold.inMilliseconds;
     if (!isStale) return;
 

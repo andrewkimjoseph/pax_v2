@@ -64,6 +64,24 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
       }
     });
 
+    // When balance card updates (e.g. after miniapp tx or pull-to-refresh), refresh transaction list.
+    ref.listen(paxWalletViewProvider, (prev, next) {
+      final addr = ref.read(paxWalletProvider).wallet?.eoAddress;
+      if (addr == null) return;
+      if (next.state != PaxWalletViewState.loaded) return;
+      final prevLoaded = prev?.state == PaxWalletViewState.loaded;
+      final justLoaded = !prevLoaded;
+      final balancesChanged =
+          prevLoaded &&
+          prev != null &&
+          (prev.gdBalance != next.gdBalance ||
+              prev.cusdBalance != next.cusdBalance ||
+              prev.usdtBalance != next.usdtBalance);
+      if (justLoaded || balancesChanged) {
+        ref.read(walletTransactionsProvider.notifier).refresh(addr);
+      }
+    });
+
     return Scaffold(
       headers: [
         AppBar(
@@ -115,7 +133,7 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Your transactions',
+                      'Your transactions (${txState.transactions.length})',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,

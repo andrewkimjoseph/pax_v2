@@ -6,7 +6,6 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
-import 'package:pax/providers/local/wallet_transactions_provider.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/widgets/web3_webview.dart';
@@ -213,13 +212,10 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
               (controller) => setState(() => _webViewController = controller),
           onTransactionSent: (eoAddress) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              Future.delayed(const Duration(seconds: 2), () {
-                if (!mounted) return;
-                ref
-                    .read(paxWalletViewProvider.notifier)
-                    .fetchBalance(eoAddress, forceRefresh: true);
-                ref.read(walletTransactionsProvider.notifier).refresh(eoAddress);
-              });
+              if (!mounted) return;
+              ref
+                  .read(paxWalletViewProvider.notifier)
+                  .fetchBalance(eoAddress, forceRefresh: true);
             });
           },
         ),
