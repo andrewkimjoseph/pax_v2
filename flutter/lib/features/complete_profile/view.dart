@@ -71,7 +71,11 @@ class _CompleteProfileViewState extends ConsumerState<CompleteProfileView> {
                 onTap: () {
                   context.pop();
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               const Spacer(),
               Text(
@@ -290,9 +294,14 @@ class _CompleteProfileViewState extends ConsumerState<CompleteProfileView> {
             ),
           ),
           // Bottom section: button and skip link (pinned to bottom)
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          SafeArea(
+            bottom: true,
+            left: false,
+            right: false,
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 SizedBox(
                   width: double.infinity,
                   height: 48,
@@ -327,6 +336,7 @@ class _CompleteProfileViewState extends ConsumerState<CompleteProfileView> {
                 ).withPadding(top: 8, bottom: 16),
               ],
             ).withPadding(all: 8),
+          ),
         ],
       ),
     );

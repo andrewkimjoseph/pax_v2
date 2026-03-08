@@ -20,7 +20,7 @@ class ProfileCompletionPromptBanner extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        context.push(Routes.completeProfile);
+        context.push(Routes.profile);
       },
       child: Container(
         width: double.infinity,

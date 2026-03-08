@@ -35,6 +35,8 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   );
 
   bool? _isWhitelisted;
+  bool _isRegisteringWallet = false;
+  String? _registryErrorMessage;
 
   @override
   void initState() {
@@ -154,10 +156,15 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
               );
         }
       } catch (e) {
-        // Non-blocking: wallet is created even if registry fails
+        // Surface registration failure so user can retry
         if (kDebugMode) {
           debugPrint('Registry log failed (non-blocking): $e');
         }
+        viewModel.setError(
+          'Wallet was created but could not be registered on-chain. '
+          'You can try again from the next screen.',
+        );
+        return;
       }
 
       viewModel.setStep(WalletCreationStep.success);
@@ -217,11 +224,12 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const Spacer(),
-              SvgPicture.asset(
-                'lib/assets/svgs/wallets/pax_wallet.svg',
-                width: 120,
-                height: 120,
-              ).withPadding(bottom: 32),
+              if (!hasWalletNeedingVerification)
+                SvgPicture.asset(
+                  'lib/assets/svgs/wallets/pax_wallet.svg',
+                  width: 120,
+                  height: 120,
+                ).withPadding(bottom: 32),
               if (hasWalletNeedingVerification)
                 _buildWalletAlreadyExistsContent()
               else
@@ -241,11 +249,32 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   Widget _buildWalletAlreadyExistsContent() {
     return Column(
       children: [
-        FaIcon(
-          FontAwesomeIcons.solidCircleCheck,
-          color: PaxColors.green,
-          size: 56,
-        ).withPadding(bottom: 20),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            SvgPicture.asset(
+              'lib/assets/svgs/wallets/pax_wallet.svg',
+              width: 120,
+              height: 120,
+            ),
+            Positioned(
+              right: -8,
+              top: -8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: PaxColors.white,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(4),
+                child: FaIcon(
+                  FontAwesomeIcons.solidCircleCheck,
+                  color: PaxColors.green,
+                  size: 40,
+                ),
+              ),
+            ),
+          ],
+        ).withPadding(bottom: 32),
         Text(
           'You now have a PaxWallet',
           style: TextStyle(
@@ -265,18 +294,76 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   }
 
   Widget _buildContinueToFaceVerificationButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: PrimaryButton(
-        onPressed: () {
-          context.go(
-            Routes.completeGoodDollarFaceVerification,
-            extra: 'wallet_creation',
-          );
-        },
-        child: const Text('Continue to Face Verification'),
-      ),
+    final wallet = ref.read(paxWalletProvider).wallet;
+    final eoAddress = wallet?.eoAddress;
+    final alreadyLogged = (wallet?.logTxnHash ?? '').isNotEmpty;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_registryErrorMessage != null)
+          Text(
+            _registryErrorMessage!,
+            style: TextStyle(fontSize: 14, color: PaxColors.red),
+            textAlign: TextAlign.center,
+          ).withPadding(bottom: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: PrimaryButton(
+            onPressed: _isRegisteringWallet
+                ? null
+                : () async {
+                    if (eoAddress == null) return;
+                    if (alreadyLogged) {
+                      context.go(
+                        Routes.completeGoodDollarFaceVerification,
+                        extra: 'wallet_creation',
+                      );
+                      return;
+                    }
+                    setState(() {
+                      _isRegisteringWallet = true;
+                      _registryErrorMessage = null;
+                    });
+                    try {
+                      final registryService = WalletRegistryService();
+                      final registryResult = await registryService.logWallet(
+                        eoWalletAddress: eoAddress,
+                      );
+                      final walletState = ref.read(paxWalletProvider);
+                      if (walletState.wallet?.id != null && mounted) {
+                        await ref
+                            .read(paxWalletProvider.notifier)
+                            .updateWithLogData(
+                              walletId: walletState.wallet!.id!,
+                              logTxnHash: registryResult.txnHash,
+                              logTimeCreated: registryResult.logTimeCreated,
+                            );
+                      }
+                      if (mounted) {
+                        setState(() => _isRegisteringWallet = false);
+                        context.go(
+                          Routes.completeGoodDollarFaceVerification,
+                          extra: 'wallet_creation',
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        setState(() {
+                          _isRegisteringWallet = false;
+                          _registryErrorMessage =
+                              'Could not register wallet. Please try again.';
+                        });
+                      }
+                    }
+                  },
+            child: _isRegisteringWallet
+                ? const CircularProgressIndicator(onSurface: true)
+                : const Text('Continue to Face Verification'),
+          ),
+        ),
+      ],
     );
   }
 

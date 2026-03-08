@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/local/task_context/task_context_provider.dart';
 import 'package:pax/providers/local/task_master_server_id_provider.dart';
 import 'package:pax/providers/local/screening_state_provider.dart';
@@ -18,6 +19,7 @@ import 'package:pax/utils/token_address_util.dart';
 import 'package:pax/widgets/other_task_card.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
 import 'package:go_router/go_router.dart';
+import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
 
 class TaskSummaryView extends ConsumerStatefulWidget {
@@ -83,6 +85,71 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
     );
   }
 
+  void _showV2CompletionDialog({required bool needsFv}) {
+    if (needsFv) {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder:
+            (dialogContext) => AlertDialog(
+              title: const Text(
+                'Complete setup to continue',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: PaxColors.deepPurple,
+                ),
+              ),
+              content: const Text(
+                'To continue with task, complete face verification.',
+              ),
+              actions: [
+                PrimaryButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    context.pop();
+                    context.push(
+                      Routes.completeGoodDollarFaceVerification,
+                      extra: 'task_summary',
+                    );
+                  },
+                  child: const Text('Complete Face Verification'),
+                ),
+              ],
+            ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder:
+            (dialogContext) => AlertDialog(
+              title: const Text(
+                'Complete setup to continue',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: PaxColors.deepPurple,
+                ),
+              ),
+              content: const Text(
+                'To continue with task, complete your profile.',
+              ),
+              actions: [
+                PrimaryButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    context.pop();
+                    context.push(Routes.profile);
+                  },
+                  child: const Text('Complete profile'),
+                ),
+              ],
+            ),
+      );
+    }
+  }
+
   // Method to handle screening process
   Future<void> _processScreening(BuildContext context) async {
     if (_isProcessingScreening) return;
@@ -116,7 +183,15 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
 
     // If participant is not completely complete, show dialog and return
     if (!participantIsCompletelyComplete) {
-      _showWithdrawalMethodDialog();
+      if (isV2) {
+        final needsFv = await ref.read(
+          paxWalletNeedsVerificationProvider.future,
+        );
+        if (!mounted) return;
+        _showV2CompletionDialog(needsFv: needsFv);
+      } else {
+        _showWithdrawalMethodDialog();
+      }
       return;
     }
 
@@ -310,7 +385,11 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
                 onTap: () {
                   context.pop();
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               Spacer(),
               Text(

@@ -73,6 +73,10 @@ android {
             )
         }
     }
+
+    lint {
+        disable += "NullSafeMutableLiveData"
+    }
 }
 
 flutter {

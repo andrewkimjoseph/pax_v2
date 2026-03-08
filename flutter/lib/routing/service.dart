@@ -24,6 +24,7 @@ import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/widgets/image_step_photo_view/image_step_photo_view.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/route/route_notifier_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/features/onboarding/onboarding_questionnaire/view.dart';
@@ -152,6 +153,13 @@ final routerProvider = Provider((ref) {
             if (!isOnV2OnboardingRoute) {
               if (onboardingType == 'v1_legacy') {
                 return "/withdrawal-methods";
+              }
+
+              // User has a Pax wallet (e.g. skipped FV then profile) — allow home instead of forcing back to wallet/FV
+              final paxWalletState = ref.read(paxWalletProvider);
+              if (paxWalletState.state == PaxWalletState.loaded &&
+                  paxWalletState.wallet != null) {
+                return null;
               }
 
               // Default to V2 wallet creation for v2_native and mixed

@@ -817,80 +817,86 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
       );
     }
 
-    return Column(
-      children: [
-        Expanded(child: content),
-        const Divider(height: 1).withPadding(bottom: 8),
+    return SafeArea(
+      top: false,
+      bottom: true,
+      left: false,
+      right: false,
+      child: Column(
+        children: [
+          Expanded(child: content),
+          const Divider(height: 1).withPadding(bottom: 8),
 
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: PaxColors.white,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton.outline(
-                    onPressed:
-                        _canGoBack && _controller != null
-                            ? () {
-                              _controller?.goBack();
-                              _updateNavigationState();
-                            }
-                            : null,
-                    density: ButtonDensity.icon,
-                    variance: const ButtonStyle.outline(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: PaxColors.white,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton.outline(
+                      onPressed:
+                          _canGoBack && _controller != null
+                              ? () {
+                                _controller?.goBack();
+                                _updateNavigationState();
+                              }
+                              : null,
                       density: ButtonDensity.icon,
+                      variance: const ButtonStyle.outline(
+                        density: ButtonDensity.icon,
+                      ),
+                      icon: const FaIcon(
+                        FontAwesomeIcons.chevronLeft,
+                        size: 22,
+                        color: PaxColors.deepPurple,
+                      ),
                     ),
-                    icon: const FaIcon(
-                      FontAwesomeIcons.chevronLeft,
-                      size: 22,
-                      color: PaxColors.deepPurple,
-                    ),
-                  ),
-                  IconButton.outline(
-                    onPressed:
-                        _controller != null
-                            ? () {
-                              _controller?.reload();
-                              _updateNavigationState();
-                            }
-                            : null,
-                    density: ButtonDensity.icon,
-                    variance: const ButtonStyle.outline(
+                    IconButton.outline(
+                      onPressed:
+                          _controller != null
+                              ? () {
+                                _controller?.reload();
+                                _updateNavigationState();
+                              }
+                              : null,
                       density: ButtonDensity.icon,
+                      variance: const ButtonStyle.outline(
+                        density: ButtonDensity.icon,
+                      ),
+                      icon: const FaIcon(
+                        FontAwesomeIcons.arrowsRotate,
+                        size: 22,
+                        color: PaxColors.deepPurple,
+                      ),
                     ),
-                    icon: const FaIcon(
-                      FontAwesomeIcons.arrowsRotate,
-                      size: 22,
-                      color: PaxColors.deepPurple,
-                    ),
-                  ),
-                  IconButton.outline(
-                    onPressed:
-                        _canGoForward && _controller != null
-                            ? () {
-                              _controller?.goForward();
-                              _updateNavigationState();
-                            }
-                            : null,
-                    density: ButtonDensity.icon,
-                    variance: const ButtonStyle.outline(
+                    IconButton.outline(
+                      onPressed:
+                          _canGoForward && _controller != null
+                              ? () {
+                                _controller?.goForward();
+                                _updateNavigationState();
+                              }
+                              : null,
                       density: ButtonDensity.icon,
+                      variance: const ButtonStyle.outline(
+                        density: ButtonDensity.icon,
+                      ),
+                      icon: const FaIcon(
+                        FontAwesomeIcons.chevronRight,
+                        size: 22,
+                        color: PaxColors.deepPurple,
+                      ),
                     ),
-                    icon: const FaIcon(
-                      FontAwesomeIcons.chevronRight,
-                      size: 22,
-                      color: PaxColors.deepPurple,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
