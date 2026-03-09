@@ -385,71 +385,57 @@ class AnalyticsProvider {
       _logEvent('esi_tapped', properties: properties);
 
   // V2 Onboarding events
-  Future<void> v2WalletCreationInitiated([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_wallet_creation_initiated', properties: properties);
+  Future<void> v2WalletCreationInitiated([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_wallet_creation_initiated', properties: properties);
 
-  Future<void> v2WalletCreationSuccess([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_wallet_creation_success', properties: properties);
+  Future<void> v2WalletCreationSuccess([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_wallet_creation_success', properties: properties);
 
-  Future<void> v2WalletCreationFailed([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_wallet_creation_failed', properties: properties);
+  Future<void> v2WalletCreationFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_wallet_creation_failed', properties: properties);
 
-  Future<void> v2FaceVerificationStarted([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_face_verification_started', properties: properties);
+  Future<void> v2FaceVerificationStarted([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_face_verification_started', properties: properties);
 
-  Future<void> v2FaceVerificationSuccess([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_face_verification_success', properties: properties);
+  Future<void> v2FaceVerificationSuccess([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_face_verification_success', properties: properties);
 
-  Future<void> v2FaceVerificationFailed([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_face_verification_failed', properties: properties);
+  Future<void> v2FaceVerificationFailed([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_face_verification_failed', properties: properties);
 
-  Future<void> v2ProfileCompletionStarted([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_profile_completion_started', properties: properties);
+  Future<void> v2ProfileCompletionStarted([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_profile_completion_started', properties: properties);
 
-  Future<void> v2ProfileCompletionSuccess([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_profile_completion_success', properties: properties);
+  Future<void> v2ProfileCompletionSuccess([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_profile_completion_success', properties: properties);
 
   // V1 user events
-  Future<void> v2AvailabilityBannerShown([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_availability_banner_shown', properties: properties);
+  // Future<void> v2AvailabilityBannerShown([
+  //   Map<String, dynamic>? properties,
+  // ]) => _logEvent('v2_availability_banner_shown', properties: properties);
 
   Future<void> v2UpgradeEligibilityChecked([
     Map<String, dynamic>? properties,
   ]) => _logEvent('v2_upgrade_eligibility_checked', properties: properties);
 
-  Future<void> v2UpgradeInitiated([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_upgrade_initiated', properties: properties);
+  Future<void> v2UpgradeInitiated([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_upgrade_initiated', properties: properties);
 
-  Future<void> v2UpgradeCompleted([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_upgrade_completed', properties: properties);
+  Future<void> v2UpgradeCompleted([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_upgrade_completed', properties: properties);
 
-  Future<void> v1FeaturesShelved([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v1_features_shelved', properties: properties);
+  Future<void> v1FeaturesShelved([Map<String, dynamic>? properties]) =>
+      _logEvent('v1_features_shelved', properties: properties);
 
   // V2 usage events
-  Future<void> v2FirstWalletTransaction([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_first_wallet_transaction', properties: properties);
+  Future<void> v2FirstWalletTransaction([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_first_wallet_transaction', properties: properties);
 
-  Future<void> v2PaxWalletRouteVisited([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_pax_wallet_route_visited', properties: properties);
+  Future<void> v2PaxWalletRouteVisited([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_pax_wallet_route_visited', properties: properties);
 
-  Future<void> v2WithdrawalMethodAdded([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_withdrawal_method_added', properties: properties);
+  Future<void> v2WithdrawalMethodAdded([Map<String, dynamic>? properties]) =>
+      _logEvent('v2_withdrawal_method_added', properties: properties);
 
   Future<void> v2FaceVerificationPromptShown([
     Map<String, dynamic>? properties,
