@@ -7,12 +7,15 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class OptimizedWebView extends ConsumerStatefulWidget {
   final URLRequest? initialUrlRequest;
   final void Function(InAppWebViewController controller)? onWebViewCreated;
-  final void Function(InAppWebViewController controller, WebUri? url)? onLoadStart;
-  final void Function(InAppWebViewController controller, WebUri? url)? onLoadStop;
+  final void Function(InAppWebViewController controller, WebUri? url)?
+  onLoadStart;
+  final void Function(InAppWebViewController controller, WebUri? url)?
+  onLoadStop;
   final Future<NavigationActionPolicy?> Function(
     InAppWebViewController controller,
     NavigationAction navigationAction,
-  )? shouldOverrideUrlLoading;
+  )?
+  shouldOverrideUrlLoading;
   final bool isLoading;
   final Widget? loadingWidget;
 
@@ -32,6 +35,15 @@ class OptimizedWebView extends ConsumerStatefulWidget {
 }
 
 class _OptimizedWebViewState extends ConsumerState<OptimizedWebView> {
+  InAppWebViewController? _controller;
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -50,7 +62,10 @@ class _OptimizedWebViewState extends ConsumerState<OptimizedWebView> {
             useWideViewPort: true,
             useOnLoadResource: false,
           ),
-          onWebViewCreated: widget.onWebViewCreated,
+          onWebViewCreated: (controller) {
+            _controller = controller;
+            widget.onWebViewCreated?.call(controller);
+          },
           onLoadStart: widget.onLoadStart,
           onLoadStop: widget.onLoadStop,
           shouldOverrideUrlLoading: widget.shouldOverrideUrlLoading,

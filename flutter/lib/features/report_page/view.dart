@@ -17,6 +17,14 @@ class ReportPageView extends StatefulWidget {
 
 class _ReportPageViewState extends State<ReportPageView> {
   bool isLoading = true;
+  InAppWebViewController? _controller;
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +62,9 @@ class _ReportPageViewState extends State<ReportPageView> {
               javaScriptEnabled: true,
               useWideViewPort: true,
             ),
+            onWebViewCreated: (controller) {
+              _controller = controller;
+            },
             onLoadStart: (controller, url) {
               setState(() {
                 isLoading = true;

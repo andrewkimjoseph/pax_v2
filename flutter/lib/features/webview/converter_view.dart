@@ -71,6 +71,13 @@ class _WebViewConverterPageState extends ConsumerState<WebViewConverterPage> {
   }
 
   @override
+  void dispose() {
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
