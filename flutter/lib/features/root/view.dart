@@ -35,6 +35,25 @@ class _RootViewState extends ConsumerState<RootView> {
     final accountType = ref.watch(accountTypeProvider);
     final isV2 = accountType == AccountType.v2;
 
+    // Single watch for achievements (V1 Account red-dot badge)
+    final achievementState = ref.watch(achievementsProvider);
+    final requiredAchievements = [
+      AchievementConstants.payoutConnector,
+      AchievementConstants.profilePerfectionist,
+      AchievementConstants.verifiedHuman,
+      AchievementConstants.doublePayoutConnector,
+    ];
+    final userAchievementNames =
+        achievementState.achievements.map((a) => a.name).whereType<String>().toSet();
+    final hasAllRequired =
+        requiredAchievements.every((ach) => userAchievementNames.contains(ach));
+    final showAccountBadge =
+        !isV2 &&
+            achievementState.state == AchievementState.loaded &&
+            !hasAllRequired;
+
+    final tabChildren = _buildTabChildren(isV2);
+
     return Scaffold(
       footers: [
         const Divider(),
@@ -75,49 +94,34 @@ class _RootViewState extends ConsumerState<RootView> {
                 selected == (isV2 ? 4 : 2),
                 badgeCount: null,
                 isV2: isV2,
+                showAccountBadge: showAccountBadge,
               ),
             ],
           ),
         ),
       ],
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child: _buildSelectedPage(selected, isV2),
+      child: IndexedStack(
+        index: selected,
+        children: tabChildren,
       ),
     );
   }
 
-  Widget _buildSelectedPage(int selected, bool isV2) {
+  List<Widget> _buildTabChildren(bool isV2) {
     if (isV2) {
-      switch (selected) {
-        case 0:
-          return HomeView(key: const ValueKey('home'));
-        case 1:
-          return const PaxWalletView(key: ValueKey('pax-wallet'));
-        case 2:
-          return const MiniAppsView(key: ValueKey('miniapps'));
-        case 3:
-          return ActivityView(key: const ValueKey('activity'));
-        case 4:
-          return AccountView(key: const ValueKey('account'));
-        default:
-          return HomeView(key: const ValueKey('home'));
-      }
-    } else {
-      switch (selected) {
-        case 0:
-          return HomeView(key: const ValueKey('home'));
-        case 1:
-          return ActivityView(key: const ValueKey('activity'));
-        case 2:
-          return AccountView(key: const ValueKey('account'));
-        default:
-          return HomeView(key: const ValueKey('home'));
-      }
+      return [
+        HomeView(key: const ValueKey('home')),
+        const PaxWalletView(key: ValueKey('pax-wallet')),
+        const MiniAppsView(key: ValueKey('miniapps')),
+        ActivityView(key: const ValueKey('activity')),
+        AccountView(key: const ValueKey('account')),
+      ];
     }
+    return [
+      HomeView(key: const ValueKey('home')),
+      ActivityView(key: const ValueKey('activity')),
+      AccountView(key: const ValueKey('account')),
+    ];
   }
 
   IconData _getIconForLabel(String label) {
@@ -142,32 +146,8 @@ class _RootViewState extends ConsumerState<RootView> {
     bool isSelected, {
     int? badgeCount,
     bool isV2 = false,
+    bool showAccountBadge = false,
   }) {
-    final achievementState = ref.watch(achievementsProvider);
-
-    // Check for the presence of all three required achievements
-    final requiredAchievements = [
-      AchievementConstants.payoutConnector,
-      AchievementConstants.profilePerfectionist,
-      AchievementConstants.verifiedHuman,
-      AchievementConstants.doublePayoutConnector,
-      // AchievementConstants.triplePayoutConnector,
-    ];
-    final userAchievementNames =
-        achievementState.achievements
-            .map((a) => a.name)
-            .whereType<String>()
-            .toSet();
-    final hasAllRequired = requiredAchievements.every(
-      (ach) => userAchievementNames.contains(ach),
-    );
-
-    // Red dot on Account tab: only for V1 users; V2 users do not see it
-    final showAccountBadge =
-        !isV2 &&
-        label == 'Account' &&
-        achievementState.state == AchievementState.loaded &&
-        !hasAllRequired;
     final showActivityBadge =
         label == 'Activity' && badgeCount != null && badgeCount > 0;
 
