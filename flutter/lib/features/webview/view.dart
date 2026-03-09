@@ -51,6 +51,13 @@ class _WebViewPageState extends ConsumerState<WebViewPage> {
   }
 
   @override
+  void dispose() {
+    _controller?.dispose();
+    _controller = null;
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
@@ -109,64 +116,73 @@ class _WebViewPageState extends ConsumerState<WebViewPage> {
               ),
             ),
             const Divider(height: 1).withPadding(bottom: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: PaxColors.white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton.outline(
-                    onPressed:
-                        _canGoBack
-                            ? () {
-                              _controller?.goBack();
-                              _updateNavigationState();
-                            }
-                            : null,
-                    density: ButtonDensity.icon,
-                    variance: const ButtonStyle.outline(
+            SafeArea(
+              bottom: true,
+              top: false,
+              left: false,
+              right: false,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                color: PaxColors.white,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton.outline(
+                      onPressed:
+                          _canGoBack
+                              ? () {
+                                _controller?.goBack();
+                                _updateNavigationState();
+                              }
+                              : null,
                       density: ButtonDensity.icon,
+                      variance: const ButtonStyle.outline(
+                        density: ButtonDensity.icon,
+                      ),
+                      icon: const FaIcon(
+                        FontAwesomeIcons.chevronLeft,
+                        size: 22,
+                        color: PaxColors.deepPurple,
+                      ),
                     ),
-                    icon: const FaIcon(
-                      FontAwesomeIcons.chevronLeft,
-                      size: 22,
-                      color: PaxColors.deepPurple,
-                    ),
-                  ),
-                  IconButton.outline(
-                    onPressed: () {
-                      _controller?.reload();
-                      _updateNavigationState();
-                    },
-                    density: ButtonDensity.icon,
-                    variance: const ButtonStyle.outline(
+                    IconButton.outline(
+                      onPressed: () {
+                        _controller?.reload();
+                        _updateNavigationState();
+                      },
                       density: ButtonDensity.icon,
+                      variance: const ButtonStyle.outline(
+                        density: ButtonDensity.icon,
+                      ),
+                      icon: const FaIcon(
+                        FontAwesomeIcons.arrowsRotate,
+                        size: 22,
+                        color: PaxColors.deepPurple,
+                      ),
                     ),
-                    icon: const FaIcon(
-                      FontAwesomeIcons.arrowsRotate,
-                      size: 22,
-                      color: PaxColors.deepPurple,
-                    ),
-                  ),
-                  IconButton.outline(
-                    onPressed:
-                        _canGoForward
-                            ? () {
-                              _controller?.goForward();
-                              _updateNavigationState();
-                            }
-                            : null,
-                    density: ButtonDensity.icon,
-                    variance: const ButtonStyle.outline(
+                    IconButton.outline(
+                      onPressed:
+                          _canGoForward
+                              ? () {
+                                _controller?.goForward();
+                                _updateNavigationState();
+                              }
+                              : null,
                       density: ButtonDensity.icon,
+                      variance: const ButtonStyle.outline(
+                        density: ButtonDensity.icon,
+                      ),
+                      icon: const FaIcon(
+                        FontAwesomeIcons.chevronRight,
+                        size: 22,
+                        color: PaxColors.deepPurple,
+                      ),
                     ),
-                    icon: const FaIcon(
-                      FontAwesomeIcons.chevronRight,
-                      size: 22,
-                      color: PaxColors.deepPurple,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

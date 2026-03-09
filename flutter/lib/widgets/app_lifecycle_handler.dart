@@ -49,13 +49,14 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Refresh remote config
-      ref.read(remoteConfigServiceProvider).refreshConfig();
-
-      // Invalidate all remote config providers to force a rebuild
-      ref.invalidate(appVersionConfigProvider);
-      ref.invalidate(maintenanceConfigProvider);
-      ref.invalidate(featureFlagsProvider);
+      // Defer remote config refresh and provider invalidation until after the first frame,
+      // so the resumed UI can paint before overlays and rebuilds kick in.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(remoteConfigServiceProvider).refreshConfig();
+        ref.invalidate(appVersionConfigProvider);
+        ref.invalidate(maintenanceConfigProvider);
+        ref.invalidate(featureFlagsProvider);
+      });
 
       // Only refresh auth state when in a stable non-authenticated state.
       // Skip when initial (cold start: let authStateChanges restore session) or loading (sign-in in progress).

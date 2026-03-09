@@ -703,6 +703,8 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
 
   @override
   void dispose() {
+    _controller?.dispose();
+    _controller = null;
     _httpClient?.close();
     super.dispose();
   }
