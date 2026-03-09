@@ -70,9 +70,10 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
               itemCount: onboardingState.pageCount,
               itemBuilder: (context, index) {
                 final page = onboardingState.currentPage;
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
+                return SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
                     Text(
                       page.title,
                       style: Theme.of(context).typography.base.copyWith(
@@ -101,7 +102,8 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                     //     onboardingState.isLastPage)
                     // _buildUserInfo(context, authState.user),
                   ],
-                ).withPadding(left: 16, right: 16);
+                ).withPadding(left: 16, right: 16),
+                );
               },
             ),
           ),
