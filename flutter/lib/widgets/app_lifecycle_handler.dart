@@ -57,11 +57,14 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       ref.invalidate(maintenanceConfigProvider);
       ref.invalidate(featureFlagsProvider);
 
-      // Only refresh auth state if we're not authenticated AND not still in initial (cold start).
-      // When state is initial, let authStateChanges restore the session from persistence.
+      // Only refresh auth state when in a stable non-authenticated state.
+      // Skip when initial (cold start: let authStateChanges restore session) or loading (sign-in in progress).
       final currentAuthState = ref.read(authProvider);
-      if (currentAuthState.state != AuthState.authenticated &&
-          currentAuthState.state != AuthState.initial) {
+      final shouldRefreshAuth =
+          currentAuthState.state != AuthState.authenticated &&
+          currentAuthState.state != AuthState.initial &&
+          currentAuthState.state != AuthState.loading;
+      if (shouldRefreshAuth) {
         ref.read(authProvider.notifier).refreshUserState();
       } else if (currentAuthState.state == AuthState.authenticated) {
         // Preload wallet credentials for V2 users so miniapps open quickly
