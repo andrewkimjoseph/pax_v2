@@ -18,8 +18,6 @@ import {
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
 import { createWithdrawalRecord } from "../../utils/helpers/createWithdrawal";
-import { getReferralTagFromSmartAccount } from "../../utils/helpers/getReferralTagFromSmartAccount";
-
 /**
  * Cloud function to withdraw tokens to a payment method
  */
@@ -258,8 +256,6 @@ export const withdrawToPaymentMethod = onCall(
         },
       });
 
-      const referralTag = getReferralTagFromSmartAccount(smartAccountClient);
-
       let userOpTxnHash: `0x${string}`;
 
       if (isV1) {
@@ -273,7 +269,7 @@ export const withdrawToPaymentMethod = onCall(
             {
               to: paxAccountAddress as Address,
               value: BigInt(0),
-              data: (withdrawData + referralTag) as Address,
+              data: withdrawData,
             },
           ],
         });
@@ -288,7 +284,7 @@ export const withdrawToPaymentMethod = onCall(
             {
               to: currency as Address,
               value: BigInt(0),
-              data: (transferData + referralTag) as Address,
+              data: transferData,
             },
           ],
         });

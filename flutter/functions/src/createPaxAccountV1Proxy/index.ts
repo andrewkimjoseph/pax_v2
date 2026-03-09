@@ -17,8 +17,6 @@ import {
 } from "../../utils/config";
 import { getDeployedProxyContractAddress } from "../../utils/helpers/getDeployedProxyContractAddress";
 import { getProxyDeployDataAndSalt } from "../../utils/helpers/getProxyDeployDataAndSalt";
-import { getReferralTagFromSmartAccount } from "../../utils/helpers/getReferralTagFromSmartAccount";
-
 // Initialize clients
 
 /**
@@ -179,15 +177,13 @@ export const createPaxAccountV1Proxy = onCall(
         _primaryPaymentMethod as Address // Use the provided wallet address as primary payment method
       );
 
-      const referralTag = getReferralTagFromSmartAccount(smartAccountClient);
-
       // Deploy using CREATE2 factory via account abstraction
       const userOpTxnHash = await smartAccountClient.sendUserOperation({
         calls: [
           {
             to: CREATE2_FACTORY,
             value: BigInt(0),
-            data: (deployData + referralTag) as Address,
+            data: deployData,
           },
         ],
       });

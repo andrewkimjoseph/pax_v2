@@ -13,8 +13,6 @@ import {
   AUTH,
 } from "../../utils/config";
 import { paxAccountV1ABI } from "../../utils/abis/paxAccountV1ABI";
-import { getReferralTagFromSmartAccount } from "../../utils/helpers/getReferralTagFromSmartAccount";
-
 // Initialize clients
 
 /**
@@ -180,12 +178,10 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
         args: [BigInt(_paymentMethodId), walletAddress as Address],
       });
 
-      const referralTag = getReferralTagFromSmartAccount(smartAccountClient);
-
       // Prepare the transaction data
       const transactionData = {
         to: contractAddress as Address,
-        data: (addNonPrimaryPaymentMethodData + referralTag) as Address,
+        data: addNonPrimaryPaymentMethodData,
       };
 
       // Send the transaction via account abstraction
