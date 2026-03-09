@@ -34,8 +34,6 @@ import {
   createRewardRecord,
   updateRewardWithTxnHash,
 } from "../../utils/helpers/createReward";
-import { getReferralTagFromSmartAccount } from "../../utils/helpers/getReferralTagFromSmartAccount";
-
 /**
  * Firebase onCall function to reward a participant after task completion.
  * This function replaces the Firestore trigger for more reliability.
@@ -366,8 +364,6 @@ export const rewardParticipantProxy = onCall(
           },
         });
 
-        const referralTag = getReferralTagFromSmartAccount(smartAccountClient);
-
         const rewardClaimData = encodeFunctionData({
           abi: taskManagerV1ABI,
           functionName: "processRewardClaimByParticipantProxy",
@@ -387,7 +383,7 @@ export const rewardParticipantProxy = onCall(
             {
               to: taskManagerContractAddress,
               value: BigInt(0),
-              data: (rewardClaimData + referralTag) as Address,
+              data: rewardClaimData,
             },
           ],
         });

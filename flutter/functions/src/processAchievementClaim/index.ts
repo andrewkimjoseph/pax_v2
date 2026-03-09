@@ -28,8 +28,6 @@ import {
   generateRandomNonce,
 } from "../../utils/helpers/rewardingSignature";
 import { canvassingRewarderABI } from "../../utils/abis/new/canvassingRewarder";
-import { getReferralTagFromSmartAccount } from "../../utils/helpers/getReferralTagFromSmartAccount";
-
 export const processAchievementClaim = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
@@ -317,13 +315,11 @@ export const processAchievementClaim = onCall(
           },
         });
 
-        const referralTag = getReferralTagFromSmartAccount(smartAccountClient);
-
         const userOpTxnHash = await smartAccountClient.sendUserOperation({
           calls: [
             {
               to: REWARD_TOKEN_ADDRESS,
-              data: (data + referralTag) as Address,
+              data,
             },
           ],
         });

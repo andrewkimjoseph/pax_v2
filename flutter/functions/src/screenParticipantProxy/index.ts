@@ -24,8 +24,6 @@ import {
   generateRandomNonce,
 } from "../../utils/helpers/screeningSignature";
 import { createScreeningRecord } from "../../utils/helpers/createScreening";
-import { getReferralTagFromSmartAccount } from "../../utils/helpers/getReferralTagFromSmartAccount";
-
 /**
  * Comprehensive cloud function to screen a participant
  * This function handles the complete process:
@@ -269,8 +267,6 @@ export const screenParticipantProxy = onCall(
         },
       });
 
-      const referralTag = getReferralTagFromSmartAccount(smartAccountClient);
-
       const screeningData = encodeFunctionData({
         abi: canvassingTaskManagerABI,
         functionName: "screenParticipantProxy",
@@ -284,7 +280,7 @@ export const screenParticipantProxy = onCall(
           {
             to: CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
             value: BigInt(0),
-            data: (screeningData + referralTag) as Address,
+            data: screeningData,
           },
         ],
       });
