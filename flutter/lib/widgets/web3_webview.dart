@@ -723,6 +723,8 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
           domStorageEnabled: true,
           allowsInlineMediaPlayback: true,
           mediaPlaybackRequiresUserGesture: false,
+          useHybridComposition: false,
+          hardwareAcceleration: false,
         ),
         initialUserScripts: UnmodifiableListView<UserScript>([
           UserScript(

@@ -61,6 +61,8 @@ class _OptimizedWebViewState extends ConsumerState<OptimizedWebView> {
             javaScriptEnabled: true,
             useWideViewPort: true,
             useOnLoadResource: false,
+            useHybridComposition: false,
+            hardwareAcceleration: false,
           ),
           onWebViewCreated: (controller) {
             _controller = controller;

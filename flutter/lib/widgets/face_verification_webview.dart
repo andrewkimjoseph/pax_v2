@@ -456,6 +456,8 @@ class _FaceVerificationWebViewState
         domStorageEnabled: true,
         allowsInlineMediaPlayback: true,
         mediaPlaybackRequiresUserGesture: false,
+        useHybridComposition: false,
+        hardwareAcceleration: false,
       ),
       initialUserScripts: UnmodifiableListView<UserScript>([
         UserScript(
