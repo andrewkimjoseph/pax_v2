@@ -61,6 +61,8 @@ class _ReportPageViewState extends State<ReportPageView> {
             initialSettings: InAppWebViewSettings(
               javaScriptEnabled: true,
               useWideViewPort: true,
+              useHybridComposition: false,
+              hardwareAcceleration: false,
             ),
             onWebViewCreated: (controller) {
               _controller = controller;

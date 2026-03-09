@@ -98,6 +98,8 @@ class _WebViewPageState extends ConsumerState<WebViewPage> {
                     initialSettings: InAppWebViewSettings(
                       javaScriptEnabled: true,
                       useWideViewPort: true,
+                      useHybridComposition: false,
+                      hardwareAcceleration: false,
                     ),
                     onLoadStart: (controller, url) {
                       _controller ??= controller;
