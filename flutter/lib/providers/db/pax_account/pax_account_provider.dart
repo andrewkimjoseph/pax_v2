@@ -253,7 +253,7 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
     } catch (e) {
       if (silent) {
         if (kDebugMode) {
-          print('Silent balance sync failed: $e');
+          debugPrint('Silent balance sync failed: $e');
         }
         return;
       }
@@ -278,7 +278,7 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       return await _repository.fetchTokenBalance(authState.user.uid, tokenId);
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching token balance: $e');
+        debugPrint('Error fetching token balance: $e');
       }
       return 0.0;
     }

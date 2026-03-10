@@ -45,7 +45,7 @@ Future<void> main() async {
     // Continue other initializations in background
     AppInitializer().initializeRemaining().catchError((error) {
       if (kDebugMode) {
-        print('Background initialization error: $error');
+        debugPrint('Background initialization error: $error');
       }
     });
   } else {
@@ -92,14 +92,18 @@ class _AppState extends ConsumerState<App> {
   void _handleMessage(RemoteMessage message) {
     if (message.data.containsKey('route')) {
       final route = message.data['route'];
-      if (kDebugMode) print('Navigating to route from FCM: $route');
+      if (kDebugMode) {
+        debugPrint('Navigating to route from FCM: $route');
+      }
       final router = ref.read(routerProvider);
       router.push(route);
     }
   }
 
   void _handleDeepLink(Map<dynamic, dynamic> linkData) {
-    if (kDebugMode) print('Handling deep link in App: $linkData');
+    if (kDebugMode) {
+      debugPrint('Handling deep link in App: $linkData');
+    }
 
     final router = ref.read(routerProvider);
     if (linkData['+clicked_branch_link'] == true) {
@@ -111,20 +115,20 @@ class _AppState extends ConsumerState<App> {
 
       if (path != null && path.isNotEmpty) {
         if (kDebugMode) {
-          print('[:_handleDeepLink] Path from Deep Link:  $path');
+          debugPrint('[:_handleDeepLink] Path from Deep Link:  $path');
         }
       } else {
         if (kDebugMode) {
-          print('[:_handleDeepLink] No path from Deep Link');
+          debugPrint('[:_handleDeepLink] No path from Deep Link');
         }
       }
     } else {
       if (kDebugMode) {
-        print('[:_handleDeepLink] No +clicked_branch_link from Deep Link');
+        debugPrint('[:_handleDeepLink] No +clicked_branch_link from Deep Link');
       }
     }
     if (kDebugMode) {
-      print('[:_handleDeepLink] Navigating to home');
+      debugPrint('[:_handleDeepLink] Navigating to home');
     }
     router.go("/home");
   }

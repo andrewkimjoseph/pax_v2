@@ -66,7 +66,7 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
     try {
       if (state.isInitialized) {
         if (kDebugMode) {
-          print('FCM Provider: Already initialized, skipping');
+          debugPrint('FCM Provider: Already initialized, skipping');
         }
         return;
       }
@@ -87,11 +87,11 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
       state = state.copyWith(isInitialized: true, isSavingToken: false);
 
       if (kDebugMode) {
-        print('FCM Provider: Initialization complete');
+        debugPrint('FCM Provider: Initialization complete');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('FCM Provider: Error during initialization: $e');
+        debugPrint('FCM Provider: Error during initialization: $e');
       }
 
       state = state.copyWith(
@@ -108,13 +108,13 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
       if (previous?.state != current.state) {
         if (current.state == AuthState.authenticated) {
           if (kDebugMode) {
-            print('FCM Provider: Auth state changed to authenticated');
+            debugPrint('FCM Provider: Auth state changed to authenticated');
           }
 
           _requestPermissionAndSaveTokenForCurrentUser(current.user.uid);
         } else if (current.state == AuthState.unauthenticated) {
           if (kDebugMode) {
-            print('FCM Provider: Auth state changed to unauthenticated');
+            debugPrint('FCM Provider: Auth state changed to unauthenticated');
           }
 
           // Stop listening when user signs out
@@ -128,7 +128,7 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
   Future<void> _requestPermissionAndSaveTokenForCurrentUser(String userId) async {
     if (state.isSavingToken) {
       if (kDebugMode) {
-        print(
+        debugPrint(
           'FCM Provider: Already saving token, skipping duplicate operation',
         );
       }
@@ -162,7 +162,7 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
       state = state.copyWith(isSavingToken: false);
     } catch (e) {
       if (kDebugMode) {
-        print('FCM Provider: Error saving token: $e');
+        debugPrint('FCM Provider: Error saving token: $e');
       }
 
       state = state.copyWith(

@@ -19,7 +19,7 @@ class FcmTokenRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting FCM token by id: $e');
+        debugPrint('Error getting FCM token by id: $e');
       }
       rethrow;
     }
@@ -41,7 +41,7 @@ class FcmTokenRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting all FCM tokens by participant id: $e');
+        debugPrint('Error getting all FCM tokens by participant id: $e');
       }
       rethrow;
     }
@@ -58,7 +58,7 @@ class FcmTokenRepository {
 
       if (tokens.length > 1) {
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Warning: Found ${tokens.length} tokens for participant $participantId, using most recent',
           );
         }
@@ -74,7 +74,7 @@ class FcmTokenRepository {
       return tokens.first;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting FCM token by participant id: $e');
+        debugPrint('Error getting FCM token by participant id: $e');
       }
       rethrow;
     }
@@ -94,7 +94,7 @@ class FcmTokenRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting all FCM tokens by value: $e');
+        debugPrint('Error getting all FCM tokens by value: $e');
       }
       rethrow;
     }
@@ -111,7 +111,7 @@ class FcmTokenRepository {
 
       if (tokens.length > 1) {
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Warning: Found ${tokens.length} documents with the same token value, using most recent',
           );
         }
@@ -127,7 +127,7 @@ class FcmTokenRepository {
       return tokens.first;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting FCM token by value: $e');
+        debugPrint('Error getting FCM token by value: $e');
       }
       rethrow;
     }
@@ -138,7 +138,7 @@ class FcmTokenRepository {
     try {
       // PHASE 1: Query operations - Find and analyze existing tokens
       if (kDebugMode) {
-        print(
+        debugPrint(
           'FCM Token Repository: Starting saveToken for participant $participantId',
         );
       }
@@ -157,7 +157,7 @@ class FcmTokenRepository {
       for (var existingToken in tokensWithSameValue) {
         if (existingToken.participantId == participantId) {
           if (kDebugMode) {
-            print(
+            debugPrint(
               'Found exact token match for participant $participantId, no changes needed',
             );
           }
@@ -169,7 +169,7 @@ class FcmTokenRepository {
       if (tokensWithSameValue.isNotEmpty) {
         final tokenToUpdate = tokensWithSameValue.first;
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Token exists for participant ${tokenToUpdate.participantId}, updating ownership to $participantId',
           );
         }
@@ -204,7 +204,7 @@ class FcmTokenRepository {
 
         final mostRecentToken = participantTokens.first;
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Participant has existing token(s), updating most recent one with new value',
           );
         }
@@ -230,7 +230,7 @@ class FcmTokenRepository {
 
       // CASE 4: No matching tokens, create a new one
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Creating new token for participant $participantId (no existing tokens found)',
         );
       }
@@ -249,7 +249,7 @@ class FcmTokenRepository {
       await newTokenRef.set(newToken.toMap());
 
       if (kDebugMode) {
-        print(
+        debugPrint(
           'FCM token saved for participant: $participantId with ID: ${newToken.id}',
         );
       }
@@ -257,7 +257,7 @@ class FcmTokenRepository {
       return newToken;
     } catch (e) {
       if (kDebugMode) {
-        print('Error saving FCM token: $e');
+        debugPrint('Error saving FCM token: $e');
       }
       rethrow;
     }

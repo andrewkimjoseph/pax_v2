@@ -28,7 +28,7 @@ class TaskCompletionRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting task completions: $e');
+        debugPrint('Error getting task completions: $e');
       }
       // Return empty list on error
       return [];
@@ -47,7 +47,7 @@ class TaskCompletionRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting task completion: $e');
+        debugPrint('Error getting task completion: $e');
       }
       rethrow;
     }
@@ -68,7 +68,7 @@ class TaskCompletionRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting task completions for task: $e');
+        debugPrint('Error getting task completions for task: $e');
       }
       // Return empty list on error
       return [];

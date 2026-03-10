@@ -109,7 +109,7 @@ class WithdrawalMethodConnectionService {
       return false; // No authentication timestamp found
     } catch (e) {
       if (kDebugMode) {
-        print('Error checking GoodDollar verification: $e');
+        debugPrint('Error checking GoodDollar verification: $e');
       }
       return false;
     }
@@ -134,7 +134,7 @@ class WithdrawalMethodConnectionService {
       return Map<String, dynamic>.from(result.data);
     } catch (e) {
       if (kDebugMode) {
-        print('Error creating server wallet: $e');
+        debugPrint('Error creating server wallet: $e');
       }
       rethrow;
     }
@@ -165,7 +165,7 @@ class WithdrawalMethodConnectionService {
       return Map<String, dynamic>.from(result.data);
     } catch (e) {
       if (kDebugMode) {
-        print('Error deploying smart contract: $e');
+        debugPrint('Error deploying smart contract: $e');
       }
       rethrow;
     }
@@ -199,7 +199,7 @@ class WithdrawalMethodConnectionService {
       return Map<String, dynamic>.from(result.data);
     } catch (e) {
       if (kDebugMode) {
-        print('Error interacting with smart contract: $e');
+        debugPrint('Error interacting with smart contract: $e');
       }
       rethrow;
     }
@@ -350,7 +350,7 @@ class WithdrawalMethodConnectionService {
       return null; // No authentication timestamp found
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting GoodDollar identity expiry date: $e');
+        debugPrint('Error getting GoodDollar identity expiry date: $e');
       }
       return null;
     }

@@ -16,7 +16,7 @@ class PaxWalletRepository {
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
       if (kDebugMode) {
-        print('Error checking if wallet exists: $e');
+        debugPrint('Error checking if wallet exists: $e');
       }
       rethrow;
     }
@@ -37,7 +37,7 @@ class PaxWalletRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting wallet: $e');
+        debugPrint('Error getting wallet: $e');
       }
       rethrow;
     }
@@ -53,7 +53,7 @@ class PaxWalletRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting wallet by id: $e');
+        debugPrint('Error getting wallet by id: $e');
       }
       rethrow;
     }
@@ -68,7 +68,7 @@ class PaxWalletRepository {
       final exists = await walletExistsForParticipant(participantId);
       if (exists) {
         if (kDebugMode) {
-          print('Wallet already exists for participant $participantId');
+          debugPrint('Wallet already exists for participant $participantId');
         }
         return await getWalletByParticipantId(participantId);
       }
@@ -88,7 +88,7 @@ class PaxWalletRepository {
       return wallet;
     } catch (e) {
       if (kDebugMode) {
-        print('Error creating wallet: $e');
+        debugPrint('Error creating wallet: $e');
       }
       rethrow;
     }
@@ -109,7 +109,7 @@ class PaxWalletRepository {
       return PaxWallet.fromMap(updatedDoc.data()!, id: updatedDoc.id);
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating smart account address: $e');
+        debugPrint('Error updating smart account address: $e');
       }
       rethrow;
     }
@@ -132,7 +132,7 @@ class PaxWalletRepository {
       return PaxWallet.fromMap(updatedDoc.data()!, id: updatedDoc.id);
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating wallet with log data: $e');
+        debugPrint('Error updating wallet with log data: $e');
       }
       rethrow;
     }

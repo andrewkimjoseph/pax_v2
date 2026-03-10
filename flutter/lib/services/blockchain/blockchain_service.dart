@@ -80,7 +80,9 @@ class BlockchainService {
       if (chainId == 44787) return 'Celo (testnet)';
       return 'Network $chainId';
     } catch (e) {
-      if (kDebugMode) print('BlockchainService.getNetworkLabel: $e');
+      if (kDebugMode) {
+        debugPrint('BlockchainService.getNetworkLabel: $e');
+      }
       return null;
     }
   }
@@ -118,7 +120,7 @@ class BlockchainService {
         balances[entry.key] = balance;
       } catch (e) {
         if (kDebugMode) {
-          print('Error fetching ${entry.value.name} balance: $e');
+          debugPrint('Error fetching ${entry.value.name} balance: $e');
         }
         balances[entry.key] = 0.0;
       }
@@ -225,7 +227,7 @@ class BlockchainService {
       );
 
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Contract/EOA balance: $balance, Amount to withdraw: $amountToWithdraw',
         );
       }
@@ -233,7 +235,7 @@ class BlockchainService {
       return balance >= amountToWithdraw;
     } catch (e) {
       if (kDebugMode) {
-        print('Error checking contract balance: $e');
+        debugPrint('Error checking contract balance: $e');
       }
       return false;
     }

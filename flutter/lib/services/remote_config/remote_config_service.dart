@@ -20,7 +20,7 @@ class RemoteConfigService {
   Future<void> initialize() async {
     if (_isInitialized) {
       if (kDebugMode) {
-        print('Remote Config Service: Already initialized');
+        debugPrint('Remote Config Service: Already initialized');
       }
       return;
     }
@@ -66,17 +66,17 @@ class RemoteConfigService {
       _lastFetchTime = DateTime.now();
 
       if (kDebugMode) {
-        print('Remote Config Service: Successfully initialized');
-        print(
+        debugPrint('Remote Config Service: Successfully initialized');
+        debugPrint(
           'Remote Config Service: Config ${activated ? "activated" : "not activated"}',
         );
-        print(
+        debugPrint(
           'Remote Config Service: All parameters: ${_remoteConfig.getAll().map((key, value) => MapEntry(key, value.asString()))}',
         );
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Remote Config Service: Error initializing: $e');
+        debugPrint('Remote Config Service: Error initializing: $e');
       }
       // Set initialized to true even on error to prevent infinite retry loops
       _isInitialized = true;
@@ -97,7 +97,7 @@ class RemoteConfigService {
 
     try {
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Remote Config Service: All parameters: ${_remoteConfig.getAll()}',
         );
       }
@@ -106,7 +106,7 @@ class RemoteConfigService {
         RemoteConfigKeys.appVersionConfig,
       );
       if (kDebugMode) {
-        print('Remote Config Service: Raw config string: $jsonString');
+        debugPrint('Remote Config Service: Raw config string: $jsonString');
       }
 
       if (jsonString.isEmpty) {
@@ -123,13 +123,13 @@ class RemoteConfigService {
 
       final Map<String, dynamic> configMap = json.decode(jsonString);
       if (kDebugMode) {
-        print('Remote Config Service: Parsed config map: $configMap');
+        debugPrint('Remote Config Service: Parsed config map: $configMap');
       }
 
       return AppVersionConfig.fromJson(configMap);
     } catch (e) {
       if (kDebugMode) {
-        print('Remote Config Service: Error getting app version config: $e');
+        debugPrint('Remote Config Service: Error getting app version config: $e');
       }
       // Return default config on error
       return AppVersionConfig(
@@ -155,7 +155,7 @@ class RemoteConfigService {
 
     try {
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Remote Config Service: All parameters: ${_remoteConfig.getAll()}',
         );
       }
@@ -164,7 +164,7 @@ class RemoteConfigService {
         RemoteConfigKeys.maintenanceConfig,
       );
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Remote Config Service: Raw maintenance config string: $jsonString',
         );
       }
@@ -179,7 +179,7 @@ class RemoteConfigService {
 
       final Map<String, dynamic> configMap = json.decode(jsonString);
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Remote Config Service: Parsed maintenance config map: $configMap',
         );
       }
@@ -187,7 +187,7 @@ class RemoteConfigService {
       return MaintenanceConfig.fromJson(configMap);
     } catch (e) {
       if (kDebugMode) {
-        print('Remote Config Service: Error getting maintenance config: $e');
+        debugPrint('Remote Config Service: Error getting maintenance config: $e');
       }
       // Return default config on error
       return MaintenanceConfig(
@@ -209,7 +209,7 @@ class RemoteConfigService {
     while (retryCount < maxRetries) {
       try {
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Remote Config Service: Attempting to fetch config (attempt ${retryCount + 1}/$maxRetries)',
           );
         }
@@ -218,10 +218,10 @@ class RemoteConfigService {
         _lastFetchTime = DateTime.now();
 
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Remote Config Service: Config refresh ${activated ? "successful" : "not activated"}',
           );
-          print(
+          debugPrint(
             'Remote Config Service: All parameters after refresh: ${_remoteConfig.getAll().map((key, value) => MapEntry(key, value.asString()))}',
           );
         }
@@ -229,19 +229,19 @@ class RemoteConfigService {
       } catch (e) {
         retryCount++;
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Remote Config Service: Error refreshing config (attempt $retryCount/$maxRetries): $e',
           );
           if (e is PlatformException) {
-            print('Remote Config Service: Error code: ${e.code}');
-            print('Remote Config Service: Error message: ${e.message}');
-            print('Remote Config Service: Error details: ${e.details}');
+            debugPrint('Remote Config Service: Error code: ${e.code}');
+            debugPrint('Remote Config Service: Error message: ${e.message}');
+            debugPrint('Remote Config Service: Error details: ${e.details}');
           }
         }
 
         if (retryCount == maxRetries) {
           if (kDebugMode) {
-            print('Remote Config Service: Max retries reached, giving up');
+            debugPrint('Remote Config Service: Max retries reached, giving up');
           }
           return;
         }
@@ -265,7 +265,7 @@ class RemoteConfigService {
     try {
       final jsonString = _remoteConfig.getString(RemoteConfigKeys.featureFlags);
       if (kDebugMode) {
-        print('Remote Config Service: Raw feature flags string: $jsonString');
+        debugPrint('Remote Config Service: Raw feature flags string: $jsonString');
       }
 
       if (jsonString.isEmpty) {
@@ -283,7 +283,7 @@ class RemoteConfigService {
 
       final Map<String, dynamic> configMap = json.decode(jsonString);
       if (kDebugMode) {
-        print('Remote Config Service: Parsed feature flags map: $configMap');
+        debugPrint('Remote Config Service: Parsed feature flags map: $configMap');
       }
 
       return {
@@ -306,7 +306,7 @@ class RemoteConfigService {
       };
     } catch (e) {
       if (kDebugMode) {
-        print('Remote Config Service: Error getting feature flags: $e');
+        debugPrint('Remote Config Service: Error getting feature flags: $e');
       }
       // Return default config on error
       return {
@@ -336,7 +336,7 @@ class RemoteConfigService {
         RemoteConfigKeys.miniappsConfig,
       );
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Remote Config Service: Raw miniapps config string: $jsonString',
         );
       }
@@ -350,7 +350,7 @@ class RemoteConfigService {
 
       final Map<String, dynamic> configMap = json.decode(jsonString);
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Remote Config Service: Parsed miniapps config map: $configMap',
         );
       }
@@ -358,7 +358,7 @@ class RemoteConfigService {
       return MiniappsConfig.fromJson(configMap);
     } catch (e) {
       if (kDebugMode) {
-        print('Remote Config Service: Error getting miniapps config: $e');
+        debugPrint('Remote Config Service: Error getting miniapps config: $e');
       }
       return MiniappsConfig(
         areMiniappsAvailable: false,

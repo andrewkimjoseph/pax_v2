@@ -74,12 +74,12 @@ class AppInitializer {
       } catch (e) {
         retryCount++;
         if (kDebugMode) {
-          print('Remote Config initialization attempt $retryCount failed: $e');
+          debugPrint('Remote Config initialization attempt $retryCount failed: $e');
         }
 
         if (retryCount == maxRetries) {
           if (kDebugMode) {
-            print(
+            debugPrint(
               'Remote Config initialization failed after $maxRetries attempts',
             );
           }
@@ -97,7 +97,7 @@ class AppInitializer {
       await _initializeBranch();
     } catch (e) {
       if (kDebugMode) {
-        print('Branch SDK initialization failed: $e');
+        debugPrint('Branch SDK initialization failed: $e');
       }
       // Don't block app startup if Branch fails
     }
@@ -124,7 +124,7 @@ class AppInitializer {
             Duration(seconds: kIsWeb ? 3 : 10),
             onTimeout: () {
               if (kDebugMode) {
-                print(
+                debugPrint(
                   'App Check initialization timed out. Continuing without App Check.',
                 );
               }
@@ -132,7 +132,7 @@ class AppInitializer {
           );
     } catch (e) {
       if (kDebugMode) {
-        print(
+        debugPrint(
           'App Check initialization failed: $e. Continuing without App Check.',
         );
       }
@@ -148,8 +148,8 @@ class AppInitializer {
       } else {
         // Log to console on web for debugging
         if (kDebugMode) {
-          print('Flutter Error: ${errorDetails.exception}');
-          print('Stack: ${errorDetails.stack}');
+          debugPrint('Flutter Error: ${errorDetails.exception}');
+          debugPrint('Stack: ${errorDetails.stack}');
         }
       }
     };
@@ -160,8 +160,8 @@ class AppInitializer {
       } else {
         // Log to console on web for debugging
         if (kDebugMode) {
-          print('Platform Error: $error');
-          print('Stack: $stack');
+          debugPrint('Platform Error: $error');
+          debugPrint('Stack: $stack');
         }
       }
       return true;
@@ -184,7 +184,7 @@ class AppInitializer {
     BranchService.markSdkInitialized();
 
     if (kDebugMode) {
-      print('Branch SDK initialized');
+      debugPrint('Branch SDK initialized');
     }
   }
 }
@@ -194,8 +194,8 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   if (kDebugMode) {
-    print('Background message received: ${message.messageId}');
-    print('Background message notification: ${message.notification?.title}');
-    print('Background message data: ${message.data}');
+    debugPrint('Background message received: ${message.messageId}');
+    debugPrint('Background message notification: ${message.notification?.title}');
+    debugPrint('Background message data: ${message.data}');
   }
 }

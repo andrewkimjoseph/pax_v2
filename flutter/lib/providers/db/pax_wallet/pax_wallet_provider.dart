@@ -75,7 +75,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         state: PaxWalletState.loaded,
       );
     } catch (e) {
-      if (kDebugMode) print('Error fetching pax wallet: $e');
+      if (kDebugMode) debugPrint('Error fetching pax wallet: $e');
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
@@ -104,7 +104,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
       return wallet;
     } catch (e) {
-      if (kDebugMode) print('Error creating pax wallet doc: $e');
+      if (kDebugMode) debugPrint('Error creating pax wallet doc: $e');
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
@@ -124,7 +124,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       );
       state = state.copyWith(wallet: updated, state: PaxWalletState.loaded);
     } catch (e) {
-      if (kDebugMode) print('Error updating smart account address: $e');
+      if (kDebugMode) debugPrint('Error updating smart account address: $e');
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
@@ -145,7 +145,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       );
       state = state.copyWith(wallet: updated, state: PaxWalletState.loaded);
     } catch (e) {
-      if (kDebugMode) print('Error updating wallet log data: $e');
+      if (kDebugMode) debugPrint('Error updating wallet log data: $e');
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
@@ -200,7 +200,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error registering PaxWallet as withdrawal method: $e');
+        debugPrint('Error registering PaxWallet as withdrawal method: $e');
       }
     }
   }
@@ -257,12 +257,12 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
             .call({'eoWalletAddress': wallet.eoAddress});
       } catch (e) {
         if (kDebugMode) {
-          print('Gas sponsorship failed (non-blocking): $e');
+          debugPrint('Gas sponsorship failed (non-blocking): $e');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error registering PaxWallet after face verification: $e');
+        debugPrint('Error registering PaxWallet after face verification: $e');
       }
     }
   }

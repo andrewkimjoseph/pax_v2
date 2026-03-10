@@ -93,7 +93,7 @@ class AccountDeletionNotifier extends Notifier<AccountDeletionStateModel> {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Error deleting account: $e');
+        debugPrint('Error deleting account: $e');
       }
       state = state.copyWith(
         state: AccountDeletionState.error,
