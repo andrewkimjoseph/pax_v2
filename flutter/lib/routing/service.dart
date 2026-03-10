@@ -7,12 +7,12 @@ import 'package:pax/features/account_and_security/view.dart';
 import 'package:pax/features/claim_reward/view.dart';
 import 'package:pax/features/complete_profile/view.dart';
 import 'package:pax/features/face_verification/view.dart';
-import 'package:pax/features/home/pax_wallet/view.dart';
+import 'package:pax/features/home/wallet_and_apps/view.dart';
 import 'package:pax/features/report_page/view.dart';
 import 'package:pax/features/task/task_itself/check_out_app/view.dart';
 import 'package:pax/features/task/task_itself/fill_a_form/view.dart';
 import 'package:pax/features/wallet_creation/view.dart';
-import 'package:pax/features/home/miniapps/webview/miniapp_webview.dart';
+import 'package:pax/features/home/wallet_and_apps/miniapps/webview/miniapp_webview.dart';
 import 'package:pax/models/remote_config/miniapps_config.dart';
 import 'package:pax/features/webview/view.dart';
 import 'package:pax/features/webview/converter_view.dart';
@@ -218,9 +218,10 @@ final routerProvider = Provider((ref) {
       ),
       GoRoute(
         path: Routes.webviewConverter,
-        builder: (context, state) => WebViewConverterPage(
-          payload: state.extra as WebViewConverterPayload,
-        ),
+        builder:
+            (context, state) => WebViewConverterPage(
+              payload: state.extra as WebViewConverterPayload,
+            ),
       ),
       GoRoute(
         path: Routes.miniappWebView,
@@ -467,7 +468,7 @@ final routerProvider = Provider((ref) {
       ),
       GoRoute(
         path: Routes.paxWallet,
-        builder: (context, state) => const PaxWalletView(),
+        builder: (context, state) => const WalletAndAppsView(),
       ),
       GoRoute(
         path: Routes.checkV2Eligibility,

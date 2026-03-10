@@ -2,7 +2,7 @@ import 'package:flutter/material.dart' show Badge;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/exports/views.dart';
-import 'package:pax/features/home/pax_wallet/view.dart';
+import 'package:pax/features/home/wallet_and_apps/view.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
@@ -44,13 +44,17 @@ class _RootViewState extends ConsumerState<RootView> {
       AchievementConstants.doublePayoutConnector,
     ];
     final userAchievementNames =
-        achievementState.achievements.map((a) => a.name).whereType<String>().toSet();
-    final hasAllRequired =
-        requiredAchievements.every((ach) => userAchievementNames.contains(ach));
+        achievementState.achievements
+            .map((a) => a.name)
+            .whereType<String>()
+            .toSet();
+    final hasAllRequired = requiredAchievements.every(
+      (ach) => userAchievementNames.contains(ach),
+    );
     final showAccountBadge =
         !isV2 &&
-            achievementState.state == AchievementState.loaded &&
-            !hasAllRequired;
+        achievementState.state == AchievementState.loaded &&
+        !hasAllRequired;
 
     final tabChildren = _buildTabChildren(isV2);
 
@@ -61,6 +65,7 @@ class _RootViewState extends ConsumerState<RootView> {
           child: NavigationBar(
             alignment: NavigationBarAlignment.spaceBetween,
             labelType: NavigationLabelType.expanded,
+            expands: false,
             onSelected: (index) {
               ref.read(rootSelectedIndexProvider.notifier).setIndex(index);
             },
@@ -74,16 +79,9 @@ class _RootViewState extends ConsumerState<RootView> {
                   badgeCount: null,
                   isV2: isV2,
                 ),
-              if (isV2)
-                buildButton(
-                  'Apps',
-                  selected == 2,
-                  badgeCount: null,
-                  isV2: isV2,
-                ),
               buildButton(
                 'Activity',
-                selected == (isV2 ? 3 : 1),
+                selected == (isV2 ? 2 : 1),
                 badgeCount: ref
                     .watch(unclaimedTaskCompletionsCountProvider)
                     .maybeWhen(data: (c) => c, orElse: () => null),
@@ -91,7 +89,7 @@ class _RootViewState extends ConsumerState<RootView> {
               ),
               buildButton(
                 'Account',
-                selected == (isV2 ? 4 : 2),
+                selected == (isV2 ? 3 : 2),
                 badgeCount: null,
                 isV2: isV2,
                 showAccountBadge: showAccountBadge,
@@ -100,10 +98,7 @@ class _RootViewState extends ConsumerState<RootView> {
           ),
         ),
       ],
-      child: IndexedStack(
-        index: selected,
-        children: tabChildren,
-      ),
+      child: IndexedStack(index: selected, children: tabChildren),
     );
   }
 
@@ -111,8 +106,7 @@ class _RootViewState extends ConsumerState<RootView> {
     if (isV2) {
       return [
         HomeView(key: const ValueKey('home')),
-        const PaxWalletView(key: ValueKey('pax-wallet')),
-        const MiniAppsView(key: ValueKey('miniapps')),
+        const WalletAndAppsView(key: ValueKey('wallet-and-apps')),
         ActivityView(key: const ValueKey('activity')),
         AccountView(key: const ValueKey('account')),
       ];
@@ -130,10 +124,8 @@ class _RootViewState extends ConsumerState<RootView> {
         return FontAwesomeIcons.house;
       case 'Wallet':
         return FontAwesomeIcons.wallet;
-      case 'Apps':
-        return FontAwesomeIcons.puzzlePiece;
       case 'Activity':
-        return FontAwesomeIcons.chartLine;
+        return FontAwesomeIcons.clockRotateLeft;
       case 'Account':
         return FontAwesomeIcons.circleUser;
       default:
