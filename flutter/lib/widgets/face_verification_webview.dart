@@ -452,7 +452,6 @@ class _FaceVerificationWebViewState
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(_verificationUrl)),
       initialSettings: InAppWebViewSettings(
-        javaScriptEnabled: true,
         domStorageEnabled: true,
         allowsInlineMediaPlayback: true,
         mediaPlaybackRequiresUserGesture: false,

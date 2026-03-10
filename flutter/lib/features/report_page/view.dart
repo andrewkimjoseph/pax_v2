@@ -59,8 +59,6 @@ class _ReportPageViewState extends State<ReportPageView> {
           InAppWebView(
             initialUrlRequest: URLRequest(url: WebUri(widget.reportLink)),
             initialSettings: InAppWebViewSettings(
-              javaScriptEnabled: true,
-              useWideViewPort: true,
               useHybridComposition: false,
               hardwareAcceleration: false,
             ),

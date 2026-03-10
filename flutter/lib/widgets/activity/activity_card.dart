@@ -115,7 +115,10 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
     final isExpired = widget.activity.isExpired;
 
     return InkWell(
-      onTap: isTaskCompletion && isValid != false ? () => _callBackFn() : null,
+      onTap:
+          isTaskCompletion && isValid != false && !activityIsClaimed
+              ? _callBackFn
+              : null,
       child: Container(
         width: MediaQuery.of(context).size.width,
         padding: EdgeInsets.all(10),
