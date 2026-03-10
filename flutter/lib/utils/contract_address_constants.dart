@@ -5,13 +5,11 @@ class ContractAddressConstants {
 
   /// CanvassingTaskManager contract address.
   /// Used for screening balance checks and screening flow.
-  /// Replace with the deployed address (e.g. from Firebase config or hardcoded per build).
   static const String canvassingTaskManagerAddress =
-      '0x351df8260080CA47386442Bb19d4D025277bbAe3';
+      '0x339a7328289ef6f51be3f4d0Cb19cc46EB9eF4f1';
 
   /// CanvassingRewarder contract address.
   /// Used for task reward and achievement claim balance checks; rewards are paid from this contract.
-  /// Replace with the deployed address.
   static const String canvassingRewarderAddress =
-      '0xB439F45399d877447B1d140c90093f2DCC54c65c';
+      '0x4D167933D742B31229bc730eADf5f2E3c4feceA2';
 }

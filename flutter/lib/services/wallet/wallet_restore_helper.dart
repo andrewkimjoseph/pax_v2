@@ -37,7 +37,7 @@ Future<void> restoreWalletIfNeeded(
   if (credState.status == WalletCredentialsStatus.loading) return;
 
   if (kDebugMode) {
-    print('WalletRestoreHelper: restoreWalletIfNeeded start (silentOnly: $silentOnly)');
+    debugPrint('WalletRestoreHelper: restoreWalletIfNeeded start (silentOnly: $silentOnly)');
   }
   try {
     GoogleSignInAccount? driveAccount =
@@ -46,11 +46,13 @@ Future<void> restoreWalletIfNeeded(
       driveAccount = await driveSignInForWallet.signIn();
     }
     if (driveAccount == null) {
-      if (kDebugMode) print('WalletRestoreHelper: no Drive account, skipping');
+      if (kDebugMode) {
+        debugPrint('WalletRestoreHelper: no Drive account, skipping');
+      }
       return;
     }
     if (kDebugMode) {
-      print('WalletRestoreHelper: Drive account ok, calling restoreWallet...');
+      debugPrint('WalletRestoreHelper: Drive account ok, calling restoreWallet...');
     }
 
     final driveAuth = await driveAccount.authentication;
@@ -66,7 +68,7 @@ Future<void> restoreWalletIfNeeded(
         .read(walletCredentialsProvider.notifier)
         .restoreWallet(accessToken: accessToken, accountId: driveAccount.id);
     if (kDebugMode) {
-      print('WalletRestoreHelper: wallet restored on preload');
+      debugPrint('WalletRestoreHelper: wallet restored on preload');
     }
 
     // Backfill smart account address if missing (e.g. partial write or legacy data).
@@ -100,18 +102,18 @@ Future<void> restoreWalletIfNeeded(
             'smartAccountWalletAddress': smartAccountAddress,
           });
           if (kDebugMode) {
-            print('WalletRestoreHelper: backfilled smart account address');
+            debugPrint('WalletRestoreHelper: backfilled smart account address');
           }
         } catch (e) {
           if (kDebugMode) {
-            print('WalletRestoreHelper: backfill failed (non-blocking): $e');
+            debugPrint('WalletRestoreHelper: backfill failed (non-blocking): $e');
           }
         }
       }
     }
   } catch (e) {
     if (kDebugMode) {
-      print('WalletRestoreHelper: preload restore failed: $e');
+      debugPrint('WalletRestoreHelper: preload restore failed: $e');
     }
     ref.read(walletCredentialsProvider.notifier).setError(e.toString());
   }

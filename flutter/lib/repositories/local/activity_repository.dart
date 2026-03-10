@@ -62,7 +62,7 @@ class ActivityRepository {
       return allActivities;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting all activities: $e');
+        debugPrint('Error getting all activities: $e');
       }
       // Return empty list on error
       return [];
@@ -81,7 +81,7 @@ class ActivityRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting task completion activities: $e');
+        debugPrint('Error getting task completion activities: $e');
       }
       // Return empty list on error
       return [];
@@ -99,7 +99,7 @@ class ActivityRepository {
       return rewards.map((r) => Activity.fromReward(r)).toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting reward activities: $e');
+        debugPrint('Error getting reward activities: $e');
       }
       // Return empty list on error
       return [];
@@ -116,7 +116,7 @@ class ActivityRepository {
       return withdrawals.map((w) => Activity.fromWithdrawal(w)).toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting withdrawal activities: $e');
+        debugPrint('Error getting withdrawal activities: $e');
       }
       // Return empty list on error
       return [];

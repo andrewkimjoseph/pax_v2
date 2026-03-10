@@ -138,7 +138,7 @@ class WithdrawalMethodsNotifier extends Notifier<WithdrawalMethodsStateModel> {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching payment methods: $e');
+        debugPrint('Error fetching payment methods: $e');
       }
       // Update state with error
       state = state.copyWith(
@@ -198,7 +198,7 @@ class WithdrawalMethodsNotifier extends Notifier<WithdrawalMethodsStateModel> {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error removing payment method: $e');
+        debugPrint('Error removing payment method: $e');
       }
       // Update state with error
       state = state.copyWith(
@@ -229,7 +229,7 @@ class WithdrawalMethodsNotifier extends Notifier<WithdrawalMethodsStateModel> {
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('Error setting default payment method: $e');
+        debugPrint('Error setting default payment method: $e');
       }
       // Update state with error
       state = state.copyWith(

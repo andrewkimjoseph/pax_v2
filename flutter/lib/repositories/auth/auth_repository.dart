@@ -61,7 +61,7 @@ class AuthRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        print('Error signing in with Google: $e');
+        debugPrint('Error signing in with Google: $e');
       }
       rethrow; // Rethrow to let the notifier handle it
     }
@@ -85,7 +85,7 @@ class AuthRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Error signing in for Drive access: $e');
+        debugPrint('Error signing in for Drive access: $e');
       }
       rethrow;
     }
@@ -99,7 +99,7 @@ class AuthRepository {
       await _auth.signOut();
     } catch (e) {
       if (kDebugMode) {
-        print('Error during sign out: $e');
+        debugPrint('Error during sign out: $e');
       }
       // Continue with signout even if there's an error
     }
@@ -119,7 +119,7 @@ class AuthRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting current user: $e');
+        debugPrint('Error getting current user: $e');
       }
       return null;
     }
@@ -146,7 +146,7 @@ class AuthRepository {
       } catch (e) {
         // If that fails, then try with force refresh
         if (kDebugMode) {
-          print('Gentle token refresh failed, trying forced refresh');
+          debugPrint('Gentle token refresh failed, trying forced refresh');
         }
         token = await user.getIdToken(true);
         _lastTokenRefresh = DateTime.now();
@@ -160,20 +160,20 @@ class AuthRepository {
           e.code == 'user-not-found' ||
           e.code == 'user-disabled') {
         if (kDebugMode) {
-          print('Firebase auth validation error: ${e.code} - ${e.message}');
+          debugPrint('Firebase auth validation error: ${e.code} - ${e.message}');
         }
         return false;
       }
 
       // For other Firebase errors, don't log out
       if (kDebugMode) {
-        print('Non-critical Firebase auth error: ${e.code} - ${e.message}');
+        debugPrint('Non-critical Firebase auth error: ${e.code} - ${e.message}');
       }
       return true;
     } catch (e) {
       // For network errors or other issues, don't immediately log out
       if (kDebugMode) {
-        print('Error validating user token (non-critical): $e');
+        debugPrint('Error validating user token (non-critical): $e');
       }
       return true; // Assume token is valid if we can't check due to errors
     }
@@ -201,7 +201,7 @@ class AuthRepository {
       return user != null; // User exists but we didn't need to refresh
     } catch (e) {
       if (kDebugMode) {
-        print('Error refreshing token: $e');
+        debugPrint('Error refreshing token: $e');
       }
       // Return false but don't automatically sign out
       return false;

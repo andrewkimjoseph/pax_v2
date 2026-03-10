@@ -59,10 +59,10 @@ class WithdrawNotifier extends Notifier<WithdrawStateModel> {
       final paxAccount = paxAccountState.account;
 
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Withdrawing: $amountToWithdraw tokens to payment method $paymentMethodId',
         );
-        print(
+        debugPrint(
           'Using currency address: $currencyAddress with $decimals decimals',
         );
       }
@@ -146,7 +146,7 @@ class WithdrawNotifier extends Notifier<WithdrawStateModel> {
       );
 
       if (kDebugMode) {
-        print('Withdrawal transaction successful: ${result['txnHash']}');
+        debugPrint('Withdrawal transaction successful: ${result['txnHash']}');
       }
 
       // Update state to success
@@ -196,7 +196,7 @@ class WithdrawNotifier extends Notifier<WithdrawStateModel> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error withdrawing tokens: $e');
+        debugPrint('Error withdrawing tokens: $e');
       }
 
       ref.read(analyticsProvider).withdrawalFailed({

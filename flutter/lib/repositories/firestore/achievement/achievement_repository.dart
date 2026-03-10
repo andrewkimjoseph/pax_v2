@@ -51,7 +51,7 @@ class AchievementRepository {
       return achievement;
     } catch (e) {
       if (kDebugMode) {
-        print('Error creating achievement: $e');
+        debugPrint('Error creating achievement: $e');
       }
       rethrow;
     }
@@ -68,7 +68,7 @@ class AchievementRepository {
               .where('participantId', isEqualTo: participantId)
               .get();
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Achievements fetched: ${querySnapshot.docs.length} for participant: $participantId',
         );
       }
@@ -77,7 +77,7 @@ class AchievementRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting achievements: $e');
+        debugPrint('Error getting achievements: $e');
       }
       rethrow;
     }
@@ -100,7 +100,7 @@ class AchievementRepository {
       return Achievement.fromFirestore(doc);
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating achievement: $e');
+        debugPrint('Error updating achievement: $e');
       }
       rethrow;
     }

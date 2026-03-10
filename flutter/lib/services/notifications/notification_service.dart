@@ -27,7 +27,8 @@ class NotificationService {
   String? _currentToken; // Current FCM token
   String? _currentUserId; // Current user's ID
   bool _isInitialized = false; // Initialization status (local notifications)
-  bool _isFcmInitialized = false; // FCM permission requested and token obtained (done after login)
+  bool _isFcmInitialized =
+      false; // FCM permission requested and token obtained (done after login)
   bool _isSavingToken = false; // Token saving status
 
   /// Android notification channel configuration for high importance notifications
@@ -50,16 +51,22 @@ class NotificationService {
   /// after sign-in via [requestPermissionAndEnsureFcmToken].
   Future<void> initialize() async {
     if (_isInitialized) {
-      if (kDebugMode) print('Notification Service: Already initialized');
+      if (kDebugMode) {
+        debugPrint('Notification Service: Already initialized');
+      }
       return;
     }
 
     try {
       await _initializeLocalNotifications();
       _isInitialized = true;
-      if (kDebugMode) print('Notification Service: Local notifications initialized');
+      if (kDebugMode) {
+        debugPrint('Notification Service: Local notifications initialized');
+      }
     } catch (e) {
-      if (kDebugMode) print('Notification Service: Error initializing: $e');
+      if (kDebugMode) {
+        debugPrint('Notification Service: Error initializing: $e');
+      }
     }
   }
 
@@ -68,17 +75,23 @@ class NotificationService {
   /// Returns the [AuthorizationStatus] after the request, or null if already initialized.
   Future<AuthorizationStatus?> requestPermissionAndEnsureFcmToken() async {
     if (_isFcmInitialized) {
-      if (kDebugMode) print('Notification Service: FCM already initialized');
+      if (kDebugMode) {
+        debugPrint('Notification Service: FCM already initialized');
+      }
       return null;
     }
 
     try {
       final status = await _initializeFirebaseMessaging();
       _isFcmInitialized = true;
-      if (kDebugMode) print('Notification Service: FCM permission and token ready');
+      if (kDebugMode) {
+        debugPrint('Notification Service: FCM permission and token ready');
+      }
       return status;
     } catch (e) {
-      if (kDebugMode) print('Notification Service: Error initializing FCM: $e');
+      if (kDebugMode) {
+        debugPrint('Notification Service: Error initializing FCM: $e');
+      }
       rethrow;
     }
   }
@@ -110,7 +123,9 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        if (kDebugMode) print('Notification tapped: ${response.payload}');
+        if (kDebugMode) {
+          debugPrint('Notification tapped: ${response.payload}');
+        }
         if (response.payload != null) {
           // Handle navigation based on payload
         }
@@ -124,6 +139,12 @@ class NotificationService {
               AndroidFlutterLocalNotificationsPlugin
             >()
             ?.createNotificationChannel(channel);
+        // Request exact alarm permission for scheduled notifications (Android 14+).
+        await _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestExactAlarmsPermission();
       }
     }
   }
@@ -142,7 +163,7 @@ class NotificationService {
     );
 
     if (kDebugMode) {
-      print(
+      debugPrint(
         'User notification permission status: ${settings.authorizationStatus}',
       );
     }
@@ -155,7 +176,7 @@ class NotificationService {
 
     _currentToken = await _messaging.getToken();
     if (kDebugMode) {
-      print('FCM Token: ${_currentToken?.substring(0, 10)}...');
+      debugPrint('FCM Token: ${_currentToken?.substring(0, 10)}...');
     }
     return settings.authorizationStatus;
   }
@@ -169,11 +190,13 @@ class NotificationService {
       final token = await _messaging.getToken();
       _currentToken = token;
       if (kDebugMode) {
-        print('Notification Service: Got token: ${token?.substring(0, 10)}...');
+        debugPrint('Notification Service: Got token: ${token?.substring(0, 10)}...');
       }
       return token;
     } catch (e) {
-      if (kDebugMode) print('Notification Service: Error getting token: $e');
+      if (kDebugMode) {
+        debugPrint('Notification Service: Error getting token: $e');
+      }
       return null;
     }
   }
@@ -183,7 +206,7 @@ class NotificationService {
   Future<void> saveTokenForParticipant(String participantId) async {
     if (_isSavingToken) {
       if (kDebugMode) {
-        print('Notification Service: Token save already in progress');
+        debugPrint('Notification Service: Token save already in progress');
       }
       return;
     }
@@ -195,20 +218,24 @@ class NotificationService {
       final token = await getToken();
       if (token == null) {
         if (kDebugMode) {
-          print('Notification Service: No token available to save');
+          debugPrint('Notification Service: No token available to save');
         }
         return;
       }
 
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Notification Service: Saving token for participant $participantId',
         );
       }
       await _repository.saveToken(participantId, token);
-      if (kDebugMode) print('Notification Service: Token saved successfully');
+      if (kDebugMode) {
+        debugPrint('Notification Service: Token saved successfully');
+      }
     } catch (e) {
-      if (kDebugMode) print('Notification Service: Error saving token: $e');
+      if (kDebugMode) {
+        debugPrint('Notification Service: Error saving token: $e');
+      }
     } finally {
       _isSavingToken = false;
     }
@@ -220,7 +247,7 @@ class NotificationService {
     _currentUserId = participantId;
     _messaging.onTokenRefresh.listen((newToken) {
       if (kDebugMode) {
-        print(
+        debugPrint(
           'Notification Service: Token refreshed: ${newToken.substring(0, 10)}...',
         );
       }
@@ -262,7 +289,9 @@ class NotificationService {
   /// Schedules task cooldown reminders: one immediate "task started" and then
   /// every [taskTimerReminderIntervalMinutes] until [taskTimerDurationMinutes].
   /// Cancels any existing task-cooldown schedule first. Call when screening completes.
-  Future<void> scheduleTaskCooldownReminders(DateTime screeningTimeCreated) async {
+  Future<void> scheduleTaskCooldownReminders(
+    DateTime screeningTimeCreated,
+  ) async {
     if (kIsWeb) return;
     await cancelTaskCooldownReminders();
 
@@ -276,11 +305,12 @@ class NotificationService {
     const skipTolerance = Duration(seconds: 60);
 
     int scheduledId = taskCooldownNotificationIdBase + 1;
-    for (var minutes = taskTimerReminderIntervalMinutes;
-        minutes <= taskTimerDurationMinutes;
-        minutes += taskTimerReminderIntervalMinutes) {
-      final scheduledAt =
-          screeningTimeCreated.add(Duration(minutes: minutes));
+    for (
+      var minutes = taskTimerReminderIntervalMinutes;
+      minutes <= taskTimerDurationMinutes;
+      minutes += taskTimerReminderIntervalMinutes
+    ) {
+      final scheduledAt = screeningTimeCreated.add(Duration(minutes: minutes));
       final tzScheduled = tz.TZDateTime.from(scheduledAt, tz.local);
       // Only skip if clearly in the past (tolerance avoids skipping due to device clock skew).
       if (tzScheduled.isBefore(now.subtract(skipTolerance))) continue;
@@ -297,7 +327,7 @@ class NotificationService {
         );
       } catch (e) {
         if (kDebugMode) {
-          print(
+          debugPrint(
             'Notification Service: Failed to schedule reminder at +$minutes min: $e',
           );
         }
@@ -309,9 +339,11 @@ class NotificationService {
   /// Cancels all task cooldown reminders (IDs [taskCooldownNotificationIdBase] through +6).
   /// Call when the user marks the task complete so no further reminders are sent.
   Future<void> cancelTaskCooldownReminders() async {
-    for (var id = taskCooldownNotificationIdBase;
-        id <= taskCooldownNotificationIdBase + 6;
-        id++) {
+    for (
+      var id = taskCooldownNotificationIdBase;
+      id <= taskCooldownNotificationIdBase + 6;
+      id++
+    ) {
       await _flutterLocalNotificationsPlugin.cancel(id);
     }
   }
@@ -321,9 +353,9 @@ class NotificationService {
   void setupForegroundMessageHandling(Function(RemoteMessage) onMessageTap) {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (kDebugMode) {
-        print('Foreground message received: ${message.messageId}');
-        print('Notification: ${message.notification?.title}');
-        print('Data: ${message.data}');
+        debugPrint('Foreground message received: ${message.messageId}');
+        debugPrint('Notification: ${message.notification?.title}');
+        debugPrint('Data: ${message.data}');
       }
 
       RemoteNotification? notification = message.notification;
@@ -348,8 +380,8 @@ class NotificationService {
     RemoteMessage? initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       if (kDebugMode) {
-        print('App opened from terminated state via notification');
-        print('Initial message: ${initialMessage.messageId}');
+        debugPrint('App opened from terminated state via notification');
+        debugPrint('Initial message: ${initialMessage.messageId}');
       }
       onMessageTap(initialMessage);
     }
@@ -396,11 +428,11 @@ class NotificationService {
       });
 
       if (kDebugMode) {
-        print('Notification Service: Remote notification sent successfully');
+        debugPrint('Notification Service: Remote notification sent successfully');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Notification Service: Error sending remote notification: $e');
+        debugPrint('Notification Service: Error sending remote notification: $e');
       }
       rethrow;
     }

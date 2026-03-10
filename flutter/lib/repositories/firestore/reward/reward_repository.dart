@@ -23,7 +23,7 @@ class RewardRepository {
       return snapshot.docs.map((doc) => Reward.fromFirestore(doc)).toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting rewards: $e');
+        debugPrint('Error getting rewards: $e');
       }
       // Return empty list on error
       return [];
@@ -42,7 +42,7 @@ class RewardRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting reward: $e');
+        debugPrint('Error getting reward: $e');
       }
       rethrow;
     }
@@ -61,7 +61,7 @@ class RewardRepository {
       return snapshot.docs.map((doc) => Reward.fromFirestore(doc)).toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting rewards for task: $e');
+        debugPrint('Error getting rewards for task: $e');
       }
       // Return empty list on error
       return [];
@@ -83,7 +83,7 @@ class RewardRepository {
       return snapshot.docs.map((doc) => Reward.fromFirestore(doc)).toList();
     } catch (e) {
       if (kDebugMode) {
-        print('Error getting rewards for task completion: $e');
+        debugPrint('Error getting rewards for task completion: $e');
       }
       // Return empty list on error
       return [];
@@ -109,7 +109,7 @@ class RewardRepository {
           });
     } catch (e) {
       if (kDebugMode) {
-        print('Error streaming rewards: $e');
+        debugPrint('Error streaming rewards: $e');
       }
       // Return empty stream on error
       return Stream.value([]);

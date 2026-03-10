@@ -124,7 +124,7 @@ class RewardService {
 
       // Log the error
       if (kDebugMode) {
-        print('Reward process error: $e');
+        debugPrint('Reward process error: $e');
       }
 
       rethrow;

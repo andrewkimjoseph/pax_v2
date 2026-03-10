@@ -25,7 +25,7 @@ class BranchService {
         _sdkInitCompleter.complete();
       }
       if (kDebugMode) {
-        print('BranchService: SDK marked as initialized');
+        debugPrint('BranchService: SDK marked as initialized');
       }
     }
   }
@@ -36,14 +36,14 @@ class BranchService {
   void init({required Function(Map<dynamic, dynamic>) deepLinkHandler}) {
     _deepLinkHandler = deepLinkHandler;
     if (kDebugMode) {
-      print('BranchService: Initialized with deep link handler');
+      debugPrint('BranchService: Initialized with deep link handler');
     }
   }
 
   Future<void> listenToDeepLinks() async {
     if (_deepLinkHandler == null) {
       if (kDebugMode) {
-        print(
+        debugPrint(
           'BranchService: Error: Deep link handler not set before listening.',
         );
       }
@@ -52,7 +52,7 @@ class BranchService {
 
     if (_isListening) {
       if (kDebugMode) {
-        print('Already listening to deep links');
+        debugPrint('Already listening to deep links');
       }
       return;
     }
@@ -60,18 +60,18 @@ class BranchService {
     // Wait for SDK to be initialized before listening
     if (!_sdkInitialized) {
       if (kDebugMode) {
-        print('BranchService: Waiting for SDK initialization...');
+        debugPrint('BranchService: Waiting for SDK initialization...');
       }
       await waitForSdkInit();
     }
 
     if (kDebugMode) {
-      print('BranchService: Starting deep link listener');
+      debugPrint('BranchService: Starting deep link listener');
     }
     _linkDataStreamSubscription = FlutterBranchSdk.listSession().listen(
       (linkData) {
         if (kDebugMode) {
-          print('BranchService: Deep link being listened to: $linkData');
+          debugPrint('BranchService: Deep link being listened to: $linkData');
         }
         // Only handle deep links if they contain actual link data
         if (linkData.isNotEmpty && linkData['+clicked_branch_link'] == true) {
@@ -80,7 +80,7 @@ class BranchService {
       },
       onError: (error) {
         if (kDebugMode) {
-          print('BranchService: Error receiving deep link: $error');
+          debugPrint('BranchService: Error receiving deep link: $error');
         }
       },
     );
@@ -89,7 +89,7 @@ class BranchService {
 
   void dispose() {
     if (kDebugMode) {
-      print('BranchService: Disposing deep link listener');
+      debugPrint('BranchService: Disposing deep link listener');
     }
     _linkDataStreamSubscription?.cancel();
     _deepLinkHandler = null;
