@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:pax/providers/local/wallet_creation_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
@@ -14,6 +13,7 @@ import 'package:pax/routing/routes.dart';
 import 'package:pax/services/wallet/smart_account_service.dart';
 import 'package:pax/services/wallet/wallet_registry_service.dart';
 import 'package:pax/services/wallet/gooddollar_identity_service.dart';
+import 'package:pax/services/wallet/wallet_restore_helper.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -26,14 +26,6 @@ class WalletCreationView extends ConsumerStatefulWidget {
 }
 
 class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
-  static final GoogleSignIn _driveSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'profile',
-      'https://www.googleapis.com/auth/drive.appdata',
-    ],
-  );
-
   bool? _isWhitelisted;
   bool _isRegisteringWallet = false;
   String? _registryErrorMessage;
@@ -70,8 +62,8 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
     ref.read(analyticsProvider).v2WalletCreationInitiated();
 
     try {
-      // Sign in with Drive scopes
-      final driveAccount = await _driveSignIn.signIn();
+      // Sign in with Drive scopes (shared instance so restore uses same account)
+      final driveAccount = await driveSignInForWallet.signIn();
       if (driveAccount == null) {
         viewModel.setError('Google Sign-In cancelled');
         return;
@@ -91,6 +83,7 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
 
       final walletState = ref.read(walletCredentialsProvider);
       if (walletState.status == WalletCredentialsStatus.error) {
+        ref.read(walletCredentialsProvider.notifier).clearCredentials();
         viewModel.setError(
           walletState.errorMessage ?? 'Wallet creation failed',
         );

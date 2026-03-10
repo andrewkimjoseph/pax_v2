@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/models/firestore/pax_wallet/pax_wallet_model.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
+import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/providers/withdrawal_method_connection/withdrawal_method_connection_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
 import 'package:pax/repositories/firestore/pax_wallet/pax_wallet_repository.dart';
@@ -53,6 +54,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
           fetchWallet(next.user.uid);
         } else if (next.state == AuthState.unauthenticated) {
           clearWallet();
+          ref.read(walletCredentialsProvider.notifier).clearCredentials();
         }
       }
     });

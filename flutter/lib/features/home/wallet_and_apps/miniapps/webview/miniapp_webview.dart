@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 import 'package:pax/theming/colors.dart';
@@ -28,7 +29,15 @@ class MiniAppWebView extends ConsumerStatefulWidget {
 
 class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
   bool _restoreTriggered = false;
+  bool _mismatchRecoveryTriggered = false;
   InAppWebViewController? _webViewController;
+
+  static bool _eoAddressMatches(String? a, String? b) {
+    if (a == null || b == null) return false;
+    final na = a.trim().toLowerCase().replaceFirst(RegExp(r'^0x'), '');
+    final nb = b.trim().toLowerCase().replaceFirst(RegExp(r'^0x'), '');
+    return na == nb;
+  }
 
   Future<void> _handleBack() async {
     if (_webViewController == null) {
@@ -46,6 +55,8 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
   @override
   Widget build(BuildContext context) {
     final walletState = ref.watch(walletCredentialsProvider);
+    final paxWallet = ref.watch(paxWalletProvider).wallet;
+    final walletEoAddress = paxWallet?.eoAddress;
 
     final isWaitingForWallet =
         walletState.status == WalletCredentialsStatus.loading ||
@@ -62,6 +73,22 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
           restoreWalletIfNeeded(ref, silentOnly: true);
         });
       }
+    }
+
+    // Loaded but eoAddress mismatch with Firestore: clear and try interactive restore once (recovery-first).
+    if (walletState.status == WalletCredentialsStatus.loaded &&
+        walletState.credentials != null &&
+        walletState.eoAddress != null &&
+        walletEoAddress != null &&
+        walletEoAddress.isNotEmpty &&
+        !_eoAddressMatches(walletState.eoAddress, walletEoAddress) &&
+        !_mismatchRecoveryTriggered) {
+      _mismatchRecoveryTriggered = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        ref.read(walletCredentialsProvider.notifier).clearCredentials();
+        _restoreTriggered = true;
+        await restoreWalletIfNeeded(ref, silentOnly: false);
+      });
     }
 
     if (isWaitingForWallet) {
