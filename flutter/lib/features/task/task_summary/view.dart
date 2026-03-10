@@ -7,7 +7,6 @@ import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/local/task_context/task_context_provider.dart';
-import 'package:pax/providers/local/task_master_server_id_provider.dart';
 import 'package:pax/providers/local/screening_state_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/services/screening_service.dart';
@@ -163,7 +162,6 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
       return;
     }
 
-    final taskMasterServerWalletId = ref.read(taskMasterServerIdProvider);
     final serverWalletId = ref.read(paxAccountProvider).account?.serverWalletId;
     final participant = ref.read(participantProvider).participant;
 
@@ -238,30 +236,21 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
     try {
       if (!mounted) return;
 
-      final canvassingTaskManagerAddress =
-          ContractAddressConstants.canvassingTaskManagerAddress;
-      if (canvassingTaskManagerAddress.isEmpty) {
-        throw Exception(
-          'CanvassingTaskManager address not configured. Set ContractAddressConstants.canvassingTaskManagerAddress.',
-        );
-      }
+      final canvassingRewarderProxyAddress =
+          ContractAddressConstants.canvassingRewarderProxyAddress;
 
       final hasBalance = await BlockchainService.hasSufficientBalance(
-        canvassingTaskManagerAddress,
+        canvassingRewarderProxyAddress,
         TokenAddressUtil.getAddressForCurrency(currentTask.rewardCurrencyId!),
         currentTask.rewardAmountPerParticipant!.toDouble(),
         TokenAddressUtil.getDecimalsForCurrency(currentTask.rewardCurrencyId!),
       );
 
       if (!hasBalance) {
-        throw Exception('Task manager contract has insufficient balance');
+        throw Exception('CanvassingRewarder contract has insufficient balance');
       }
 
-      ref.read(analyticsProvider).screeningStarted({
-        "taskId": currentTask.id,
-        "taskManagerContractAddress": "CanvassingTaskManager",
-        "taskMasterServerWalletId": taskMasterServerWalletId,
-      });
+      ref.read(analyticsProvider).screeningStarted({"taskId": currentTask.id});
 
       if (!mounted) return;
       Map<String, String>? v2EncryptedParams;
@@ -297,7 +286,6 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
             serverWalletId: isV2 ? null : serverWalletId,
             taskId: currentTask.id,
             participantId: participantId,
-            taskMasterServerWalletId: taskMasterServerWalletId!,
             v2EncryptedParams: v2EncryptedParams,
           );
 
@@ -322,8 +310,6 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
       if (!mounted) return;
       ref.read(analyticsProvider).screeningFailed({
         "taskId": currentTask.id,
-        "taskManagerContractAddress": "CanvassingTaskManager",
-        "taskMasterServerWalletId": taskMasterServerWalletId,
         "error": e.toString(),
       });
 

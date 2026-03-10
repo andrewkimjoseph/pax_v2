@@ -277,7 +277,6 @@ class TaskCard extends ConsumerWidget {
                   "taskTitle": task.title,
                   "taskType": task.type,
                   "taskCategory": task.category,
-                  "taskMasterServerWalletId": serverWalletId,
                 });
 
                 if (kIsWeb && task.type == "fillAForm") {

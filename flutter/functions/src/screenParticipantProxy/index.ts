@@ -74,7 +74,6 @@ export const screenParticipantProxy = onCall(
         serverWalletId,
         taskId,
         participantId,
-        taskMasterServerWalletId,
         // V2 path: ephemeral key (when participant has no Privy server wallet)
         encryptedPrivateKey,
         sessionKey,
@@ -83,7 +82,6 @@ export const screenParticipantProxy = onCall(
         serverWalletId?: string;
         taskId: string;
         participantId: string;
-        taskMasterServerWalletId: string;
         encryptedPrivateKey?: string;
         sessionKey?: string;
         eoWalletAddress?: string;
@@ -106,20 +104,15 @@ export const screenParticipantProxy = onCall(
         !!eoWalletAddress;
       const isV1 = !!serverWalletId;
 
-      if (
-        !taskId ||
-        !participantId ||
-        !taskMasterServerWalletId
-      ) {
+      if (!taskId || !participantId) {
         logger.error("Missing required parameters in screenParticipantProxy", {
           serverWalletId,
           taskId,
           participantId,
-          taskMasterServerWalletId,
         });
         throw new HttpsError(
           "invalid-argument",
-          "Missing required parameters: taskId, participantId, taskMasterServerWalletId."
+          "Missing required parameters: taskId, participantId."
         );
       }
 

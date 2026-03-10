@@ -119,26 +119,13 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
 
       // Check CanvassingRewarder has sufficient balance before claiming
       const rewardTokenId = 1; // good_dollar (matches backend REWARD_TOKEN)
-      final rewarderAddress =
-          ContractAddressConstants.canvassingRewarderAddress;
-      if (rewarderAddress.isEmpty) {
-        final finalClaimingStates = Map<String, bool>.from(
-          state.claimingStates,
-        );
-        finalClaimingStates.remove(achievement.id);
-        state = state.copyWith(
-          claimingStates: finalClaimingStates,
-          errorMessage:
-              'CanvassingRewarder address not configured. Set ContractAddressConstants.canvassingRewarderAddress.',
-        );
-        throw Exception(
-          'CanvassingRewarder address not configured. Set ContractAddressConstants.canvassingRewarderAddress.',
-        );
-      }
+      final canvassingRewarderProxyAddress =
+          ContractAddressConstants.canvassingRewarderProxyAddress;
+
       final amount = (achievement.amountEarned ?? 0).toDouble();
       if (amount > 0) {
         final hasBalance = await BlockchainService.hasSufficientBalance(
-          rewarderAddress,
+          canvassingRewarderProxyAddress,
           TokenAddressUtil.getAddressForCurrency(rewardTokenId),
           amount,
           TokenAddressUtil.getDecimalsForCurrency(rewardTokenId),
