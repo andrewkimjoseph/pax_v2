@@ -198,9 +198,9 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
       }
 
       // Check CanvassingRewarder has sufficient balance before claiming
-      final rewarderAddress =
-          ContractAddressConstants.canvassingRewarderAddress;
-      if (rewarderAddress.isEmpty) {
+      final canvassingRewarderProxyAddress =
+          ContractAddressConstants.canvassingRewarderProxyAddress;
+      if (canvassingRewarderProxyAddress.isEmpty) {
         if (!context.mounted) return;
         context.pop(); // Close loading dialog
         _showErrorDialog(
@@ -213,11 +213,9 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
       }
       final amount = claimContext.amount;
       final tokenId = claimContext.tokenId;
-      if (amount != null &&
-          tokenId != null &&
-          amount > 0) {
+      if (amount != null && tokenId != null && amount > 0) {
         final hasBalance = await BlockchainService.hasSufficientBalance(
-          rewarderAddress,
+          canvassingRewarderProxyAddress,
           TokenAddressUtil.getAddressForCurrency(tokenId),
           amount.toDouble(),
           TokenAddressUtil.getDecimalsForCurrency(tokenId),
@@ -363,7 +361,8 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
     final timeCreated = claimContext?.timeCreated?.toDate();
     final isValid = claimContext?.isValid ?? true;
 
-    final isExpired = taskIsCompleted == false &&
+    final isExpired =
+        taskIsCompleted == false &&
         (timeCreated == null ||
             DateTime.now().isAfter(
               timeCreated.add(Duration(minutes: taskTimerDurationMinutes)),

@@ -124,7 +124,6 @@ class ScreeningService {
     String? serverWalletId,
     required String taskId,
     required String participantId,
-    required String taskMasterServerWalletId,
     Map<String, String>? v2EncryptedParams,
   }) async {
     try {
@@ -165,7 +164,6 @@ class ScreeningService {
 
         ref.read(analyticsProvider).screeningComplete({
           "taskId": taskId,
-          "taskManagerContractAddress": "CanvassingTaskManager",
           "screeningId": existingScreeningResult.screeningId,
           "txnHash": existingScreeningResult.txnHash,
           "signature": existingScreeningResult.signature,
@@ -183,7 +181,6 @@ class ScreeningService {
       final payload = <String, dynamic>{
         'taskId': taskId,
         'participantId': participantId,
-        'taskMasterServerWalletId': taskMasterServerWalletId,
       };
       if (v2EncryptedParams != null) {
         payload['encryptedPrivateKey'] =
@@ -250,7 +247,9 @@ class ScreeningService {
           .read(screeningProvider.notifier)
           .setError(
             ErrorMessageUtil.userFacing(
-              e is FirebaseFunctionsException ? e.message ?? e.toString() : e.toString(),
+              e is FirebaseFunctionsException
+                  ? e.message ?? e.toString()
+                  : e.toString(),
             ),
           );
       rethrow;
