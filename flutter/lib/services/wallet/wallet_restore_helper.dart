@@ -13,6 +13,18 @@ final GoogleSignIn driveSignInForWallet = GoogleSignIn(
   scopes: ['email', 'profile', 'https://www.googleapis.com/auth/drive.appdata'],
 );
 
+/// Normalizes an EOA address for comparison (case-insensitive, optional 0x prefix).
+String _normalizeEoAddress(String? a) {
+  if (a == null || a.isEmpty) return '';
+  final s = a.trim().toLowerCase();
+  return s.startsWith('0x') ? s.substring(2) : s;
+}
+
+bool _eoAddressMatches(String? fromCreds, String? fromFirestore) {
+  if (fromCreds == null || fromFirestore == null) return false;
+  return _normalizeEoAddress(fromCreds) == _normalizeEoAddress(fromFirestore);
+}
+
 /// Restores wallet credentials from cache or Drive when the user is V2 and has a Pax wallet.
 /// Call on app resume or when entering Miniapps so the wallet is ready when the user opens a miniapp.
 /// [silentOnly] if true uses only signInSilently (no UI). Set false to allow interactive sign-in.
@@ -69,6 +81,36 @@ Future<void> restoreWalletIfNeeded(
         .restoreWallet(accessToken: accessToken, accountId: driveAccount.id);
     if (kDebugMode) {
       debugPrint('WalletRestoreHelper: wallet restored on preload');
+    }
+
+    // Validate restored credentials match Firestore wallet (recovery-first: try interactive restore once before showing error).
+    final credStateAfterRestore = ref.read(walletCredentialsProvider);
+    final paxWalletStateAfterRestore = ref.read(paxWalletProvider);
+    final walletEoAddress = paxWalletStateAfterRestore.wallet?.eoAddress;
+    final credEoAddress = credStateAfterRestore.eoAddress;
+    if (credStateAfterRestore.status == WalletCredentialsStatus.loaded &&
+        walletEoAddress != null &&
+        walletEoAddress.isNotEmpty &&
+        credEoAddress != null &&
+        !_eoAddressMatches(credEoAddress, walletEoAddress)) {
+      if (kDebugMode) {
+        debugPrint('WalletRestoreHelper: eoAddress mismatch after restore, clearing and trying interactive restore once');
+      }
+      ref.read(walletCredentialsProvider.notifier).clearCredentials();
+      await restoreWalletIfNeeded(ref, silentOnly: false);
+      final credStateAfterRetry = ref.read(walletCredentialsProvider);
+      final paxWalletAfterRetry = ref.read(paxWalletProvider);
+      final walletEoAfterRetry = paxWalletAfterRetry.wallet?.eoAddress;
+      final credEoAfterRetry = credStateAfterRetry.eoAddress;
+      if (credStateAfterRetry.status != WalletCredentialsStatus.loaded ||
+          walletEoAfterRetry == null ||
+          credEoAfterRetry == null ||
+          !_eoAddressMatches(credEoAfterRetry, walletEoAfterRetry)) {
+        ref.read(walletCredentialsProvider.notifier).setError(
+          'Please sign in with the same Google account you used when creating your wallet.',
+        );
+        return;
+      }
     }
 
     // Backfill smart account address if missing (e.g. partial write or legacy data).
