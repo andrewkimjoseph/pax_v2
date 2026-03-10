@@ -119,7 +119,6 @@ class _WebViewConverterPageState extends ConsumerState<WebViewConverterPage> {
                     ),
                     initialSettings: InAppWebViewSettings(
                       useHybridComposition: false,
-                      hardwareAcceleration: false,
                     ),
                     onLoadStart: (controller, url) {
                       _controller ??= controller;

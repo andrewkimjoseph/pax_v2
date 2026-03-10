@@ -718,12 +718,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     } else {
       final webview = InAppWebView(
         initialUrlRequest: URLRequest(url: WebUri(widget.url)),
-        initialSettings: InAppWebViewSettings(
-          allowsInlineMediaPlayback: true,
-          mediaPlaybackRequiresUserGesture: false,
-          useHybridComposition: false,
-          hardwareAcceleration: false,
-        ),
+        initialSettings: InAppWebViewSettings(useHybridComposition: false),
         initialUserScripts: UnmodifiableListView<UserScript>([
           UserScript(
             source: _injectedJavaScript,

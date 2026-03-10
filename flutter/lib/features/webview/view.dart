@@ -96,10 +96,7 @@ class _WebViewPageState extends ConsumerState<WebViewPage> {
                   InAppWebView(
                     initialUrlRequest: URLRequest(url: WebUri(widget.url)),
                     initialSettings: InAppWebViewSettings(
-                      javaScriptEnabled: true,
-                      useWideViewPort: true,
                       useHybridComposition: false,
-                      hardwareAcceleration: false,
                     ),
                     onLoadStart: (controller, url) {
                       _controller ??= controller;
