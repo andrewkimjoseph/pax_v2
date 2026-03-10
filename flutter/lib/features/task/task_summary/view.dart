@@ -154,175 +154,180 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
     if (_isProcessingScreening) return;
     if (!mounted) return;
 
-    ref.read(analyticsProvider).continueWithTaskTapped();
-    final currentTask = ref.read(taskContextProvider)?.task;
-    if (currentTask == null) {
-      if (!mounted) return;
-      _showErrorDialog(context, 'Task not found');
-      return;
-    }
-
-    final serverWalletId = ref.read(paxAccountProvider).account?.serverWalletId;
-    final participant = ref.read(participantProvider).participant;
-
-    final paxAccount = ref.watch(paxAccountProvider).account;
-
-    final participantId = ref.read(participantProvider).participant?.id;
-    final hasDeployedPaxAccount = paxAccount?.payoutWalletAddress != null;
-    final isV2 = paxAccount?.isV2 ?? false;
-
-    final participantIsComplete =
-        (participant?.country != null &&
-            participant?.dateOfBirth != null &&
-            participant?.gender != null);
-
-    final participantIsCompletelyComplete =
-        participantIsComplete && hasDeployedPaxAccount;
-
-    // If participant is not completely complete, show dialog and return
-    if (!participantIsCompletelyComplete) {
-      if (isV2) {
-        final needsFv = await ref.read(
-          paxWalletNeedsVerificationProvider.future,
-        );
-        if (!mounted) return;
-        _showV2CompletionDialog(needsFv: needsFv);
-      } else {
-        _showWithdrawalMethodDialog();
-      }
-      return;
-    }
-
-    // Check face verification before attempting screening
+    setState(() => _isProcessingScreening = true);
     try {
-      await ref
-          .read(screeningServiceProvider)
-          .ensureHasVerifiedWithdrawalMethod(participantId!);
-    } catch (e) {
+      ref.read(analyticsProvider).continueWithTaskTapped();
+      final currentTask = ref.read(taskContextProvider)?.task;
+      if (currentTask == null) {
+        if (!mounted) return;
+        _showErrorDialog(context, 'Task not found');
+        return;
+      }
+
+      final serverWalletId =
+          ref.read(paxAccountProvider).account?.serverWalletId;
+      final participant = ref.read(participantProvider).participant;
+
+      final paxAccount = ref.watch(paxAccountProvider).account;
+
+      final participantId = ref.read(participantProvider).participant?.id;
+      final hasDeployedPaxAccount = paxAccount?.payoutWalletAddress != null;
+      final isV2 = paxAccount?.isV2 ?? false;
+
+      final participantIsComplete =
+          (participant?.country != null &&
+              participant?.dateOfBirth != null &&
+              participant?.gender != null);
+
+      final participantIsCompletelyComplete =
+          participantIsComplete && hasDeployedPaxAccount;
+
+      // If participant is not completely complete, show dialog and return
+      if (!participantIsCompletelyComplete) {
+        if (isV2) {
+          final needsFv = await ref.read(
+            paxWalletNeedsVerificationProvider.future,
+          );
+          if (!mounted) return;
+          _showV2CompletionDialog(needsFv: needsFv);
+        } else {
+          _showWithdrawalMethodDialog();
+        }
+        return;
+      }
+
+      // Check face verification before attempting screening
+      try {
+        await ref
+            .read(screeningServiceProvider)
+            .ensureHasVerifiedWithdrawalMethod(participantId!);
+      } catch (e) {
+        if (!context.mounted) return;
+        _showErrorDialog(context, ErrorMessageUtil.userFacing(e.toString()));
+        return;
+      }
+
+      if (!mounted) return;
+      // Show loading dialog
       if (!context.mounted) return;
-      _showErrorDialog(context, ErrorMessageUtil.userFacing(e.toString()));
-      return;
-    }
-
-    if (!mounted) return;
-    setState(() {
-      _isProcessingScreening = true;
-    });
-
-    // Show loading dialog
-    if (!context.mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (dialogContext) => PopScope(
-            canPop: false,
-            child: AlertDialog(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator().withPadding(bottom: 16),
-                  Text('Letting you in...').withPadding(bottom: 12),
-                  Text(
-                    'Please be patient and do not close the app.',
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (dialogContext) => PopScope(
+              canPop: false,
+              child: AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator().withPadding(bottom: 16),
+                    Text('Letting you in...').withPadding(bottom: 12),
+                    Text(
+                      'Please be patient and do not close the app.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-    );
-
-    try {
-      if (!mounted) return;
-
-      final canvassingRewarderProxyAddress =
-          ContractAddressConstants.canvassingRewarderProxyAddress;
-
-      final hasBalance = await BlockchainService.hasSufficientBalance(
-        canvassingRewarderProxyAddress,
-        TokenAddressUtil.getAddressForCurrency(currentTask.rewardCurrencyId!),
-        currentTask.rewardAmountPerParticipant!.toDouble(),
-        TokenAddressUtil.getDecimalsForCurrency(currentTask.rewardCurrencyId!),
       );
 
-      if (!hasBalance) {
-        throw Exception('CanvassingRewarder contract has insufficient balance');
-      }
+      try {
+        if (!mounted) return;
 
-      ref.read(analyticsProvider).screeningStarted({"taskId": currentTask.id});
+        final canvassingRewarderProxyAddress =
+            ContractAddressConstants.canvassingRewarderProxyAddress;
 
-      if (!mounted) return;
-      Map<String, String>? v2EncryptedParams;
-      if (isV2) {
-        final credState = ref.read(walletCredentialsProvider);
-        final credentials = credState.credentials;
-        if (credentials == null) {
-          throw Exception(
-            'Pax Wallet not loaded. Please open Pax Wallet or restore from backup and try again.',
-          );
-        }
-        final user = FirebaseAuth.instance.currentUser;
-        if (user == null) {
-          throw Exception('Not signed in');
-        }
-        final sessionKey = await user.getIdToken(true);
-        if (sessionKey == null) {
-          throw Exception('Failed to get session token');
-        }
-        final smartAccountService = SmartAccountService();
-        v2EncryptedParams = smartAccountService.getV2EncryptedParamsForBackend(
-          credentials: credentials,
-          sessionKey: sessionKey,
+        final hasBalance = await BlockchainService.hasSufficientBalance(
+          canvassingRewarderProxyAddress,
+          TokenAddressUtil.getAddressForCurrency(currentTask.rewardCurrencyId!),
+          currentTask.rewardAmountPerParticipant!.toDouble(),
+          TokenAddressUtil.getDecimalsForCurrency(
+            currentTask.rewardCurrencyId!,
+          ),
         );
-      } else if (serverWalletId == null || serverWalletId.isEmpty) {
-        throw Exception('Server wallet not found');
-      }
 
-      if (!mounted) return;
-      await ref
-          .read(screeningServiceProvider)
-          .screenParticipant(
-            serverWalletId: isV2 ? null : serverWalletId,
-            taskId: currentTask.id,
-            participantId: participantId,
-            v2EncryptedParams: v2EncryptedParams,
+        if (!hasBalance) {
+          throw Exception(
+            'CanvassingRewarder contract has insufficient balance',
           );
+        }
 
-      if (!mounted) return;
+        ref.read(analyticsProvider).screeningStarted({
+          "taskId": currentTask.id,
+        });
 
-      if (!context.mounted) return;
-      // Dismiss loading dialog and navigate on success
-      context.pop();
+        if (!mounted) return;
+        Map<String, String>? v2EncryptedParams;
+        if (isV2) {
+          final credState = ref.read(walletCredentialsProvider);
+          final credentials = credState.credentials;
+          if (credentials == null) {
+            throw Exception(
+              'Pax Wallet not loaded. Please open Pax Wallet or restore from backup and try again.',
+            );
+          }
+          final user = FirebaseAuth.instance.currentUser;
+          if (user == null) {
+            throw Exception('Not signed in');
+          }
+          final sessionKey = await user.getIdToken(true);
+          if (sessionKey == null) {
+            throw Exception('Failed to get session token');
+          }
+          final smartAccountService = SmartAccountService();
+          v2EncryptedParams = smartAccountService
+              .getV2EncryptedParamsForBackend(
+                credentials: credentials,
+                sessionKey: sessionKey,
+              );
+        } else if (serverWalletId == null || serverWalletId.isEmpty) {
+          throw Exception('Server wallet not found');
+        }
 
-      String nextRoute = "";
+        if (!mounted) return;
+        await ref
+            .read(screeningServiceProvider)
+            .screenParticipant(
+              serverWalletId: isV2 ? null : serverWalletId,
+              taskId: currentTask.id,
+              participantId: participantId,
+              v2EncryptedParams: v2EncryptedParams,
+            );
 
-      if (currentTask.actionText == 'Check Out App') {
-        nextRoute = '/tasks/check-out-app';
-      }
+        if (!mounted) return;
 
-      if (currentTask.actionText == 'Fill A Form') {
-        nextRoute = '/tasks/fill-a-form';
-      }
-
-      context.push(nextRoute);
-    } catch (e) {
-      if (!mounted) return;
-      ref.read(analyticsProvider).screeningFailed({
-        "taskId": currentTask.id,
-        "error": e.toString(),
-      });
-
-      if (context.mounted) {
-        // Dismiss loading dialog and show error
+        if (!context.mounted) return;
+        // Dismiss loading dialog and navigate on success
         context.pop();
-        _showErrorDialog(context, ErrorMessageUtil.userFacing(e.toString()));
+
+        String nextRoute = "";
+
+        if (currentTask.actionText == 'Check Out App') {
+          nextRoute = '/tasks/check-out-app';
+        }
+
+        if (currentTask.actionText == 'Fill A Form') {
+          nextRoute = '/tasks/fill-a-form';
+        }
+
+        context.push(nextRoute);
+      } catch (e) {
+        if (!mounted) return;
+        ref.read(analyticsProvider).screeningFailed({
+          "taskId": currentTask.id,
+          "error": e.toString(),
+        });
+
+        if (context.mounted) {
+          // Dismiss loading dialog and show error
+          context.pop();
+          _showErrorDialog(context, ErrorMessageUtil.userFacing(e.toString()));
+        }
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isProcessingScreening = false;
-        });
+        setState(() => _isProcessingScreening = false);
       }
     }
   }
