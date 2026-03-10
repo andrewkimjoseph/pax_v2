@@ -96,7 +96,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
                 onPressed: () {
                   context.push(
                     Routes.completeGoodDollarFaceVerification,
-                    extra: 'dashboard',
+                    extra: 'wallet_and_apps',
                   );
                 },
                 child: const Text('Continue'),

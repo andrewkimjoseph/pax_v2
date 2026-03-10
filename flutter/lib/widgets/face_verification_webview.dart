@@ -43,7 +43,6 @@ class _FaceVerificationWebViewState
   String? _lastPopupUrl;
   Timer? _popupTimer;
   bool _isPopupShowing = false;
-  InAppWebViewController? _controller;
 
   @override
   void initState() {
@@ -436,8 +435,6 @@ class _FaceVerificationWebViewState
 
   @override
   void dispose() {
-    _controller?.dispose();
-    _controller = null;
     _popupTimer?.cancel();
     _httpClient.close();
     super.dispose();
@@ -459,7 +456,6 @@ class _FaceVerificationWebViewState
         ),
       ]),
       onWebViewCreated: (controller) {
-        _controller = controller;
         controller.addJavaScriptHandler(
           handlerName: 'web3Request',
           callback: (args) async {
