@@ -14,7 +14,12 @@ import 'package:pax/utils/remote_config_constants.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class MiniAppsView extends ConsumerStatefulWidget {
-  const MiniAppsView({super.key});
+  const MiniAppsView({super.key, this.embedded = false});
+
+  /// When true, only the body content is built (no Scaffold/AppBar).
+  /// Used when embedded inside [WalletAndAppsView]. Caller is responsible
+  /// for showing the custom dapp button in the AppBar when needed.
+  final bool embedded;
 
   @override
   ConsumerState<MiniAppsView> createState() => _MiniAppsViewState();
@@ -53,7 +58,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
             final app = config.miniapps[index];
             return _MiniAppCard(app: app);
           },
-        ).withPadding(top: 8);
+        );
       },
     );
   }
@@ -128,6 +133,19 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
     final paxWalletNeedsVerificationAsync = ref.watch(
       paxWalletNeedsVerificationProvider,
     );
+
+    if (widget.embedded) {
+      return paxWalletNeedsVerificationAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => _buildVerificationPrompt(context),
+        data: (needsVerification) {
+          if (!needsVerification) {
+            return _buildVerificationPrompt(context);
+          }
+          return _buildMiniappsList(configAsync);
+        },
+      );
+    }
 
     if (accountType != AccountType.v2) {
       return Scaffold(

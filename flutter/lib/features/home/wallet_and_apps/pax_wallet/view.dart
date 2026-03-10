@@ -12,7 +12,11 @@ import 'package:pax/extensions/tooltip.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class PaxWalletView extends ConsumerStatefulWidget {
-  const PaxWalletView({super.key});
+  const PaxWalletView({super.key, this.embedded = false});
+
+  /// When true, only the body content is built (no Scaffold/AppBar).
+  /// Used when embedded inside [WalletAndAppsView].
+  final bool embedded;
 
   @override
   ConsumerState<PaxWalletView> createState() => _PaxWalletViewState();
@@ -82,6 +86,78 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
       }
     });
 
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Locked: wallet card + network label (no scroll)
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PaxWalletBalanceCard(
+              viewState: viewState,
+              address: wallet?.eoAddress,
+              networkLabel: viewState.networkLabel,
+              onRefresh: () {
+                _loadBalance();
+              },
+              canRefresh: viewState.state != PaxWalletViewState.loading,
+              refreshTooltip: 'Refresh balances',
+              onBeforeOpenConverter: (gdBalance) {
+                ref.read(analyticsProvider).gdConverterOpened({
+                  'gd_balance': gdBalance,
+                });
+              },
+            ),
+            // Sticky: "Recent transactions" + refresh (when wallet present)
+            if (eoAddress != null)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Your transactions (${txState.transactions.length})',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: PaxColors.black,
+                    ),
+                  ),
+                  IconButton.outline(
+                    onPressed:
+                        txState.isRefreshing
+                            ? null
+                            : () => ref
+                                .read(walletTransactionsProvider.notifier)
+                                .refresh(eoAddress),
+                    density: ButtonDensity.icon,
+                    icon:
+                        txState.isRefreshing
+                            ? CircularProgressIndicator(size: 25)
+                            : FaIcon(FontAwesomeIcons.arrowsRotate),
+                  ).withToolTip(
+                    'Refresh transactions',
+                    showTooltip: !txState.isRefreshing,
+                  ),
+                ],
+              ).withPadding(top: 12),
+          ],
+        ).withPadding(left: 8, right: 8),
+        // Scrollable: transaction list only
+        if (eoAddress != null)
+          Expanded(
+            child: SingleChildScrollView(
+              child: RecentTransactionsContent(eoAddress: eoAddress),
+            ).withPadding(left: 8, right: 8, bottom: 8, top: 8),
+          )
+        else
+          Expanded(child: const SizedBox.shrink()),
+      ],
+    );
+
+    if (widget.embedded) {
+      return body;
+    }
+
     return Scaffold(
       headers: [
         AppBar(
@@ -104,73 +180,7 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
         ),
         Divider(color: PaxColors.lightGrey),
       ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Locked: wallet card + network label (no scroll)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              PaxWalletBalanceCard(
-                viewState: viewState,
-                address: wallet?.eoAddress,
-                networkLabel: viewState.networkLabel,
-                onRefresh: () {
-                  _loadBalance();
-                },
-                canRefresh: viewState.state != PaxWalletViewState.loading,
-                refreshTooltip: 'Refresh balances',
-                onBeforeOpenConverter: (gdBalance) {
-                  ref.read(analyticsProvider).gdConverterOpened({
-                    'gd_balance': gdBalance,
-                  });
-                },
-              ),
-              // Sticky: "Recent transactions" + refresh (when wallet present)
-              if (eoAddress != null)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Your transactions (${txState.transactions.length})',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: PaxColors.black,
-                      ),
-                    ),
-                    IconButton.outline(
-                      onPressed:
-                          txState.isRefreshing
-                              ? null
-                              : () => ref
-                                  .read(walletTransactionsProvider.notifier)
-                                  .refresh(eoAddress),
-                      density: ButtonDensity.icon,
-                      icon:
-                          txState.isRefreshing
-                              ? CircularProgressIndicator(size: 25)
-                              : FaIcon(FontAwesomeIcons.arrowsRotate),
-                    ).withToolTip(
-                      'Refresh transactions',
-                      showTooltip: !txState.isRefreshing,
-                    ),
-                  ],
-                ).withPadding(top: 12),
-            ],
-          ).withPadding(left: 8, right: 8),
-          // Scrollable: transaction list only
-          if (eoAddress != null)
-            Expanded(
-              child: SingleChildScrollView(
-                child: RecentTransactionsContent(eoAddress: eoAddress),
-              ).withPadding(left: 8, right: 8, bottom: 8, top: 8),
-            )
-          else
-            Expanded(child: const SizedBox.shrink()),
-        ],
-      ),
+      child: body,
     );
   }
 }

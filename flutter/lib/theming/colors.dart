@@ -71,6 +71,9 @@ class PaxColors {
   /// Red with 40% opacity - used for error backgrounds and subtle warnings
   static const Color redWithOpacity = Color(0x66FF0404); // 40% opacity
 
+  /// Fully transparent - used for invisible backgrounds (e.g. segment buttons)
+  static const Color transparent = Color(0x00000000);
+
   /// White with 20% opacity - used for highlights on dark backgrounds
   static const Color whiteWithOpacity = Color(0x33FFFFFF); // 20% opacity
 

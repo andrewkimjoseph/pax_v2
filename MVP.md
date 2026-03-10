@@ -251,10 +251,10 @@ Stores the V2 user's EOA and smart account addresses. Backed by client-side encr
 /loading                                 - Resolves account type and redirects (e.g. to questionnaire, create-v2-wallet, home, v2-web-blocked)
 /home                                    - Main hub with tabs (tab set depends on V1 vs V2)
   V1 tabs: Home (Dashboard, Tasks, Achievements) | Activity | Account
-  V2 tabs: Home (Dashboard, Tasks, Achievements) | Wallet (Pax Wallet) | Apps (Miniapps) | Activity | Account
+  V2 tabs: Home (Dashboard, Tasks, Achievements) | Wallet (Pax Wallet + Miniapps) | Activity | Account
 
 /create-v2-wallet                        - V2 wallet creation (Drive backup, EOA + smart account, register Pax Wallet as withdrawal method)
-/pax-wallet                              - V2: Pax Wallet balance card + address (embedded in Wallet tab for V2)
+/pax-wallet                              - V2: Wallet & Apps view (balance + miniapps; embedded in Wallet tab)
 /check-v2-eligibility                    - V1: Check if user can upgrade to V2
 /v2-web-blocked                          - Shown when V2 user tries to use web app (must use mobile)
 
@@ -327,7 +327,7 @@ Stores the V2 user's EOA and smart account addresses. Backed by client-side encr
 
 **Components:**
 - Current Balance Card (shows selected currency balance) — V1 uses pax_account balances; V2 home tab shows dashboard balance card
-- **V2:** Bottom nav includes **Wallet** (Pax Wallet view) and **Apps** (Miniapps) tabs
+- **V2:** Bottom nav includes **Wallet** (Pax Wallet + Miniapps) tab
 - Social Links Carousel (X, Telegram, WhatsApp links)
 - Image Carousel (5 rotating promotional images)
 - Published Reports Section (links to research reports)
@@ -756,7 +756,7 @@ Stores the V2 user's EOA and smart account addresses. Backed by client-side encr
 
 ### Design Patterns
 - Card-based layouts
-- Bottom navigation: **V1** — Home, Activity, Account; **V2** — Home, Wallet (Pax Wallet), Apps (Miniapps), Activity, Account
+- Bottom navigation: **V1** — Home, Activity, Account; **V2** — Home, Wallet (Pax Wallet + Miniapps), Activity, Account
 - Tab navigation in home (Dashboard, Tasks, Achievements)
 - Pull-to-refresh on lists
 - Skeleton loading states
