@@ -118,8 +118,6 @@ class _WebViewConverterPageState extends ConsumerState<WebViewConverterPage> {
                       url: WebUri(widget.payload.url),
                     ),
                     initialSettings: InAppWebViewSettings(
-                      javaScriptEnabled: true,
-                      useWideViewPort: true,
                       useHybridComposition: false,
                       hardwareAcceleration: false,
                     ),
