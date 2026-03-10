@@ -148,7 +148,7 @@ export const sponsorWalletGas = onCall(
       });
 
       logger.info("[V2] sponsorWalletGas tx confirmed", {
-        blockNumber: receipt.blockNumber,
+        blockNumber: receipt.blockNumber.toString(),
         userId,
         eoWalletAddress,
       });
@@ -160,7 +160,10 @@ export const sponsorWalletGas = onCall(
         blockNumber: receipt.blockNumber.toString(),
       };
     } catch (error: unknown) {
-      logger.error("[V2] sponsorWalletGas error:", error);
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      logger.error("[V2] sponsorWalletGas error:", message);
+      if (stack) logger.error("[V2] sponsorWalletGas error stack:", stack);
       if (error instanceof HttpsError) {
         throw error;
       }
