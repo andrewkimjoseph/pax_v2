@@ -77,7 +77,9 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
   void _navigateAfterFlow() {
     if (!mounted) return;
     final source = widget.source;
-    if (source == 'dashboard') {
+    if (source == 'wallet_and_apps') {
+      context.pop();
+    } else if (source == 'dashboard') {
       context.pop();
     } else if (source == 'task_summary') {
       context.go(Routes.home);
