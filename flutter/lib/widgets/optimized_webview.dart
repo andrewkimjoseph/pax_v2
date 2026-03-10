@@ -57,13 +57,7 @@ class _OptimizedWebViewState extends ConsumerState<OptimizedWebView> {
       child: ClipRect(
         child: InAppWebView(
           initialUrlRequest: widget.initialUrlRequest,
-          initialSettings: InAppWebViewSettings(
-            javaScriptEnabled: true,
-            useWideViewPort: true,
-            useOnLoadResource: false,
-            useHybridComposition: false,
-            hardwareAcceleration: false,
-          ),
+          initialSettings: InAppWebViewSettings(useHybridComposition: false),
           onWebViewCreated: (controller) {
             _controller = controller;
             widget.onWebViewCreated?.call(controller);

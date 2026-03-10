@@ -60,7 +60,6 @@ class _ReportPageViewState extends State<ReportPageView> {
             initialUrlRequest: URLRequest(url: WebUri(widget.reportLink)),
             initialSettings: InAppWebViewSettings(
               useHybridComposition: false,
-              hardwareAcceleration: false,
             ),
             onWebViewCreated: (controller) {
               _controller = controller;

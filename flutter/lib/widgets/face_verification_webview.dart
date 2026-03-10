@@ -451,12 +451,7 @@ class _FaceVerificationWebViewState
 
     return InAppWebView(
       initialUrlRequest: URLRequest(url: WebUri(_verificationUrl)),
-      initialSettings: InAppWebViewSettings(
-        allowsInlineMediaPlayback: true,
-        mediaPlaybackRequiresUserGesture: false,
-        useHybridComposition: false,
-        hardwareAcceleration: false,
-      ),
+      initialSettings: InAppWebViewSettings(useHybridComposition: false),
       initialUserScripts: UnmodifiableListView<UserScript>([
         UserScript(
           source: _injectedJavaScript,
