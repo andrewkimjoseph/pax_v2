@@ -43,6 +43,8 @@ class PaxWalletStateModel {
 
 class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   late final PaxWalletRepository _repository;
+  /// EOA we have already requested gas sponsorship for this session; avoids duplicate sponsorWalletGas calls.
+  String? _gasSponsorshipRequestedForEoAddress;
 
   @override
   PaxWalletStateModel build() {
@@ -252,15 +254,33 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
             );
       }
 
+      // Sponsor gas at most once per wallet per app session
+      final eoAddress = wallet.eoAddress!;
+      if (_gasSponsorshipRequestedForEoAddress == eoAddress) {
+        if (kDebugMode) {
+          debugPrint(
+            'PaxWalletNotifier: skipping sponsorWalletGas (already requested for eoAddress)',
+          );
+        }
+        return;
+      }
+      _gasSponsorshipRequestedForEoAddress = eoAddress;
+
       // Sponsor gas for the wallet (only when face verification completes)
+      if (kDebugMode) {
+        debugPrint(
+          'PaxWalletNotifier: calling sponsorWalletGas for eoAddress=$eoAddress',
+        );
+      }
       try {
         await FirebaseFunctions.instance
             .httpsCallable('sponsorWalletGas')
-            .call({'eoWalletAddress': wallet.eoAddress});
+            .call({'eoWalletAddress': eoAddress});
       } catch (e) {
         if (kDebugMode) {
           debugPrint('Gas sponsorship failed (non-blocking): $e');
         }
+        _gasSponsorshipRequestedForEoAddress = null;
       }
     } catch (e) {
       if (kDebugMode) {
@@ -270,6 +290,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   }
 
   void clearWallet() {
+    _gasSponsorshipRequestedForEoAddress = null;
     state = PaxWalletStateModel.initial();
   }
 }

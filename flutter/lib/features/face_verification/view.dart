@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' show Divider, InkWell, PopScope;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -32,6 +33,8 @@ class FaceVerificationView extends ConsumerStatefulWidget {
 class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
   bool _restoreAttempted = false;
   bool _hasLoggedVerificationStarted = false;
+  /// Guards so we only trigger gas sponsorship and registration once per session.
+  bool _hasTriggeredGasSponsorship = false;
 
   Future<void> _restoreWallet() async {
     if (!mounted) return;
@@ -44,8 +47,25 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
     required bool verified,
     required String chain,
   }) async {
+    if (kDebugMode) {
+      debugPrint(
+        'FaceVerificationView: _onVerificationResult called (verified=$verified, chain=$chain)',
+      );
+    }
     final viewModel = ref.read(faceVerificationProvider.notifier);
     if (verified) {
+      if (_hasTriggeredGasSponsorship) {
+        if (kDebugMode) {
+          debugPrint(
+            'FaceVerificationView: skipping duplicate verification flow (already triggered gas sponsorship)',
+          );
+        }
+        viewModel.setSuccess(chain);
+        if (!mounted) return;
+        _showResultDialog(verified: true, chain: chain);
+        return;
+      }
+      _hasTriggeredGasSponsorship = true;
       viewModel.setSuccess(chain);
       ref.read(analyticsProvider).v2FaceVerificationSuccess({'chain': chain});
       ref.read(analyticsProvider).identifyUser({
@@ -63,6 +83,7 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
         _showResultDialog(verified: true, chain: chain);
       } catch (e) {
         if (!mounted) return;
+        _hasTriggeredGasSponsorship = false;
         viewModel.setFailed();
         ref.read(analyticsProvider).v2FaceVerificationFailed();
         _showResultDialog(verified: false, chain: chain);
