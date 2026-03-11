@@ -2,6 +2,7 @@
 // "Withdrawal Methods" in the UI for better user experience. The underlying data
 // structure and database collection remain as "payment_methods".
 // providers/payment_method_provider.dart
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -299,3 +300,29 @@ final primaryWithdrawalMethodProvider = Provider<WithdrawalMethod?>((ref) {
   final methodsState = ref.watch(withdrawalMethodsProvider);
   return methodsState.primaryWithdrawalMethod;
 });
+
+/// Waits for [withdrawalMethodsProvider] to reach [WithdrawalMethodsState.loaded]
+/// or [WithdrawalMethodsState.error], then returns the current state.
+/// Use this before reading withdrawal methods when a flow depends on the list
+/// being loaded (e.g. achievement claim, V2 eligibility).
+Future<WithdrawalMethodsStateModel> waitForWithdrawalMethods(Ref ref) {
+  final current = ref.read(withdrawalMethodsProvider);
+  if (current.state == WithdrawalMethodsState.loaded ||
+      current.state == WithdrawalMethodsState.error) {
+    return Future.value(current);
+  }
+
+  final completer = Completer<WithdrawalMethodsStateModel>();
+  late final ProviderSubscription<WithdrawalMethodsStateModel> sub;
+  sub = ref.listen(withdrawalMethodsProvider, (previous, next) {
+    if (next.state == WithdrawalMethodsState.loaded ||
+        next.state == WithdrawalMethodsState.error) {
+      if (!completer.isCompleted) {
+        completer.complete(next);
+      }
+      sub.close();
+    }
+  });
+
+  return completer.future;
+}

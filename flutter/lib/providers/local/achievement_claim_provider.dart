@@ -82,9 +82,9 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
         throw Exception('Pax account not found');
       }
 
-      // Check if at least one withdrawal method is GoodDollar verified
-      final withdrawalMethods =
-          ref.read(withdrawalMethodsProvider).withdrawalMethods;
+      // Wait for withdrawal methods to load, then check if at least one is GoodDollar verified
+      final withdrawalMethodsState = await waitForWithdrawalMethods(ref);
+      final withdrawalMethods = withdrawalMethodsState.withdrawalMethods;
       bool hasVerifiedMethod = false;
 
       for (final withdrawalMethod in withdrawalMethods) {
