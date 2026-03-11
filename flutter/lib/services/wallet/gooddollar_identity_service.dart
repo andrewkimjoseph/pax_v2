@@ -37,7 +37,7 @@ class GoodDollarIdentityService {
 
   /// Checks if a wallet address is whitelisted (verified) in GoodDollar Identity.
   static Future<bool> isWhitelisted(String walletAddress) async {
-    try {
+    Future<bool> attempt() async {
       final paddedAddress = walletAddress
           .replaceFirst('0x', '')
           .toLowerCase()
@@ -45,18 +45,29 @@ class GoodDollarIdentityService {
 
       final data = '$_isWhitelistedSelector$paddedAddress';
       final result = await _rpcCall('eth_call', [
-        {
-          'to': _identityContractAddress,
-          'data': data,
-        },
+        {'to': _identityContractAddress, 'data': data},
         'latest',
       ]);
 
       final returnValue = result['result'] as String? ?? '0x0';
       return returnValue.endsWith('1');
+    }
+
+    try {
+      return await attempt();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('GoodDollarIdentityService: isWhitelisted error: $e');
+        debugPrint(
+          'GoodDollarIdentityService: isWhitelisted first attempt error: $e, retrying once',
+        );
+      }
+    }
+
+    try {
+      return await attempt();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('GoodDollarIdentityService: isWhitelisted retry failed: $e');
       }
       return false;
     }
@@ -73,10 +84,7 @@ class GoodDollarIdentityService {
 
       final data = '$_getWhitelistedOnChainIdSelector$paddedAddress';
       final result = await _rpcCall('eth_call', [
-        {
-          'to': _identityContractAddress,
-          'data': data,
-        },
+        {'to': _identityContractAddress, 'data': data},
         'latest',
       ]);
 
@@ -94,7 +102,10 @@ class GoodDollarIdentityService {
       );
       if (length == 0) return null;
 
-      final contentHex = hexStr.substring(dataOffset + 64, dataOffset + 64 + length * 2);
+      final contentHex = hexStr.substring(
+        dataOffset + 64,
+        dataOffset + 64 + length * 2,
+      );
       final bytes = <int>[];
       for (var i = 0; i < contentHex.length; i += 2) {
         bytes.add(int.parse(contentHex.substring(i, i + 2), radix: 16));
@@ -102,7 +113,9 @@ class GoodDollarIdentityService {
       return String.fromCharCodes(bytes);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('GoodDollarIdentityService: getWhitelistedChainId error: $e');
+        debugPrint(
+          'GoodDollarIdentityService: getWhitelistedChainId error: $e',
+        );
       }
       return null;
     }
@@ -128,8 +141,5 @@ class GoodDollarIdentityStatus {
   final bool isWhitelisted;
   final String? chainId;
 
-  GoodDollarIdentityStatus({
-    required this.isWhitelisted,
-    this.chainId,
-  });
+  GoodDollarIdentityStatus({required this.isWhitelisted, this.chainId});
 }

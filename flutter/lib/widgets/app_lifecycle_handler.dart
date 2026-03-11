@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:pax/models/auth/auth_state_model.dart';
@@ -37,21 +38,35 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       deepLinkHandler: widget.onDeepLink,
     ); // Initialize with handler
     _branchService.listenToDeepLinks(); // Start listening (waits for SDK init)
+    if (kDebugMode) {
+      debugPrint('AppLifecycleHandler: initState, observer added');
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _branchService.dispose(); // Dispose the Branch service
+    if (kDebugMode) {
+      debugPrint('AppLifecycleHandler: dispose, observer removed');
+    }
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (kDebugMode) {
+      debugPrint('AppLifecycleHandler: didChangeAppLifecycleState state=$state');
+    }
     if (state == AppLifecycleState.resumed) {
       // Defer remote config refresh and provider invalidation until after the first frame,
       // so the resumed UI can paint before overlays and rebuilds kick in.
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (kDebugMode) {
+          debugPrint(
+            'AppLifecycleHandler: resumed postFrameCallback, refreshing remote config and invalidating config providers',
+          );
+        }
         ref.read(remoteConfigServiceProvider).refreshConfig();
         ref.invalidate(appVersionConfigProvider);
         ref.invalidate(maintenanceConfigProvider);
@@ -66,10 +81,20 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
           currentAuthState.state != AuthState.initial &&
           currentAuthState.state != AuthState.loading;
       if (shouldRefreshAuth) {
+        if (kDebugMode) {
+          debugPrint(
+            'AppLifecycleHandler: refreshing auth state (currentState=${currentAuthState.state})',
+          );
+        }
         ref.read(authProvider.notifier).refreshUserState();
       } else if (currentAuthState.state == AuthState.authenticated) {
         // Preload wallet credentials for V2 users so miniapps open quickly
         if (ref.read(accountTypeProvider) == AccountType.v2) {
+          if (kDebugMode) {
+            debugPrint(
+              'AppLifecycleHandler: V2 authenticated, calling restoreWalletIfNeeded(silentOnly: true)',
+            );
+          }
           restoreWalletIfNeeded(ref, silentOnly: true);
         }
       }
@@ -84,6 +109,11 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       next,
     ) {
       if (next is AsyncData) {
+        if (kDebugMode) {
+          debugPrint(
+            'AppLifecycleHandler: remoteConfigUpdate received, invalidating config providers',
+          );
+        }
         ref.invalidate(appVersionConfigProvider);
         ref.invalidate(maintenanceConfigProvider);
         ref.invalidate(featureFlagsProvider);

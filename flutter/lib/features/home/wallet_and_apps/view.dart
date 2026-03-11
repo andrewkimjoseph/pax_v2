@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/features/home/wallet_and_apps/miniapps/view.dart';
@@ -52,37 +53,37 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _segment == WalletAndAppsSegment.wallet ? 'Wallet' : 'Apps',
+                _segment == WalletAndAppsSegment.wallet ? 'Overview' : 'Apps',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 32,
                   color: PaxColors.black,
                 ),
               ),
-              if (_segment == WalletAndAppsSegment.apps)
-                ref
-                    .watch(featureFlagsProvider)
-                    .when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
-                      data:
-                          (flags) =>
-                              (flags[RemoteConfigKeys
-                                          .isCustomAppAccessFeatureAvailable] ==
-                                      true)
-                                  ? Button(
-                                    onPressed: _showOpenCustomDappDialog,
-                                    style: const ButtonStyle.ghost(
-                                      density: ButtonDensity.icon,
-                                    ),
-                                    child: FaIcon(
-                                      FontAwesomeIcons.link,
-                                      size: 22,
-                                      color: PaxColors.deepPurple,
-                                    ),
-                                  )
-                                  : const SizedBox.shrink(),
-                    ),
+              ref
+                  .watch(featureFlagsProvider)
+                  .when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
+                    data:
+                        (flags) =>
+                            kDebugMode ||
+                                    (flags[RemoteConfigKeys
+                                            .isCustomAppAccessFeatureAvailable] ==
+                                        true)
+                                ? Button(
+                                  onPressed: _showOpenCustomDappDialog,
+                                  style: const ButtonStyle.ghost(
+                                    density: ButtonDensity.icon,
+                                  ),
+                                  child: FaIcon(
+                                    FontAwesomeIcons.link,
+                                    size: 22,
+                                    color: PaxColors.deepPurple,
+                                  ),
+                                )
+                                : const SizedBox.shrink(),
+                  ),
             ],
           ).withPadding(bottom: 8),
           subtitle: SingleChildScrollView(
@@ -92,7 +93,7 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _segmentButton(
-                  label: 'Wallet',
+                  label: 'Overview',
                   isActive: _segment == WalletAndAppsSegment.wallet,
                   onPressed:
                       () => setState(
@@ -115,14 +116,8 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
       child: IndexedStack(
         index: _segment == WalletAndAppsSegment.wallet ? 0 : 1,
         children: [
-          PaxWalletView(
-            key: ValueKey('wallet'),
-            embedded: true,
-          ).withPadding(top: 8),
-          MiniAppsView(
-            key: ValueKey('apps'),
-            embedded: true,
-          ).withPadding(top: 8),
+          PaxWalletView(key: ValueKey('wallet')).withPadding(top: 8),
+          MiniAppsView(key: ValueKey('apps')).withPadding(top: 8),
         ],
       ),
     );
