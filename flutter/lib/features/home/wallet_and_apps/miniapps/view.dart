@@ -119,7 +119,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
                   child:
                       isCheckingAgain
                           ? CircularProgressIndicator()
-                          : const Text('Check again'),
+                          : const Text('Check again (if already verified)'),
                 ),
               ).withPadding(top: 8),
           ],
@@ -176,7 +176,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
             isCheckingAgain: _isCheckingAgain,
           ),
       data: (needsVerification) {
-        if (!needsVerification) {
+        if (needsVerification) {
           return _buildVerificationPrompt(
             context,
             onCheckAgain: _onCheckAgainPressed,
