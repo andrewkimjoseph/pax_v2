@@ -73,7 +73,7 @@ class WithdrawalMethodConnectionService {
     String walletAddress,
     bool checkWhitelist,
   ) async {
-    try {
+    Future<bool> runCheck() async {
       // First, validate that the wallet address is a valid Ethereum address
       if (!isValidEthereumAddress(walletAddress)) {
         return false;
@@ -107,6 +107,21 @@ class WithdrawalMethodConnectionService {
       }
 
       return false; // No authentication timestamp found
+    }
+
+    try {
+      final result = await runCheck();
+      if (result) return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'WithdrawalMethodConnectionService: isGoodDollarVerified first attempt error: $e, retrying once',
+        );
+      }
+    }
+
+    try {
+      return await runCheck();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error checking GoodDollar verification: $e');
