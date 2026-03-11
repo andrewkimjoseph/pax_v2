@@ -1,31 +1,35 @@
-import 'package:flutter/material.dart' show InkWell;
+import 'package:flutter/material.dart' show InkWell, VoidCallback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/models/remote_config/miniapps_config.dart';
-import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
-import 'package:pax/utils/remote_config_constants.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class MiniAppsView extends ConsumerStatefulWidget {
-  const MiniAppsView({super.key, this.embedded = false});
-
-  /// When true, only the body content is built (no Scaffold/AppBar).
-  /// Used when embedded inside [WalletAndAppsView]. Caller is responsible
-  /// for showing the custom dapp button in the AppBar when needed.
-  final bool embedded;
+  const MiniAppsView({super.key});
 
   @override
   ConsumerState<MiniAppsView> createState() => _MiniAppsViewState();
 }
 
 class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
+  /// Invalidate verification at most once per entry when wallet is loaded.
+  bool _hasInvalidatedVerificationOnEnter = false;
+
+  /// True while "Check again" has been pressed and verification is refetching.
+  bool _isCheckingAgain = false;
+
+  void _onCheckAgainPressed() {
+    setState(() => _isCheckingAgain = true);
+    ref.invalidate(paxWalletNeedsVerificationProvider);
+  }
+
   Widget _buildMiniappsList(AsyncValue<MiniappsConfig> configAsync) {
     return configAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -63,7 +67,11 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
     );
   }
 
-  Widget _buildVerificationPrompt(BuildContext context) {
+  Widget _buildVerificationPrompt(
+    BuildContext context, {
+    VoidCallback? onCheckAgain,
+    bool isCheckingAgain = false,
+  }) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -102,150 +110,81 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
                 child: const Text('Continue'),
               ),
             ),
+            if (onCheckAgain != null)
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlineButton(
+                  onPressed: isCheckingAgain ? null : onCheckAgain,
+                  child:
+                      isCheckingAgain
+                          ? CircularProgressIndicator()
+                          : const Text('Check again'),
+                ),
+              ).withPadding(top: 8),
           ],
         ),
       ),
     );
   }
 
-  void _showOpenCustomDappDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder:
-          (dialogContext) => _OpenCustomDappDialog(
-            onOpen: (String url) {
-              Navigator.of(dialogContext).pop();
-              ref.read(analyticsProvider).customDappOpened({
-                'custom_dapp_url': url,
-              });
-              context.push(Routes.miniappWebView, extra: url);
-            },
-            onCancel: () => Navigator.of(dialogContext).pop(),
-          ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final accountType = ref.watch(accountTypeProvider);
     final configAsync = ref.watch(miniappsConfigProvider);
+    final paxWalletState = ref.watch(paxWalletProvider);
     final paxWalletNeedsVerificationAsync = ref.watch(
       paxWalletNeedsVerificationProvider,
     );
 
-    if (widget.embedded) {
-      return paxWalletNeedsVerificationAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => _buildVerificationPrompt(context),
-        data: (needsVerification) {
-          if (needsVerification) {
-            return _buildVerificationPrompt(context);
-          }
-          return _buildMiniappsList(configAsync);
-        },
-      );
+    ref.listen<AsyncValue<bool>>(paxWalletNeedsVerificationProvider, (
+      prev,
+      next,
+    ) {
+      if (_isCheckingAgain &&
+          (next is AsyncData || next is AsyncError) &&
+          mounted) {
+        setState(() => _isCheckingAgain = false);
+      }
+    });
+
+    final walletLoaded =
+        paxWalletState.state == PaxWalletState.loaded &&
+        paxWalletState.wallet != null &&
+        (paxWalletState.wallet!.eoAddress ?? '').isNotEmpty;
+    final walletLoading =
+        paxWalletState.state == PaxWalletState.initial ||
+        paxWalletState.state == PaxWalletState.loading;
+
+    if (walletLoading) {
+      return const Center(child: CircularProgressIndicator());
     }
-
-    if (accountType != AccountType.v2) {
-      return Scaffold(
-        headers: [
-          AppBar(
-            padding: const EdgeInsets.all(8),
-            height: 50,
-            backgroundColor: PaxColors.white,
-            header: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Apps',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 32,
-                    color: PaxColors.black,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Divider(color: PaxColors.lightGrey),
-        ],
-        child: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'Only available for PaxWallet users.',
-                style: TextStyle(fontSize: 16, color: PaxColors.darkGrey),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-      );
+    if (!walletLoaded) {
+      return _buildVerificationPrompt(context);
     }
-
-    return Scaffold(
-      headers: [
-        AppBar(
-          padding: const EdgeInsets.all(8),
-          height: 50,
-          backgroundColor: PaxColors.white,
-          header: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Apps',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 32,
-                  color: PaxColors.black,
-                ),
-              ),
-              ref
-                  .watch(featureFlagsProvider)
-                  .when(
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data:
-                        (flags) =>
-                            (flags[RemoteConfigKeys
-                                        .isCustomAppAccessFeatureAvailable] ==
-                                    true)
-                                ? Button(
-                                  onPressed:
-                                      () => _showOpenCustomDappDialog(
-                                        context,
-                                        ref,
-                                      ),
-                                  style: const ButtonStyle.ghost(
-                                    density: ButtonDensity.icon,
-                                  ),
-                                  child: FaIcon(
-                                    FontAwesomeIcons.link,
-                                    size: 22,
-                                    color: PaxColors.deepPurple,
-                                  ),
-                                )
-                                : const SizedBox.shrink(),
-                  ),
-            ],
+    if (!_hasInvalidatedVerificationOnEnter) {
+      _hasInvalidatedVerificationOnEnter = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.invalidate(paxWalletNeedsVerificationProvider);
+      });
+    }
+    return paxWalletNeedsVerificationAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error:
+          (_, __) => _buildVerificationPrompt(
+            context,
+            onCheckAgain: _onCheckAgainPressed,
+            isCheckingAgain: _isCheckingAgain,
           ),
-        ),
-        Divider(color: PaxColors.lightGrey),
-      ],
-      child: paxWalletNeedsVerificationAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => _buildVerificationPrompt(context),
-        data: (needsVerification) {
-          if (needsVerification) {
-            return _buildVerificationPrompt(context);
-          }
-
-          return _buildMiniappsList(configAsync);
-        },
-      ),
+      data: (needsVerification) {
+        if (!needsVerification) {
+          return _buildVerificationPrompt(
+            context,
+            onCheckAgain: _onCheckAgainPressed,
+            isCheckingAgain: _isCheckingAgain,
+          );
+        }
+        return _buildMiniappsList(configAsync);
+      },
     );
   }
 }

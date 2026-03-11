@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' show Divider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/widgets/pax_wallet/recent_transactions_section.dart';
@@ -12,11 +11,7 @@ import 'package:pax/extensions/tooltip.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class PaxWalletView extends ConsumerStatefulWidget {
-  const PaxWalletView({super.key, this.embedded = false});
-
-  /// When true, only the body content is built (no Scaffold/AppBar).
-  /// Used when embedded inside [WalletAndAppsView].
-  final bool embedded;
+  const PaxWalletView({super.key});
 
   @override
   ConsumerState<PaxWalletView> createState() => _PaxWalletViewState();
@@ -49,7 +44,9 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
     final walletState = ref.read(paxWalletProvider);
     final eoAddress = walletState.wallet?.eoAddress;
     if (eoAddress != null) {
-      ref.read(paxWalletViewProvider.notifier).fetchBalance(eoAddress, forceRefresh: true);
+      ref
+          .read(paxWalletViewProvider.notifier)
+          .fetchBalance(eoAddress, forceRefresh: true);
     }
   }
 
@@ -147,40 +144,13 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
           Expanded(
             child: SingleChildScrollView(
               child: RecentTransactionsContent(eoAddress: eoAddress),
-            ).withPadding(left: 8, right: 8, bottom: 8, top: 8),
+            ).withPadding(left: 8, right: 8, top: 8),
           )
         else
           Expanded(child: const SizedBox.shrink()),
       ],
     );
 
-    if (widget.embedded) {
-      return body;
-    }
-
-    return Scaffold(
-      headers: [
-        AppBar(
-          padding: EdgeInsets.all(8),
-          height: 50,
-          backgroundColor: PaxColors.white,
-          header: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Wallet',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 32,
-                  color: PaxColors.black,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Divider(color: PaxColors.lightGrey),
-      ],
-      child: body,
-    );
+    return body;
   }
 }

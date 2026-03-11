@@ -26,22 +26,12 @@ class PaxWalletCardHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: PaxColors.white.withValues(alpha: 0.25),
-                blurRadius: 12,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: SvgPicture.asset(
-            'lib/assets/svgs/wallets/pax_wallet.svg',
-            width: 32,
-            height: 32,
-          ),
+        SvgPicture.asset(
+          'lib/assets/svgs/wallets/pax_wallet_lilac.svg',
+          width: 32,
+          height: 32,
         ).withPadding(right: 12),
+
         Text(
           'PaxWallet',
           style: TextStyle(

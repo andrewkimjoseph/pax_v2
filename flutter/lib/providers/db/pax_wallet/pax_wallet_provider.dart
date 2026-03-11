@@ -42,14 +42,12 @@ class PaxWalletStateModel {
 }
 
 class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
-  late final PaxWalletRepository _repository;
+  PaxWalletRepository get _repository => ref.read(paxWalletRepositoryProvider);
   /// EOA we have already requested gas sponsorship for this session; avoids duplicate sponsorWalletGas calls.
   String? _gasSponsorshipRequestedForEoAddress;
 
   @override
   PaxWalletStateModel build() {
-    _repository = ref.watch(paxWalletRepositoryProvider);
-
     ref.listen(authProvider, (previous, next) {
       if (previous?.state != next.state) {
         if (next.state == AuthState.authenticated) {

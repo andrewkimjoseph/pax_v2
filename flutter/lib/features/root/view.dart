@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' show Badge;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:pax/exports/views.dart';
 import 'package:pax/features/home/wallet_and_apps/view.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
@@ -74,7 +75,7 @@ class _RootViewState extends ConsumerState<RootView> {
               buildButton('Home', selected == 0, badgeCount: null, isV2: isV2),
               if (isV2)
                 buildButton(
-                  'Wallet',
+                  'PaxWallet',
                   selected == 1,
                   badgeCount: null,
                   isV2: isV2,
@@ -122,7 +123,7 @@ class _RootViewState extends ConsumerState<RootView> {
     switch (label) {
       case 'Home':
         return FontAwesomeIcons.house;
-      case 'Wallet':
+      case 'PaxWallet':
         return FontAwesomeIcons.wallet;
       case 'Activity':
         return FontAwesomeIcons.clockRotateLeft;
@@ -170,11 +171,20 @@ class _RootViewState extends ConsumerState<RootView> {
                 : const Text(''),
         backgroundColor: showActivityBadge ? PaxColors.orange : PaxColors.red,
         smallSize: 10,
-        child: FaIcon(
-          _getIconForLabel(label),
-          size: 24,
-          color: isSelected ? PaxColors.deepPurple : PaxColors.lilac,
-        ),
+        child:
+            label == 'PaxWallet'
+                ? SvgPicture.asset(
+                  isSelected
+                      ? 'lib/assets/svgs/wallets/pax_wallet.svg'
+                      : 'lib/assets/svgs/wallets/pax_wallet_lilac.svg',
+                  width: 32,
+                  height: 32,
+                )
+                : FaIcon(
+                  _getIconForLabel(label),
+                  size: 24,
+                  color: isSelected ? PaxColors.deepPurple : PaxColors.lilac,
+                ),
       ),
     );
   }
