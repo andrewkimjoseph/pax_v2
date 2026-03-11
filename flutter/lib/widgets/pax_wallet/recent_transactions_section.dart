@@ -47,11 +47,13 @@ class RecentTransactionsContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children:
-          txState.transactions
-              .map<Widget>(
-                (tx) => WalletTransactionTile(tx: tx, myAddress: eoAddress),
-              )
-              .toList(),
+          txState.transactions.asMap().entries.map<Widget>((entry) {
+            final index = entry.key;
+            final tx = entry.value;
+            final tile = WalletTransactionTile(tx: tx, myAddress: eoAddress);
+            final isLast = index == txState.transactions.length - 1;
+            return isLast ? tile.withPadding(bottom: 8) : tile;
+          }).toList(),
     );
   }
 }
@@ -135,7 +137,9 @@ class WalletTransactionTile extends ConsumerWidget {
     final decimals = _decimalsForTx(tx);
     final displayAmount = _formatValue(rawValue, decimals: decimals);
     final tokenSymbol = tx['tokenSymbol']?.toString().trim();
-    final displaySymbol = CurrencySymbolUtil.getDisplaySymbolForTokenSymbol(tokenSymbol);
+    final displaySymbol = CurrencySymbolUtil.getDisplaySymbolForTokenSymbol(
+      tokenSymbol,
+    );
     final amountWithSymbol =
         displayAmount != null && displaySymbol.isNotEmpty
             ? '$displayAmount $displaySymbol'
