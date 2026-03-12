@@ -47,6 +47,9 @@ export const DRPC_URL = `https://lb.drpc.live/celo/${DRPC_API_KEY}`;
 
 export const REWARD_TOKEN_ADDRESS = "0x62B8B11039FcfE5aB0C56E502b1C372A3d2a9c7A" as Address;
 
+/** Default CELO amount to sponsor per wallet (in ether). */
+export const DEFAULT_SPONSOR_AMOUNT_CELO = "0.05";
+
 export const PUBLIC_CLIENT = createPublicClient({
   chain: celo,
   transport: http(DRPC_URL),
