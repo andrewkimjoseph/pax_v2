@@ -17,12 +17,10 @@ import {
   CANVASSING_GAS_SPONSOR_PROXY_ADDRESS,
   CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
   DB,
+  DEFAULT_SPONSOR_AMOUNT_CELO,
 } from "../../utils/config";
 import { canvassingGasSponsorABI } from "../../utils/abis/new/canvassingGasSponsor";
 import { canvassingWalletRegistryABI } from "../../utils/abis/new/canvassingWalletRegistry";
-
-/** Default CELO amount to sponsor per wallet (in ether). */
-const DEFAULT_SPONSOR_AMOUNT_CELO = "0.025";
 
 /**
  * Callable to sponsor gas for a registered wallet.
