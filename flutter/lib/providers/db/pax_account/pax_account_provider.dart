@@ -5,6 +5,7 @@ import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/models/firestore/pax_account/pax_account_model.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/repositories/firestore/pax_account/pax_account_repository.dart';
 import 'package:pax/services/blockchain/blockchain_service.dart';
 import 'package:pax/utils/local_db_helper.dart';
@@ -134,6 +135,30 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       );
 
       await _syncParticipantAccountTypeIfV2(account);
+
+      // Backfill EO address (and optionally smart account address) from PaxWallet when missing.
+      // This ensures returning V2 users with an existing PaxWallet are not treated as \"new\"
+      // on subsequent sign-ins.
+      try {
+        final paxWalletState = ref.read(paxWalletProvider);
+        final wallet = paxWalletState.wallet;
+        final walletEo = wallet?.eoAddress;
+        final walletSmart = wallet?.smartAccountAddress;
+        final accountEo = state.account?.eoWalletAddress;
+        final needsBackfill =
+            walletEo != null && walletEo.isNotEmpty && (accountEo == null || accountEo.isEmpty);
+        if (needsBackfill) {
+          final update = <String, dynamic>{'eoWalletAddress': walletEo};
+          if (walletSmart != null && walletSmart.isNotEmpty) {
+            update['smartAccountWalletAddress'] = walletSmart;
+          }
+          await updateAccount(update);
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('PaxAccount backfill from PaxWallet failed (non-blocking): $e');
+        }
+      }
 
       // Try to fetch balances from blockchain if payout wallet exists (V1 or V2)
       if (account.payoutWalletAddress != null &&

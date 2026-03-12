@@ -25,10 +25,10 @@ class FaceVerificationWebView extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<FaceVerificationWebView> createState() =>
-      _FaceVerificationWebViewState();
+      FaceVerificationWebViewState();
 }
 
-class _FaceVerificationWebViewState
+class FaceVerificationWebViewState
     extends ConsumerState<FaceVerificationWebView> {
   static const String _verificationUrl =
       'https://thegoodpax.app/verify-identity';
@@ -43,6 +43,7 @@ class _FaceVerificationWebViewState
   String? _lastPopupUrl;
   Timer? _popupTimer;
   bool _isPopupShowing = false;
+  InAppWebViewController? _controller;
 
   @override
   void initState() {
@@ -456,6 +457,7 @@ class _FaceVerificationWebViewState
         ),
       ]),
       onWebViewCreated: (controller) {
+        _controller = controller;
         controller.addJavaScriptHandler(
           handlerName: 'web3Request',
           callback: (args) async {
@@ -623,5 +625,12 @@ class _FaceVerificationWebViewState
         );
       },
     );
+  }
+
+  void reload() {
+    final controller = _controller;
+    if (controller != null) {
+      controller.reload();
+    }
   }
 }

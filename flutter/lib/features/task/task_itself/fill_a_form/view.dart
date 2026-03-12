@@ -14,7 +14,6 @@ import 'package:pax/services/task_completion_service.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/utils/error_message_util.dart';
 import 'package:pax/utils/time_formatter.dart';
-import 'package:pax/widgets/optimized_webview.dart';
 
 class FillAFormView extends ConsumerStatefulWidget {
   const FillAFormView({super.key});
@@ -269,7 +268,9 @@ class _TaskItselfViewState extends ConsumerState<FillAFormView> {
         canPop: false,
         child: Stack(
           children: [
-            OptimizedWebView(
+            InAppWebView(
+              initialSettings:
+                  InAppWebViewSettings(useHybridComposition: false),
               onWebViewCreated: (controller) {
                 _webViewController = controller;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -294,7 +295,6 @@ class _TaskItselfViewState extends ConsumerState<FillAFormView> {
                 }
                 return NavigationActionPolicy.ALLOW;
               },
-              isLoading: isLoading,
             ),
             if (isLoading) Center(child: CircularProgressIndicator()),
           ],
