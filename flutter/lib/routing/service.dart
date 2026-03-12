@@ -87,6 +87,14 @@ final routerProvider = Provider((ref) {
 
       // If authenticated, check if new user needs onboarding
       if (authState == AuthState.authenticated) {
+        // Prevent landing on FV route implicitly (e.g. after app restart) without a known source.
+        if (state.matchedLocation == Routes.completeGoodDollarFaceVerification) {
+          final extra = state.extra;
+          if (extra is! String || extra.isEmpty) {
+            return Routes.home;
+          }
+        }
+
         final paxAccountState = ref.read(paxAccountProvider);
         final account = paxAccountState.account;
         final isAccountLoaded = paxAccountState.state == PaxAccountState.loaded;

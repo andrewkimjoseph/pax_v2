@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/local/face_verification_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
@@ -33,12 +32,13 @@ class FaceVerificationView extends ConsumerStatefulWidget {
 class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
   bool _restoreAttempted = false;
   bool _hasLoggedVerificationStarted = false;
+
   /// Guards so we only trigger gas sponsorship and registration once per session.
   bool _hasTriggeredGasSponsorship = false;
+  final GlobalKey _webViewKey = GlobalKey();
 
   Future<void> _restoreWallet() async {
     if (!mounted) return;
-    if (ref.read(accountTypeProvider) != AccountType.v2) return;
     _restoreAttempted = true;
     await restoreWalletIfNeeded(ref, silentOnly: false);
   }
@@ -297,12 +297,25 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
                 style: TextStyle(fontSize: 20),
               ).withPadding(right: 16),
               Spacer(),
+              IconButton(
+                onPressed: () {
+                  final currentState = _webViewKey.currentState;
+                  if (currentState is FaceVerificationWebViewState) {
+                    currentState.reload();
+                  }
+                },
+                variance: const ButtonStyle.outline(
+                  density: ButtonDensity.icon,
+                ),
+                icon: const FaIcon(FontAwesomeIcons.rotate, size: 20),
+              ),
             ],
           ),
         ).withPadding(top: 16),
         Divider(),
       ],
       child: FaceVerificationWebView(
+        key: _webViewKey,
         credentials: walletState.credentials!,
         onVerificationResult: _onVerificationResult,
       ),

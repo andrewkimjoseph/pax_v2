@@ -18,6 +18,8 @@
   const ethereumProvider = {
     isFlutterWeb3: true,
     isMetaMask: true, // Some dApps check for this
+    isMiniPay: true,   // Mimic MiniPay for mini-app compatibility
+    isMinipay: true,   // Alternate spelling some sites use
     _metamask: {
       isUnlocked: async () => true,
       requestBatch: async (requests) => {

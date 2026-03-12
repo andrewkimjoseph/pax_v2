@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:flutter_svg/svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 // import 'package:pax/providers/local/activity_providers.dart';
 // import 'package:pax/utils/token_balance_util.dart';
@@ -26,10 +27,24 @@ class AccountView extends ConsumerStatefulWidget {
 
 class _AccountViewState extends ConsumerState<AccountView> {
   bool isLoggingOut = false;
+  String? _appVersion;
 
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (!mounted) return;
+      setState(() {
+        _appVersion = '${info.version}+${info.buildNumber}';
+      });
+    } catch (_) {
+      // Ignore version load errors; simply don't show the version text.
+    }
   }
 
   @override
@@ -61,6 +76,29 @@ class _AccountViewState extends ConsumerState<AccountView> {
         ),
         Divider(color: PaxColors.lightGrey),
       ],
+      footers:
+          _appVersion != null
+              ? [
+                SafeArea(
+                  left: false,
+                  right: false,
+                  top: false,
+
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Version $_appVersion',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: PaxColors.darkGrey,
+                        ),
+                      ),
+                    ],
+                  ).withPadding(left: 8, bottom: 8),
+                ),
+              ]
+              : [],
       child: SingleChildScrollView(
         child: Column(
           children: [
