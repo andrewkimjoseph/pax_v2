@@ -314,13 +314,14 @@ class NotificationService {
       final tzScheduled = tz.TZDateTime.from(scheduledAt, tz.local);
       // Only skip if clearly in the past (tolerance avoids skipping due to device clock skew).
       if (tzScheduled.isBefore(now.subtract(skipTolerance))) continue;
+      final remainingMinutes = taskTimerDurationMinutes - minutes;
       try {
         await _flutterLocalNotificationsPlugin.zonedSchedule(
           scheduledId,
           'Task reminder',
           minutes >= taskTimerDurationMinutes
               ? 'Cooldown is ending soon.'
-              : '${taskTimerDurationMinutes - minutes} min left on your task.',
+              : '${_formatTaskTimeRemaining(remainingMinutes)} left on your task.',
           tzScheduled,
           _defaultNotificationDetails,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -334,6 +335,17 @@ class NotificationService {
       }
       scheduledId++;
     }
+  }
+
+  /// Formats remaining task time for notification body (e.g. "5 hours", "1 hour", "45 min").
+  static String _formatTaskTimeRemaining(int remainingMinutes) {
+    if (remainingMinutes >= 60) {
+      final hours = remainingMinutes ~/ 60;
+      return hours == 1 ? '1 hour' : '$hours hours';
+    }
+    return remainingMinutes == 1
+        ? '1 min'
+        : '$remainingMinutes min';
   }
 
   /// Cancels all task cooldown reminders (IDs [taskCooldownNotificationIdBase] through +6).
