@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./CanvassingWalletRegistry.sol";
 
@@ -18,12 +19,14 @@ import "./CanvassingWalletRegistry.sol";
  *      registry — only wallets that have been logged via CanvassingWalletRegistry
  *      can receive gas.
  *
- *      Implements the UUPS upgradeable proxy pattern.
+ *      Implements the UUPS upgradeable proxy pattern with reentrancy protection
+ *      on all state-changing functions that perform external calls (sponsorWallet, withdraw).
  *      Owned by the deployer; only the owner may sponsor wallets or authorise upgrades.
  */
 contract CanvassingGasSponsor is
     Initializable,
     OwnableUpgradeable,
+    ReentrancyGuardUpgradeable,
     UUPSUpgradeable
 {
     // -------------------------------------------------------------------------
@@ -125,6 +128,7 @@ contract CanvassingGasSponsor is
         require(_registry != address(0), "CanvassingGasSponsor: registry cannot be zero address");
 
         __Ownable_init(_owner);
+        __ReentrancyGuard_init();
 
         registry = CanvassingWalletRegistry(_registry);
         version = 1;
@@ -147,7 +151,7 @@ contract CanvassingGasSponsor is
 
     /**
      * @notice Send CELO to a registered wallet address.
-     * @dev Only callable by the contract owner.
+     * @dev Only callable by the contract owner. Protected against reentrancy attacks.
      *      Reverts if the wallet is not registered in the coupled registry.
      *      Reverts if the contract does not have sufficient CELO balance.
      * @param eoAddress The registered EO wallet address to sponsor.
@@ -156,7 +160,7 @@ contract CanvassingGasSponsor is
     function sponsorWallet(
         address eoAddress,
         uint256 amount
-    ) external onlyOwner {
+    ) external onlyOwner nonReentrant {
         require(eoAddress != address(0), "CanvassingGasSponsor: eoAddress cannot be zero address");
         require(amount > 0, "CanvassingGasSponsor: amount must be greater than zero");
         require(
@@ -196,11 +200,12 @@ contract CanvassingGasSponsor is
 
     /**
      * @notice Withdraw CELO from the contract back to a specified address.
-     * @dev Only callable by the owner. Useful for recovering funds or rebalancing.
+     * @dev Only callable by the owner. Protected against reentrancy attacks.
+     *      Useful for recovering funds or rebalancing.
      * @param to     The address to send the CELO to.
      * @param amount The amount of CELO to withdraw, in wei.
      */
-    function withdraw(address to, uint256 amount) external onlyOwner {
+    function withdraw(address to, uint256 amount) external onlyOwner nonReentrant {
         require(to != address(0), "CanvassingGasSponsor: recipient cannot be zero address");
         require(amount > 0, "CanvassingGasSponsor: amount must be greater than zero");
         require(address(this).balance >= amount, "CanvassingGasSponsor: insufficient balance");
@@ -269,4 +274,3 @@ contract CanvassingGasSponsor is
      */
     uint256[50] private __gap;
 }
-
