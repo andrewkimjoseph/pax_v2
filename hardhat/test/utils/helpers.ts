@@ -30,6 +30,10 @@ const taskManagerV2Bytecode = taskManagerV2ContractArtifact.bytecode as Address;
   // export const REWARD_TOKEN_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a" as Address; //  cUSD Mainnet
   export const REWARD_TOKEN_ADDRESS = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e" as Address; // Tether Mainnet
 
+  // Withdraw-reward script: TaskManager to withdraw from, and recipient address for the tokens
+  export const TASK_MANAGER_ADDRESS = "0x4452D11AD6e24D76879361641282FD7795590C08" as Address; // set to deployed TaskManager
+  export const WITHDRAW_REWARD_TO_ADDRESS = "0x4D167933D742B31229bc730eADf5f2E3c4feceA2" as Address; // recipient of withdrawn reward tokens
+
   // Helper to calculate event signatures
   export function calculateEventSignature(eventSignatureString: string): string {
     const encoder = new TextEncoder();
