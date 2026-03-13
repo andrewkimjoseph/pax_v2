@@ -1,9 +1,3 @@
-// This service manages the reward distribution process:
-// - Handles participant rewards through Firebase Functions
-// - Manages reward state through Riverpod providers
-// - Provides error handling and state management for the reward process
-// - Returns detailed reward results including transaction hashes
-
 // lib/services/reward_service.dart
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -30,19 +24,21 @@ class RewardService {
     required String taskCompletionId,
   }) async {
     try {
-      // Update state to processing
       ref.read(rewardStateProvider.notifier).startRewarding();
 
       final paxAccount = ref.read(paxAccountProvider).account;
       final isV2 = paxAccount?.isV2 ?? false;
 
-      final payload = <String, dynamic>{'taskCompletionId': taskCompletionId};
+      final Map<String, dynamic> payload = {
+        'taskCompletionId': taskCompletionId,
+      };
+
       if (isV2) {
         final credState = ref.read(walletCredentialsProvider);
         final credentials = credState.credentials;
         if (credentials == null) {
           throw Exception(
-            'Pax Wallet not loaded. Please open Pax Wallet or restore from backup and try again.',
+            'Pax Wallet not loaded. Open Pax Wallet or restore from backup to claim rewards.',
           );
         }
         final user = FirebaseAuth.instance.currentUser;
@@ -57,21 +53,24 @@ class RewardService {
         payload['encryptedPrivateKey'] = v2Params['encryptedPrivateKey'];
         payload['sessionKey'] = v2Params['sessionKey'];
         payload['eoWalletAddress'] = v2Params['eoWalletAddress'];
+      } else {
+        final serverWalletId = paxAccount?.serverWalletId;
+        if (serverWalletId == null || serverWalletId.isEmpty) {
+          throw Exception(
+            'Account is missing server wallet. Contact support or complete wallet setup.',
+          );
+        }
+        payload['serverWalletId'] = serverWalletId;
       }
 
-      // Call the Firebase function
       final httpsCallable = FirebaseFunctions.instance.httpsCallable(
         'rewardParticipantProxy',
       );
       final result = await httpsCallable.call(payload);
 
-      // Extract data from the result
       final data = result.data as Map<String, dynamic>;
-
-      // Create RewardResult object
       final rewardResult = RewardResult.fromMap(data);
 
-      // Update state to complete with the result
       ref.read(rewardStateProvider.notifier).completeRewarding(rewardResult);
 
       ref.read(analyticsProvider).rewardingComplete({
@@ -82,7 +81,6 @@ class RewardService {
         "currency": rewardResult.rewardCurrencyId,
       });
 
-      // Send notification about the reward
       final fcmToken = await ref.read(fcmTokenProvider.future);
       if (fcmToken != null) {
         final currencyName = CurrencySymbolUtil.getNameForCurrency(
@@ -111,7 +109,6 @@ class RewardService {
 
       return rewardResult;
     } catch (e) {
-      // Update state to error with error message
       ref
           .read(rewardStateProvider.notifier)
           .setError(
@@ -122,7 +119,6 @@ class RewardService {
             ),
           );
 
-      // Log the error
       if (kDebugMode) {
         debugPrint('Reward process error: $e');
       }

@@ -184,6 +184,7 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
       final txnHash = await _achievementRepository.processAchievementClaim(
         achievementId: achievement.id,
         paxAccountContractAddress: paxAccountPayoutAddress,
+        recipientAddress: paxAccountPayoutAddress,
         amountEarned: achievement.amountEarned ?? 0,
         tasksCompleted: achievement.tasksCompleted,
         eoWalletAddress: eoWalletAddress,
