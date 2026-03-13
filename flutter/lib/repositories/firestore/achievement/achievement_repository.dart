@@ -115,6 +115,7 @@ class AchievementRepository {
     required String paxAccountContractAddress,
     required num amountEarned,
     required int tasksCompleted,
+    String? recipientAddress,
     String? eoWalletAddress,
     String? encryptedPrivateKey,
     String? sessionKey,
@@ -125,6 +126,8 @@ class AchievementRepository {
         'paxAccountContractAddress': paxAccountContractAddress,
         'amountEarned': amountEarned,
         'tasksCompleted': tasksCompleted,
+        if (recipientAddress != null && recipientAddress.isNotEmpty)
+          'recipientAddress': recipientAddress,
       };
       if (eoWalletAddress != null && encryptedPrivateKey != null && sessionKey != null) {
         payload['eoWalletAddress'] = eoWalletAddress;

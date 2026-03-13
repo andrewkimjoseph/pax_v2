@@ -79,24 +79,15 @@ class _AccountViewState extends ConsumerState<AccountView> {
       footers:
           _appVersion != null
               ? [
-                SafeArea(
-                  left: false,
-                  right: false,
-                  top: false,
-
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Version $_appVersion',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: PaxColors.darkGrey,
-                        ),
-                      ),
-                    ],
-                  ).withPadding(left: 8, bottom: 8),
-                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Version $_appVersion',
+                      style: TextStyle(fontSize: 12, color: PaxColors.darkGrey),
+                    ),
+                  ],
+                ).withPadding(left: 8, bottom: 8),
               ]
               : [],
       child: SingleChildScrollView(
