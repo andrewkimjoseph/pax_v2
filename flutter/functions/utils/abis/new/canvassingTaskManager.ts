@@ -190,7 +190,7 @@ export const canvassingTaskManagerABI = [
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "eoAddress",
+				"name": "smartAccountContractAddress",
 				"type": "address"
 			},
 			{
@@ -200,7 +200,7 @@ export const canvassingTaskManagerABI = [
 				"type": "string"
 			}
 		],
-		"name": "ParticipantScreened",
+		"name": "ParticipantProxyScreened",
 		"type": "event"
 	},
 	{
