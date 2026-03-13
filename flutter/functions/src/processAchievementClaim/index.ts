@@ -1,12 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import {
-  Address,
-  encodeFunctionData,
-  http,
-  parseEther,
-  createWalletClient,
-} from "viem";
+import { Address, encodeFunctionData, http, parseEther } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { celo } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
@@ -15,7 +9,6 @@ import {
   PUBLIC_CLIENT,
   DB,
   AUTH,
-  DRPC_URL,
   CANVASSING_REWARDER_PROXY_ADDRESS,
   REWARD_TOKEN_ADDRESS,
   PIMLICO_URL,
@@ -28,6 +21,7 @@ import {
   generateRandomNonce,
 } from "../../utils/helpers/rewardingSignature";
 import { canvassingRewarderABI } from "../../utils/abis/new/canvassingRewarder";
+import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 export const processAchievementClaim = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
@@ -56,6 +50,7 @@ export const processAchievementClaim = onCall(
       const {
         achievementId,
         paxAccountContractAddress,
+        recipientAddress: recipientAddressRaw,
         amountEarned,
         tasksCompleted,
         eoWalletAddress,
@@ -64,6 +59,7 @@ export const processAchievementClaim = onCall(
       } = request.data as {
         achievementId: string;
         paxAccountContractAddress: string;
+        recipientAddress?: string;
         amountEarned: number;
         tasksCompleted: number;
         eoWalletAddress?: string;
@@ -131,10 +127,6 @@ export const processAchievementClaim = onCall(
           );
         }
 
-        type WalletAccount = Parameters<typeof createWalletClient>[0]["account"];
-        let eoaAccount: WalletAccount;
-        let eoAddress: Address;
-
         let privateKeyHex: string;
         try {
           privateKeyHex = decryptPrivateKey(encryptedPrivateKey, sessionKey);
@@ -150,10 +142,10 @@ export const processAchievementClaim = onCall(
             "Failed to decrypt private key. Invalid session key or corrupted data."
           );
         }
-        const account = privateKeyToAccount(privateKeyHex as `0x${string}`);
-        if (account.address.toLowerCase() !== eoWalletAddress.toLowerCase()) {
+        const eoaAccount = privateKeyToAccount(privateKeyHex as `0x${string}`);
+        if (eoaAccount.address.toLowerCase() !== eoWalletAddress.toLowerCase()) {
           logger.error("[V2] EOA address mismatch (achievement claim)", {
-            derived: account.address,
+            derived: eoaAccount.address,
             provided: eoWalletAddress,
           });
           throw new HttpsError(
@@ -161,10 +153,35 @@ export const processAchievementClaim = onCall(
             "Private key does not match provided EOA address"
           );
         }
-        eoaAccount = account;
-        eoAddress = eoWalletAddress as Address;
+        const eoAddress = eoWalletAddress as Address;
         privateKeyHex = "";
-        logger.info("[V2] Using V2 CanvassingRewarder achievement claim flow", {
+
+        const { toSimpleSmartAccount } = await import(
+          "permissionless/accounts"
+        );
+        const smartAccount = await toSimpleSmartAccount({
+          client: PUBLIC_CLIENT,
+          owner: eoaAccount,
+          entryPoint: {
+            address: entryPoint07Address,
+            version: "0.7",
+          },
+        });
+        if (
+          smartAccount.address.toLowerCase() !==
+          smartAccountContractAddress.toLowerCase()
+        ) {
+          logger.error("[V2] Smart account mismatch (achievement claim)", {
+            derived: smartAccount.address,
+            paxAccountContractAddress: smartAccountContractAddress,
+          });
+          throw new HttpsError(
+            "failed-precondition",
+            "Wallet smart account does not match paxAccountContractAddress."
+          );
+        }
+
+        logger.info("[V2] Sponsored CanvassingRewarder achievement claim", {
           userId,
           achievementId,
           smartAccountContractAddress,
@@ -174,11 +191,16 @@ export const processAchievementClaim = onCall(
         const amountWei = parseEther(String(amountEarned));
         const nonce = generateRandomNonce();
 
+        const recipientAddress = (
+          recipientAddressRaw || paxAccountContractAddress
+        ) as Address;
+
         const signaturePackage =
           await createAchievementRewardClaimSignaturePackageCanvassing(
             CANVASSING_REWARDER_PROXY_ADDRESS,
             eoAddress,
             smartAccountContractAddress,
+            recipientAddress,
             achievementId,
             REWARD_TOKEN_ADDRESS,
             amountWei,
@@ -192,18 +214,13 @@ export const processAchievementClaim = onCall(
           throw new HttpsError("internal", "Signature validation failed");
         }
 
-        const walletClient = createWalletClient({
-          account: eoaAccount,
-          chain: celo,
-          transport: http(DRPC_URL),
-        });
-
         const data = encodeFunctionData({
           abi: canvassingRewarderABI,
           functionName: "claimAchievementReward",
           args: [
             eoAddress,
             smartAccountContractAddress,
+            recipientAddress,
             achievementId,
             REWARD_TOKEN_ADDRESS,
             amountWei,
@@ -212,23 +229,13 @@ export const processAchievementClaim = onCall(
           ],
         });
 
-        logger.info(
-          "[V2] Submitting achievement claim transaction (CanvassingRewarder)"
-        );
-
-        const txHash = await walletClient.sendTransaction({
-          to: CANVASSING_REWARDER_PROXY_ADDRESS,
+        const { bundleTxnHash } = await submitSponsoredRewarderCall({
+          smartAccount,
           data,
+          logPrefix: "[V2]",
         });
 
-        logger.info("[V2] Achievement claim transaction submitted", { txHash });
-
-        const receipt = await PUBLIC_CLIENT.waitForTransactionReceipt({
-          hash: txHash,
-        });
-
-        const bundleTxnHash = receipt.transactionHash;
-        logger.info("[V2] Achievement claim transaction confirmed", {
+        logger.info("[V2] Achievement claim userOp confirmed", {
           bundleTxnHash,
           achievementId,
         });

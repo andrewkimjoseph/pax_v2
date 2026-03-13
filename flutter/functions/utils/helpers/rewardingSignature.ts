@@ -23,7 +23,7 @@ export function generateRandomNonce(): bigint {
 // ---------------------------------------------------------------------------
 // CanvassingRewarder — EIP-712 TaskRewardRequest
 // Domain: name = "CanvassingRewarder", version = "1"
-// Types: TaskRewardRequest(address eoAddress, address smartAccountContractAddress, string taskId, address token, uint256 amount, uint256 nonce)
+// Types: TaskRewardRequest(..., recipientAddress, taskId, ...)
 // ---------------------------------------------------------------------------
 
 type TaskRewardRequestTypes = {
@@ -36,6 +36,7 @@ type TaskRewardRequestTypes = {
   TaskRewardRequest: [
     { name: 'eoAddress'; type: 'address' },
     { name: 'smartAccountContractAddress'; type: 'address' },
+    { name: 'recipientAddress'; type: 'address' },
     { name: 'taskId'; type: 'string' },
     { name: 'token'; type: 'address' },
     { name: 'amount'; type: 'uint256' },
@@ -54,6 +55,7 @@ export async function signTaskRewardRequestCanvassing(
   rewarderContractAddress: Address,
   eoAddress: Address,
   smartAccountContractAddress: Address,
+  recipientAddress: Address,
   taskId: string,
   token: Address,
   amount: bigint,
@@ -70,6 +72,7 @@ export async function signTaskRewardRequestCanvassing(
     TaskRewardRequest: [
       { name: 'eoAddress', type: 'address' },
       { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
       { name: 'taskId', type: 'string' },
       { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint256' },
@@ -79,6 +82,7 @@ export async function signTaskRewardRequestCanvassing(
   const message = {
     eoAddress,
     smartAccountContractAddress,
+    recipientAddress,
     taskId,
     token,
     amount,
@@ -96,6 +100,7 @@ export async function createTaskRewardClaimSignaturePackageCanvassing(
   rewarderContractAddress: Address,
   eoAddress: Address,
   smartAccountContractAddress: Address,
+  recipientAddress: Address,
   taskId: string,
   token: Address,
   amount: bigint,
@@ -105,6 +110,7 @@ export async function createTaskRewardClaimSignaturePackageCanvassing(
     rewarderContractAddress,
     eoAddress,
     smartAccountContractAddress,
+    recipientAddress,
     taskId,
     token,
     amount,
@@ -121,6 +127,7 @@ export async function createTaskRewardClaimSignaturePackageCanvassing(
     TaskRewardRequest: [
       { name: 'eoAddress', type: 'address' },
       { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
       { name: 'taskId', type: 'string' },
       { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint256' },
@@ -130,6 +137,7 @@ export async function createTaskRewardClaimSignaturePackageCanvassing(
   const message = {
     eoAddress,
     smartAccountContractAddress,
+    recipientAddress,
     taskId,
     token,
     amount,
@@ -165,6 +173,7 @@ type AchievementRewardRequestTypes = {
   AchievementRewardRequest: [
     { name: 'eoAddress'; type: 'address' },
     { name: 'smartAccountContractAddress'; type: 'address' },
+    { name: 'recipientAddress'; type: 'address' },
     { name: 'achievementId'; type: 'string' },
     { name: 'token'; type: 'address' },
     { name: 'amount'; type: 'uint256' },
@@ -176,6 +185,7 @@ export async function signAchievementRewardRequestCanvassing(
   rewarderContractAddress: Address,
   eoAddress: Address,
   smartAccountContractAddress: Address,
+  recipientAddress: Address,
   achievementId: string,
   token: Address,
   amount: bigint,
@@ -192,6 +202,7 @@ export async function signAchievementRewardRequestCanvassing(
     AchievementRewardRequest: [
       { name: 'eoAddress', type: 'address' },
       { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
       { name: 'achievementId', type: 'string' },
       { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint256' },
@@ -201,6 +212,7 @@ export async function signAchievementRewardRequestCanvassing(
   const message = {
     eoAddress,
     smartAccountContractAddress,
+    recipientAddress,
     achievementId,
     token,
     amount,
@@ -218,6 +230,7 @@ export async function createAchievementRewardClaimSignaturePackageCanvassing(
   rewarderContractAddress: Address,
   eoAddress: Address,
   smartAccountContractAddress: Address,
+  recipientAddress: Address,
   achievementId: string,
   token: Address,
   amount: bigint,
@@ -227,6 +240,7 @@ export async function createAchievementRewardClaimSignaturePackageCanvassing(
     rewarderContractAddress,
     eoAddress,
     smartAccountContractAddress,
+    recipientAddress,
     achievementId,
     token,
     amount,
@@ -243,6 +257,7 @@ export async function createAchievementRewardClaimSignaturePackageCanvassing(
     AchievementRewardRequest: [
       { name: 'eoAddress', type: 'address' },
       { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
       { name: 'achievementId', type: 'string' },
       { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint256' },
@@ -252,6 +267,7 @@ export async function createAchievementRewardClaimSignaturePackageCanvassing(
   const message = {
     eoAddress,
     smartAccountContractAddress,
+    recipientAddress,
     achievementId,
     token,
     amount,
