@@ -14,21 +14,19 @@ import "./CanvassingTaskManager.sol";
 /**
  * @title CanvassingRewarder
  * @author Canvassing
- * @notice Handles all token reward distribution for both task completions and
- *         achievements. Called directly by the eoAddress (unsponsored).
+ * @notice Handles token reward distribution. Task claims are sponsored (msg.sender = smart account).
  *
  * @dev Single upgradeable deployment. Holds ERC20 token balances for all tasks
  *      and achievements. The reward token and amount are specified in the
  *      backend-signed payload — the contract honours whatever the signature says.
  *
- *      Two reward flows:
- *        1. Task reward   — gated by CanvassingTaskManager screening check +
- *                           backend signature. One claim per eoAddress per taskId.
- *        2. Achievement reward — gated by backend signature only.
- *                           One claim per eoAddress per achievementId.
+ *      Task reward — single entrypoint claimTaskReward: msg.sender == smartAccountContractAddress
+ *      (sponsored userOp). EIP-712 TaskRewardRequest; eoAddress in payload is owner identity (V1 Privy or V2 EOA).
+ *      Achievement reward — claimAchievementReward: msg.sender == smartAccountContractAddress
+ *      (sponsored userOp). Same EIP-712 pattern; one claim per eoAddress per achievementId.
  *
- *      In both flows, tokens are transferred to the participant's
- *      smartAccountContractAddress, not to the eoAddress directly.
+ *      Tokens are transferred to EIP-712 recipientAddress (e.g. Pax contract for V1;
+ *      often same as smartAccountContractAddress for V2). Caller remains the AA.
  *
  *      Implements UUPS upgradeable proxy pattern.
  */
@@ -48,13 +46,13 @@ contract CanvassingRewarder is
     /// @dev EIP-712 typehash for task reward claims.
     bytes32 private constant TASK_REWARD_TYPEHASH =
         keccak256(
-            "TaskRewardRequest(address eoAddress,address smartAccountContractAddress,string taskId,address token,uint256 amount,uint256 nonce)"
+            "TaskRewardRequest(address eoAddress,address smartAccountContractAddress,address recipientAddress,string taskId,address token,uint256 amount,uint256 nonce)"
         );
 
     /// @dev EIP-712 typehash for achievement reward claims.
     bytes32 private constant ACHIEVEMENT_REWARD_TYPEHASH =
         keccak256(
-            "AchievementRewardRequest(address eoAddress,address smartAccountContractAddress,string achievementId,address token,uint256 amount,uint256 nonce)"
+            "AchievementRewardRequest(address eoAddress,address smartAccountContractAddress,address recipientAddress,string achievementId,address token,uint256 amount,uint256 nonce)"
         );
 
     // -------------------------------------------------------------------------
@@ -77,10 +75,16 @@ contract CanvassingRewarder is
     CanvassingTaskManager public taskManager;
 
     /**
-     * @notice Returns true if an eoAddress has already claimed a task reward for a given taskId.
+     * @notice Returns true if an eoAddress has already claimed a task reward for a given taskId (EOA path).
      * @dev Key: keccak256(abi.encodePacked(taskId, eoAddress))
      */
     mapping(bytes32 => bool) public isTaskRewarded;
+
+    /**
+     * @notice True once task reward has been paid for this task to this smart account (any path).
+     * @dev Key: keccak256(abi.encodePacked(taskId, smartAccountContractAddress))
+     */
+    mapping(bytes32 => bool) public isTaskRewardPaidToSmartAccount;
 
     /**
      * @notice Returns true if an eoAddress has already claimed an achievement reward for a given achievementId.
@@ -119,8 +123,9 @@ contract CanvassingRewarder is
     event TaskRewarded(
         address indexed eoAddress,
         address indexed smartAccountContractAddress,
+        address indexed recipientAddress,
         string taskId,
-        address indexed token,
+        address token,
         uint256 amount
     );
 
@@ -135,8 +140,9 @@ contract CanvassingRewarder is
     event AchievementRewarded(
         address indexed eoAddress,
         address indexed smartAccountContractAddress,
+        address indexed recipientAddress,
         string achievementId,
-        address indexed token,
+        address token,
         uint256 amount
     );
 
@@ -222,14 +228,13 @@ contract CanvassingRewarder is
     // -------------------------------------------------------------------------
 
     /**
-     * @notice Claim a task completion reward.
-     * @dev Called directly by the eoAddress (unsponsored transaction).
-     *      Verifies that the eoAddress was screened via CanvassingTaskManager,
-     *      then validates the backend signature before transferring tokens to
-     *      the smartAccountContractAddress.
+     * @notice Claim a task completion reward (sponsored userOp).
+     * @dev msg.sender must be smartAccountContractAddress (same as screening caller).
+     *      EIP-712 still binds eoAddress + smartAccount for replay and identity.
      *
-     * @param eoAddress                   The EO wallet address of the participant (must be msg.sender).
-     * @param smartAccountContractAddress The smart account address that will receive the tokens.
+     * @param eoAddress                   Participant EOA (signed by backend; not required to be msg.sender).
+     * @param smartAccountContractAddress Must equal msg.sender (screening AA).
+     * @param recipientAddress            EIP-712; ERC20 transfer destination.
      * @param taskId                      The unique identifier of the completed task.
      * @param token                       The ERC20 token to pay the reward in.
      * @param amount                      The reward amount in wei, as specified by the backend.
@@ -239,32 +244,44 @@ contract CanvassingRewarder is
     function claimTaskReward(
         address eoAddress,
         address smartAccountContractAddress,
+        address recipientAddress,
         string calldata taskId,
         address token,
         uint256 amount,
         uint256 nonce,
         bytes calldata signature
     ) external whenNotPaused {
-        require(msg.sender == eoAddress, "CanvassingRewarder: sender must be eoAddress");
+        require(
+            msg.sender == smartAccountContractAddress,
+            "CanvassingRewarder: sender must be smartAccountContractAddress"
+        );
         require(eoAddress != address(0), "CanvassingRewarder: eoAddress cannot be zero address");
         require(smartAccountContractAddress != address(0), "CanvassingRewarder: smartAccount cannot be zero address");
+        require(recipientAddress != address(0), "CanvassingRewarder: recipient cannot be zero address");
         require(bytes(taskId).length > 0, "CanvassingRewarder: taskId cannot be empty");
         require(token != address(0), "CanvassingRewarder: token cannot be zero address");
         require(amount > 0, "CanvassingRewarder: amount must be greater than zero");
 
+        // Screening is recorded per smart account (see CanvassingTaskManager)
         require(
-            taskManager.checkIfScreened(taskId, eoAddress),
+            taskManager.checkIfScreened(taskId, smartAccountContractAddress),
             "CanvassingRewarder: participant not screened for this task"
         );
 
         bytes32 slot = _taskSlot(taskId, eoAddress);
+        bytes32 payoutSlot = _taskPayoutSlot(taskId, smartAccountContractAddress);
         require(!isTaskRewarded[slot], "CanvassingRewarder: task reward already claimed");
+        require(
+            !isTaskRewardPaidToSmartAccount[payoutSlot],
+            "CanvassingRewarder: task reward already paid for this smart account"
+        );
         require(!isSignatureUsed[signature], "CanvassingRewarder: signature already used");
 
         require(
             _verifyTaskRewardSignature(
                 eoAddress,
                 smartAccountContractAddress,
+                recipientAddress,
                 taskId,
                 token,
                 amount,
@@ -280,14 +297,15 @@ contract CanvassingRewarder is
         );
 
         isTaskRewarded[slot] = true;
+        isTaskRewardPaidToSmartAccount[payoutSlot] = true;
         isSignatureUsed[signature] = true;
 
         unchecked { ++totalTaskRewards; }
 
-        bool success = IERC20(token).transfer(smartAccountContractAddress, amount);
+        bool success = IERC20(token).transfer(recipientAddress, amount);
         require(success, "CanvassingRewarder: token transfer failed");
 
-        emit TaskRewarded(eoAddress, smartAccountContractAddress, taskId, token, amount);
+        emit TaskRewarded(eoAddress, smartAccountContractAddress, recipientAddress, taskId, token, amount);
     }
 
     // -------------------------------------------------------------------------
@@ -296,12 +314,12 @@ contract CanvassingRewarder is
 
     /**
      * @notice Claim an in-app achievement reward.
-     * @dev Called directly by the eoAddress (unsponsored transaction).
-     *      Validates the backend signature before transferring tokens to
-     *      the smartAccountContractAddress. No task manager check is required.
+     * @dev Sponsored userOp: msg.sender must be smartAccountContractAddress (same as task claims).
+     *      Validates the backend signature before transferring tokens to the smart account.
      *
-     * @param eoAddress                   The EO wallet address of the participant (must be msg.sender).
-     * @param smartAccountContractAddress The smart account address that will receive the tokens.
+     * @param eoAddress                   The EO wallet address of the participant (EIP-712 identity).
+     * @param smartAccountContractAddress The smart account that calls this function.
+     * @param recipientAddress            EIP-712; ERC20 transfer destination.
      * @param achievementId               The unique identifier of the achievement.
      * @param token                       The ERC20 token to pay the reward in.
      * @param amount                      The reward amount in wei, as specified by the backend.
@@ -311,15 +329,20 @@ contract CanvassingRewarder is
     function claimAchievementReward(
         address eoAddress,
         address smartAccountContractAddress,
+        address recipientAddress,
         string calldata achievementId,
         address token,
         uint256 amount,
         uint256 nonce,
         bytes calldata signature
     ) external whenNotPaused {
-        require(msg.sender == eoAddress, "CanvassingRewarder: sender must be eoAddress");
+        require(
+            msg.sender == smartAccountContractAddress,
+            "CanvassingRewarder: sender must be smartAccountContractAddress"
+        );
         require(eoAddress != address(0), "CanvassingRewarder: eoAddress cannot be zero address");
         require(smartAccountContractAddress != address(0), "CanvassingRewarder: smartAccount cannot be zero address");
+        require(recipientAddress != address(0), "CanvassingRewarder: recipient cannot be zero address");
         require(bytes(achievementId).length > 0, "CanvassingRewarder: achievementId cannot be empty");
         require(token != address(0), "CanvassingRewarder: token cannot be zero address");
         require(amount > 0, "CanvassingRewarder: amount must be greater than zero");
@@ -332,6 +355,7 @@ contract CanvassingRewarder is
             _verifyAchievementRewardSignature(
                 eoAddress,
                 smartAccountContractAddress,
+                recipientAddress,
                 achievementId,
                 token,
                 amount,
@@ -351,10 +375,17 @@ contract CanvassingRewarder is
 
         unchecked { ++totalAchievementRewards; }
 
-        bool success = IERC20(token).transfer(smartAccountContractAddress, amount);
+        bool success = IERC20(token).transfer(recipientAddress, amount);
         require(success, "CanvassingRewarder: token transfer failed");
 
-        emit AchievementRewarded(eoAddress, smartAccountContractAddress, achievementId, token, amount);
+        emit AchievementRewarded(
+            eoAddress,
+            smartAccountContractAddress,
+            recipientAddress,
+            achievementId,
+            token,
+            amount
+        );
     }
 
     // -------------------------------------------------------------------------
@@ -476,6 +507,13 @@ contract CanvassingRewarder is
         return keccak256(abi.encodePacked(taskId, eoAddress));
     }
 
+    function _taskPayoutSlot(
+        string calldata taskId,
+        address smartAccountContractAddress
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(taskId, smartAccountContractAddress));
+    }
+
     /**
      * @dev Derives the storage slot key for an (achievementId, eoAddress) pair.
      */
@@ -492,6 +530,7 @@ contract CanvassingRewarder is
     function _verifyTaskRewardSignature(
         address eoAddress,
         address smartAccountContractAddress,
+        address recipientAddress,
         string calldata taskId,
         address token,
         uint256 amount,
@@ -504,6 +543,7 @@ contract CanvassingRewarder is
                     TASK_REWARD_TYPEHASH,
                     eoAddress,
                     smartAccountContractAddress,
+                    recipientAddress,
                     keccak256(bytes(taskId)),
                     token,
                     amount,
@@ -520,6 +560,7 @@ contract CanvassingRewarder is
     function _verifyAchievementRewardSignature(
         address eoAddress,
         address smartAccountContractAddress,
+        address recipientAddress,
         string calldata achievementId,
         address token,
         uint256 amount,
@@ -532,6 +573,7 @@ contract CanvassingRewarder is
                     ACHIEVEMENT_REWARD_TYPEHASH,
                     eoAddress,
                     smartAccountContractAddress,
+                    recipientAddress,
                     keccak256(bytes(achievementId)),
                     token,
                     amount,
