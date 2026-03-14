@@ -4,10 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/models/firestore/pax_wallet/pax_wallet_model.dart';
+import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
+import 'package:pax/providers/db/achievement/achievement_provider.dart';
+import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/providers/withdrawal_method_connection/withdrawal_method_connection_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
+import 'package:pax/utils/achievement_constants.dart';
 import 'package:pax/repositories/firestore/pax_wallet/pax_wallet_repository.dart';
 import 'package:pax/services/wallet/gooddollar_identity_service.dart';
 
@@ -252,6 +256,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
             );
       }
 
+      // V2 face-verification route only: Verified Human before gas sponsorship
+      await _createVerifiedHumanAfterV2FaceVerification(participantId);
+
       // Sponsor gas at most once per wallet per app session
       final eoAddress = wallet.eoAddress!;
       if (_gasSponsorshipRequestedForEoAddress == eoAddress) {
@@ -285,6 +292,49 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         debugPrint('Error registering PaxWallet after face verification: $e');
       }
     }
+  }
+
+  /// Idempotent; only invoked after successful V2 face verification.
+  Future<void> _createVerifiedHumanAfterV2FaceVerification(
+    String participantId,
+  ) async {
+    final repo = ref.read(achievementsRepositoryProvider);
+    final already = await repo.getAchievementsForParticipant(participantId);
+    if (already.any((a) => a.name == AchievementConstants.verifiedHuman)) {
+      await ref.read(achievementsProvider.notifier).fetchAchievements(
+            participantId,
+          );
+      return;
+    }
+    await ref.read(achievementsProvider.notifier).createAchievement(
+          timeCreated: Timestamp.now(),
+          participantId: participantId,
+          name: AchievementConstants.verifiedHuman,
+          tasksNeededForCompletion:
+              AchievementConstants.verifiedHumanTasksNeeded,
+          tasksCompleted: 1,
+          timeCompleted: Timestamp.now(),
+          amountEarned: AchievementConstants.verifiedHumanAmount,
+        );
+    ref.read(analyticsProvider).achievementCreated({
+      'achievementName': AchievementConstants.verifiedHuman,
+      'amountEarned': AchievementConstants.verifiedHumanAmount,
+    });
+    final fcmToken = await ref.read(fcmTokenProvider.future);
+    if (fcmToken != null) {
+      await ref
+          .read(notificationServiceProvider)
+          .sendAchievementEarnedNotification(
+            token: fcmToken,
+            achievementData: {
+              'achievementName': AchievementConstants.verifiedHuman,
+              'amountEarned': AchievementConstants.verifiedHumanAmount,
+            },
+          );
+    }
+    await ref.read(achievementsProvider.notifier).fetchAchievements(
+          participantId,
+        );
   }
 
   void clearWallet() {
