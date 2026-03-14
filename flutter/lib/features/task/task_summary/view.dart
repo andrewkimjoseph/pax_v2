@@ -538,72 +538,74 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            currentTask.instructions!
-                                .split('\n')
-                                .take(2)
-                                .join('\n'),
-                            style: TextStyle(
-                              fontWeight: FontWeight.normal,
-                              fontSize: 15,
-                              height: 1.5,
-                              color: PaxColors.black.withValues(alpha: 0.85),
-                            ),
-                          ),
-                          if (currentTask.instructions!.split('\n').length >
-                              2) ...[
-                            Text(
-                              currentTask.instructions!
-                                  .split('\n')
-                                  .take(2)
-                                  .join('\n'),
-                              style: TextStyle(
-                                fontWeight: FontWeight.normal,
-                                fontSize: 15,
-                                height: 1.5,
-                                color: PaxColors.black.withValues(alpha: 0.85),
-                              ),
-                            ).withPadding(bottom: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: PaxColors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: PaxColors.lightGrey.withValues(
-                                        alpha: 0.5,
+                          Builder(
+                            builder: (context) {
+                              final lines = currentTask.instructions!.split(
+                                '\n',
+                              );
+                              final truncated = lines.length > 2;
+                              final previewLines =
+                                  '${lines.take(2).join('\n')}${truncated ? '…' : ''}';
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    previewLines,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 15,
+                                      height: 1.5,
+                                      color: PaxColors.black.withValues(
+                                        alpha: 0.85,
                                       ),
-                                      width: 1,
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        "See more when you continue",
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: PaxColors.deepPurple,
-                                          fontWeight: FontWeight.w500,
+                                  if (lines.length > 2)
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: PaxColors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: PaxColors.lightGrey
+                                                  .withValues(alpha: 0.5),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                "See more when you continue",
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  color: PaxColors.deepPurple,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ).withPadding(right: 4),
+                                              FaIcon(
+                                                FontAwesomeIcons.angleRight,
+                                                size: 12,
+                                                color: PaxColors.deepPurple,
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ).withPadding(right: 4),
-                                      FaIcon(
-                                        FontAwesomeIcons.angleRight,
-                                        size: 12,
-                                        color: PaxColors.deepPurple,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                                      ],
+                                    ).withPadding(top: 8),
+                                ],
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),

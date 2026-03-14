@@ -2,8 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pax/features/home/wallet_and_apps/miniapps/view.dart';
-import 'package:pax/features/home/wallet_and_apps/pax_wallet/view.dart';
+import 'package:pax/features/home/pax_wallet/miniapps/view.dart';
+import 'package:pax/features/home/pax_wallet/overview/view.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
@@ -53,7 +53,9 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                _segment == WalletAndAppsSegment.wallet ? 'Overview' : 'Apps',
+                _segment == WalletAndAppsSegment.wallet
+                    ? 'Overview'
+                    : 'Mini Apps',
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 32,
@@ -101,7 +103,7 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
                       ),
                 ),
                 _segmentButton(
-                  label: 'Apps',
+                  label: 'Mini Apps',
                   isActive: _segment == WalletAndAppsSegment.apps,
                   onPressed:
                       () =>
