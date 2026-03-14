@@ -143,7 +143,7 @@ class _WalletViewViewState extends ConsumerState<WalletView> {
               ),
               Spacer(),
               Text(
-                "Wallet",
+                "Account",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 20),
               ),

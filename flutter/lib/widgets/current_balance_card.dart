@@ -233,6 +233,9 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                           flags[RemoteConfigKeys.isWalletAvailable] == true;
                       if (!isWalletAvailable) return const SizedBox.shrink();
 
+                      final actionEnabled =
+                          currentBalance != null && currentBalance > 0;
+
                       return Button(
                         style:
                             const ButtonStyle.primary(
@@ -243,7 +246,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                 )
                                 .withBorder(),
                         onPressed:
-                            currentBalance != null && currentBalance > 0
+                            actionEnabled
                                 ? () async {
                                   ref
                                       .read(
@@ -283,13 +286,19 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            FaIcon(
-                              widget.nextLocation == "/wallet"
-                                  ? FontAwesomeIcons.wallet
-                                  : FontAwesomeIcons.arrowUpFromBracket,
-                              color: PaxColors.white,
-                              size: 14,
-                            ).withPadding(right: 6),
+                            widget.nextLocation == "/wallet"
+                                ? SvgPicture.asset(
+                                  actionEnabled
+                                      ? 'lib/assets/svgs/canvassing.svg'
+                                      : 'lib/assets/svgs/canvassing_lilac.svg',
+                                  width: 14,
+                                  height: 14,
+                                ).withPadding(right: 6)
+                                : FaIcon(
+                                  FontAwesomeIcons.arrowUpFromBracket,
+                                  color: PaxColors.white,
+                                  size: 14,
+                                ).withPadding(right: 6),
                             Text(
                               widget.nextLocation == "/wallet"
                                   ? "Account"
@@ -302,7 +311,11 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                             ),
                           ],
                         ),
-                      ).withToolTip('Your wallet');
+                      ).withToolTip(
+                        widget.nextLocation == "/wallet"
+                            ? 'Account & wallet'
+                            : 'Withdraw',
+                      );
                     },
                     loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),
