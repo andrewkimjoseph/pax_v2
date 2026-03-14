@@ -425,12 +425,13 @@ class _AccountViewState extends ConsumerState<AccountView> {
           onClose: () => closeDrawer(drawerContext),
           rootContext: rootContext,
           onLogoutConfirmed: () async {
+            // Capture before any await — signOut disposes this route; ref is invalid after.
+            final authNotifier = ref.read(authProvider.notifier);
+            final analytics = ref.read(analyticsProvider);
             showSuccessToast(rootContext);
             await Future.delayed(const Duration(milliseconds: 2000));
-
-            if (!mounted) return;
-            await ref.read(authProvider.notifier).signOut();
-            ref.read(analyticsProvider).logoutComplete();
+            await authNotifier.signOut();
+            analytics.logoutComplete();
           },
         );
       },
