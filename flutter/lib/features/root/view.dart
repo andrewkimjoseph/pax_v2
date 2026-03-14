@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:pax/exports/views.dart';
-import 'package:pax/features/home/wallet_and_apps/view.dart';
+import 'package:pax/features/home/pax_wallet/view.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';

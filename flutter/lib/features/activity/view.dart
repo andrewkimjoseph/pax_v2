@@ -363,9 +363,7 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                                       CompletionFilter.expired,
                                     ),
                                 badgeCount: ref
-                                    .watch(
-                                      expiredTaskCompletionsCountProvider,
-                                    )
+                                    .watch(expiredTaskCompletionsCountProvider)
                                     .maybeWhen(
                                       data: (c) => c,
                                       orElse: () => null,
@@ -417,7 +415,7 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                     ),
                   ),
                 ],
-              ).withPadding(all: 8);
+              ).withPadding(top: 8, left: 8, right: 8);
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error:

@@ -7,7 +7,7 @@ export 'package:pax/features/home/achievements/view.dart';
 export 'package:pax/features/home/dashboard/view.dart';
 export 'package:pax/features/home/tasks/view.dart';
 export 'package:pax/features/home/view.dart';
-export 'package:pax/features/home/wallet_and_apps/miniapps/view.dart';
+export 'package:pax/features/home/pax_wallet/miniapps/view.dart';
 export 'package:pax/features/onboarding/view.dart';
 export 'package:pax/features/withdrawal_methods/view.dart';
 export 'package:pax/features/withdrawal_methods/minipay-connection/view.dart';

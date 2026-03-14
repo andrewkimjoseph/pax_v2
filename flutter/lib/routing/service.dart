@@ -7,12 +7,12 @@ import 'package:pax/features/account_and_security/view.dart';
 import 'package:pax/features/claim_reward/view.dart';
 import 'package:pax/features/complete_profile/view.dart';
 import 'package:pax/features/face_verification/view.dart';
-import 'package:pax/features/home/wallet_and_apps/view.dart';
+import 'package:pax/features/home/pax_wallet/view.dart';
 import 'package:pax/features/report_page/view.dart';
 import 'package:pax/features/task/task_itself/check_out_app/view.dart';
 import 'package:pax/features/task/task_itself/fill_a_form/view.dart';
 import 'package:pax/features/wallet_creation/view.dart';
-import 'package:pax/features/home/wallet_and_apps/miniapps/webview/miniapp_webview.dart';
+import 'package:pax/features/home/pax_wallet/miniapps/webview/miniapp_webview.dart';
 import 'package:pax/models/remote_config/miniapps_config.dart';
 import 'package:pax/features/webview/view.dart';
 import 'package:pax/features/webview/converter_view.dart';
@@ -88,7 +88,8 @@ final routerProvider = Provider((ref) {
       // If authenticated, check if new user needs onboarding
       if (authState == AuthState.authenticated) {
         // Prevent landing on FV route implicitly (e.g. after app restart) without a known source.
-        if (state.matchedLocation == Routes.completeGoodDollarFaceVerification) {
+        if (state.matchedLocation ==
+            Routes.completeGoodDollarFaceVerification) {
           final extra = state.extra;
           if (extra is! String || extra.isEmpty) {
             return Routes.home;
