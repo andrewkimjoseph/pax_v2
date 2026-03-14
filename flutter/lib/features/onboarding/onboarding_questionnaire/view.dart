@@ -71,7 +71,7 @@ class _OnboardingQuestionnaireViewState
         context.go(Routes.createV2Wallet);
         break;
       case 'v1_legacy':
-        context.go('/withdrawal-methods');
+        context.go(Routes.home);
         break;
       default:
         context.go(Routes.home);

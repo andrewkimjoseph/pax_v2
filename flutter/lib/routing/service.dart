@@ -125,7 +125,7 @@ final routerProvider = Provider((ref) {
                 return Routes.onboardingQuestionnaire;
               }
               if (onboardingType == 'v1_legacy') {
-                return "/withdrawal-methods";
+                return Routes.home;
               }
               return Routes.createV2Wallet;
             }
@@ -159,8 +159,9 @@ final routerProvider = Provider((ref) {
             }
 
             if (!isOnV2OnboardingRoute) {
+              // V1 legacy: land on home; link withdrawal methods from Wallet when ready
               if (onboardingType == 'v1_legacy') {
-                return "/withdrawal-methods";
+                return null;
               }
 
               // User has a Pax wallet (e.g. skipped FV then profile) — allow home instead of forcing back to wallet/FV
