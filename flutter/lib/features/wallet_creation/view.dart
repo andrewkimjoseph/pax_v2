@@ -58,8 +58,9 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
 
   Future<void> _startWalletCreation() async {
     final viewModel = ref.read(walletCreationProvider.notifier);
+    final analytics = ref.read(analyticsProvider);
     viewModel.setStep(WalletCreationStep.creating);
-    ref.read(analyticsProvider).v2WalletCreationInitiated();
+    analytics.v2WalletCreationInitiated();
 
     try {
       // Sign in with Drive scopes (shared instance so restore uses same account)
@@ -161,7 +162,7 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       }
 
       viewModel.setStep(WalletCreationStep.success);
-      ref.read(analyticsProvider).v2WalletCreationSuccess({
+      analytics.v2WalletCreationSuccess({
         'eoAddress': eoAddress,
       });
 
@@ -179,8 +180,9 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
         );
       }
     } catch (e) {
+      // Do not use ref here: widget may be unmounted after await (ref is invalid).
       viewModel.setError(e.toString());
-      ref.read(analyticsProvider).v2WalletCreationFailed({
+      analytics.v2WalletCreationFailed({
         'error': e.toString().substring(0, e.toString().length.clamp(0, 99)),
       });
     }

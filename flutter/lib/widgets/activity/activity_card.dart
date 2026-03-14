@@ -54,7 +54,12 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
           a.reward?.txnHash != null,
     );
 
-    final task = await ref.read(tasksRepositoryProvider).getTaskById(taskId);
+    // Capture before any await — ref is invalid after unmount.
+    final tasksRepo = ref.read(tasksRepositoryProvider);
+    final claimNotifier = ref.read(claimRewardContextProvider.notifier);
+    final analytics = ref.read(analyticsProvider);
+
+    final task = await tasksRepo.getTaskById(taskId);
 
     final amount = task?.rewardAmountPerParticipant;
     final tokenId = task?.rewardCurrencyId;
@@ -63,29 +68,27 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
     final timeCreated = widget.activity.taskCompletion?.timeCreated;
     final isValid = widget.activity.taskCompletion?.isValid;
 
-    ref
-        .read(claimRewardContextProvider.notifier)
-        .setContext(
-          screeningId: screeningId,
-          taskId: taskId,
-          taskCompletionId: taskCompletionId,
-          amount: amount,
-          tokenId: tokenId,
-          txnHash: matchingReward?.reward?.txnHash,
-          taskIsCompleted: isTaskComplete,
-          numberOfCooldownHours: numberOfCooldownHours,
-          timeCompleted: timeCompleted,
-          timeCreated: timeCreated,
-          isValid: isValid,
-        );
+    claimNotifier.setContext(
+      screeningId: screeningId,
+      taskId: taskId,
+      taskCompletionId: taskCompletionId,
+      amount: amount,
+      tokenId: tokenId,
+      txnHash: matchingReward?.reward?.txnHash,
+      taskIsCompleted: isTaskComplete,
+      numberOfCooldownHours: numberOfCooldownHours,
+      timeCompleted: timeCompleted,
+      timeCreated: timeCreated,
+      isValid: isValid,
+    );
 
     if (!isTaskComplete) {
-      ref.read(analyticsProvider).incompleteTaskCompletionTapped({
+      analytics.incompleteTaskCompletionTapped({
         "taskId": taskId,
         "screeningId": screeningId,
       });
     } else if (!activityIsRewarded) {
-      ref.read(analyticsProvider).unrewardedTaskCompletionTapped({
+      analytics.unrewardedTaskCompletionTapped({
         "taskId": taskId,
         "screeningId": screeningId,
         "taskCompletionId": taskCompletionId,
