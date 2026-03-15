@@ -8,7 +8,7 @@ import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart'
-    show withdrawalMethodsProvider;
+    show WithdrawalMethodsState, withdrawalMethodsProvider;
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/remote_config_constants.dart';
@@ -51,7 +51,12 @@ class _WithdrawalMethodPromptBannerState
     }
 
     final withdrawalState = ref.watch(withdrawalMethodsProvider);
-    if (withdrawalState.withdrawalMethods.isNotEmpty) {
+    // Never show while list is still fetching — empty list during loading caused
+    // a flash for V2 users (unknown → v2, or methods appearing after load).
+    final settled =
+        withdrawalState.state == WithdrawalMethodsState.loaded ||
+        withdrawalState.state == WithdrawalMethodsState.error;
+    if (!settled || withdrawalState.withdrawalMethods.isNotEmpty) {
       return const SizedBox.shrink();
     }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show Badge;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -6,9 +7,13 @@ import 'package:pax/exports/views.dart';
 import 'package:pax/features/home/pax_wallet/view.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
+import 'package:pax/providers/db/participant/participant_provider.dart';
+import 'package:pax/providers/db/tasks/task_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/providers/route/root_selected_index_provider.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
+import 'package:pax/utils/remote_config_constants.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import '../../theming/colors.dart' show PaxColors;
 import 'package:pax/utils/achievement_constants.dart';
@@ -57,6 +62,37 @@ class _RootViewState extends ConsumerState<RootView> {
         achievementState.state == AchievementState.loaded &&
         !hasAllRequired;
 
+    final participantId = ref.watch(participantProvider).participant?.id;
+    final flags = ref
+        .watch(featureFlagsProvider)
+        .maybeWhen(data: (f) => f, orElse: () => <String, bool>{});
+    final tasksEnabled =
+        kDebugMode || flags[RemoteConfigKeys.areTasksAvailable] == true;
+    final achievementsEnabled =
+        kDebugMode || flags[RemoteConfigKeys.areAchievementsAvailable] == true;
+
+    final taskCount =
+        tasksEnabled && participantId != null
+            ? ref
+                .watch(availableTasksStreamProvider(participantId))
+                .maybeWhen(data: (tasks) => tasks.length, orElse: () => 0)
+            : 0;
+
+    final earnedToClaimCount =
+        achievementsEnabled && achievementState.state == AchievementState.loaded
+            ? achievementState.achievements
+                .where(
+                  (a) =>
+                      achievementStatusName(a.status) ==
+                      AchievementStatusNames.earned,
+                )
+                .length
+            : 0;
+
+    final homeCombinedBadgeCount = taskCount + earnedToClaimCount;
+    final int? homeTasksBadgeCount =
+        homeCombinedBadgeCount > 0 ? homeCombinedBadgeCount : null;
+
     final tabChildren = _buildTabChildren(isV2);
 
     return Scaffold(
@@ -72,7 +108,12 @@ class _RootViewState extends ConsumerState<RootView> {
             },
             index: selected,
             children: [
-              buildButton('Home', selected == 0, badgeCount: null, isV2: isV2),
+              buildButton(
+                'Home',
+                selected == 0,
+                badgeCount: homeTasksBadgeCount,
+                isV2: isV2,
+              ),
               if (isV2)
                 buildButton(
                   'PaxWallet',
@@ -143,6 +184,54 @@ class _RootViewState extends ConsumerState<RootView> {
   }) {
     final showActivityBadge =
         label == 'Activity' && badgeCount != null && badgeCount > 0;
+    final showHomeTasksBadge =
+        label == 'Home' && badgeCount != null && badgeCount > 0;
+    final countForBadge = badgeCount ?? 0;
+
+    Widget navIcon =
+        label == 'PaxWallet'
+            ? SvgPicture.asset(
+              isSelected
+                  ? 'lib/assets/svgs/wallets/pax_wallet.svg'
+                  : 'lib/assets/svgs/wallets/pax_wallet_lilac.svg',
+              width: 32,
+              height: 32,
+            )
+            : FaIcon(
+              _getIconForLabel(label),
+              size: 24,
+              color: isSelected ? PaxColors.deepPurple : PaxColors.lilac,
+            );
+
+    if (showHomeTasksBadge) {
+      navIcon = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          navIcon,
+          Positioned(
+            right: -10,
+            top: -8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: PaxColors.orangeToPinkGradient,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                countForBadge > 99 ? '99+' : '$countForBadge',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: PaxColors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     return NavigationItem(
       style: const ButtonStyle.ghost(density: ButtonDensity.icon),
@@ -161,7 +250,7 @@ class _RootViewState extends ConsumerState<RootView> {
         label:
             showActivityBadge
                 ? Text(
-                  badgeCount > 99 ? '99+' : '$badgeCount',
+                  countForBadge > 99 ? '99+' : '$countForBadge',
                   style: TextStyle(
                     fontSize: 10,
                     color: PaxColors.white,
@@ -171,20 +260,7 @@ class _RootViewState extends ConsumerState<RootView> {
                 : const Text(''),
         backgroundColor: showActivityBadge ? PaxColors.orange : PaxColors.red,
         smallSize: 10,
-        child:
-            label == 'PaxWallet'
-                ? SvgPicture.asset(
-                  isSelected
-                      ? 'lib/assets/svgs/wallets/pax_wallet.svg'
-                      : 'lib/assets/svgs/wallets/pax_wallet_lilac.svg',
-                  width: 32,
-                  height: 32,
-                )
-                : FaIcon(
-                  _getIconForLabel(label),
-                  size: 24,
-                  color: isSelected ? PaxColors.deepPurple : PaxColors.lilac,
-                ),
+        child: navIcon,
       ),
     );
   }

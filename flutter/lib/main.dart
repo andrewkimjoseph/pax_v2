@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pax/providers/analytics/clarity/clarity_provider.dart';
+import 'package:pax/routing/routes.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
 import 'package:flutter/services.dart';
 
@@ -130,7 +131,7 @@ class _AppState extends ConsumerState<App> {
     if (kDebugMode) {
       debugPrint('[:_handleDeepLink] Navigating to home');
     }
-    router.go("/home");
+    router.go(Routes.loading);
   }
 
   @override
