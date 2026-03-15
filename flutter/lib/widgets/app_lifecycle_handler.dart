@@ -56,11 +56,13 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (kDebugMode) {
-      debugPrint('AppLifecycleHandler: didChangeAppLifecycleState state=$state');
+      debugPrint(
+        'AppLifecycleHandler: didChangeAppLifecycleState state=$state',
+      );
     }
     if (state == AppLifecycleState.resumed) {
-      // Defer remote config refresh and provider invalidation until after the first frame,
-      // so the resumed UI can paint before overlays and rebuilds kick in.
+      // Defer ALL resume operations until after the first frame,
+      // so the resumed UI can paint before any refreshes or rebuilds.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (kDebugMode) {
           debugPrint(
@@ -68,36 +70,36 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
           );
         }
         ref.read(remoteConfigServiceProvider).refreshConfig();
-        ref.invalidate(appVersionConfigProvider);
-        ref.invalidate(maintenanceConfigProvider);
-        ref.invalidate(featureFlagsProvider);
-      });
+        // ref.invalidate(appVersionConfigProvider);
+        // ref.invalidate(maintenanceConfigProvider);
+        // ref.invalidate(featureFlagsProvider);
 
-      // Only refresh auth state when in a stable non-authenticated state.
-      // Skip when initial (cold start: let authStateChanges restore session) or loading (sign-in in progress).
-      final currentAuthState = ref.read(authProvider);
-      final shouldRefreshAuth =
-          currentAuthState.state != AuthState.authenticated &&
-          currentAuthState.state != AuthState.initial &&
-          currentAuthState.state != AuthState.loading;
-      if (shouldRefreshAuth) {
-        if (kDebugMode) {
-          debugPrint(
-            'AppLifecycleHandler: refreshing auth state (currentState=${currentAuthState.state})',
-          );
-        }
-        ref.read(authProvider.notifier).refreshUserState();
-      } else if (currentAuthState.state == AuthState.authenticated) {
-        // Preload wallet credentials for V2 users so miniapps open quickly
-        if (ref.read(accountTypeProvider) == AccountType.v2) {
+        // Only refresh auth state when in a stable non-authenticated state.
+        // Skip when initial (cold start: let authStateChanges restore session) or loading (sign-in in progress).
+        final currentAuthState = ref.read(authProvider);
+        final shouldRefreshAuth =
+            currentAuthState.state != AuthState.authenticated &&
+            currentAuthState.state != AuthState.initial &&
+            currentAuthState.state != AuthState.loading;
+        if (shouldRefreshAuth) {
           if (kDebugMode) {
             debugPrint(
-              'AppLifecycleHandler: V2 authenticated, calling restoreWalletIfNeeded(silentOnly: true)',
+              'AppLifecycleHandler: refreshing auth state (currentState=${currentAuthState.state})',
             );
           }
-          restoreWalletIfNeeded(ref, silentOnly: true);
+          ref.read(authProvider.notifier).refreshUserState();
+        } else if (currentAuthState.state == AuthState.authenticated) {
+          // Preload wallet credentials for V2 users so miniapps open quickly
+          if (ref.read(accountTypeProvider) == AccountType.v2) {
+            if (kDebugMode) {
+              debugPrint(
+                'AppLifecycleHandler: V2 authenticated, calling restoreWalletIfNeeded(silentOnly: true)',
+              );
+            }
+            restoreWalletIfNeeded(ref, silentOnly: true);
+          }
         }
-      }
+      });
     }
   }
 

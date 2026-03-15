@@ -1,4 +1,3 @@
-// lib/views/activity/activity_view.dart
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';

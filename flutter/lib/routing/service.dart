@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
 import 'package:go_router/go_router.dart';
 import 'package:pax/exports/views.dart';
 import 'package:pax/features/account_and_security/view.dart';
@@ -34,7 +34,9 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 
 final routerProvider = Provider((ref) {
   final notifier = ref.watch(routerNotifierProvider);
-
+  if (kDebugMode) {
+    debugPrint('[Router] Building GoRouter with initialLocation=${Routes.loading}');
+  }
   return GoRouter(
     refreshListenable: notifier,
     initialLocation: Routes.loading,
@@ -44,6 +46,11 @@ final routerProvider = Provider((ref) {
     errorBuilder: (context, state) {
       // When a routing error occurs, navigate to the onboarding questionnaire so new users can continue.
       // Redirect will send unauthenticated users to sign-in and already-onboarded users to the right step.
+      if (kDebugMode) {
+        debugPrint(
+          '[Router] errorBuilder: matchedLocation=${state.matchedLocation}, error=${state.error}, redirecting to onboarding questionnaire',
+        );
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!context.mounted) return;
         context.go(Routes.onboardingQuestionnaire);
@@ -64,24 +71,43 @@ final routerProvider = Provider((ref) {
       if (kIsWeb &&
           (state.matchedLocation == Routes.paxWallet ||
               state.matchedLocation == Routes.checkV2Eligibility)) {
+        if (kDebugMode) {
+          debugPrint('[Router] redirect: web block paxWallet/checkV2Eligibility → home');
+        }
         return Routes.home;
       }
 
       final authState = ref.read(authStateForRouterProvider);
       final isOnboardingRoute = state.matchedLocation == Routes.onboarding;
+      if (kDebugMode) {
+        debugPrint(
+          '[Router] redirect: matchedLocation=${state.matchedLocation}, authState=$authState',
+        );
+      }
 
       // If not authenticated and not on onboarding, redirect to onboarding
       if (authState != AuthState.authenticated && !isOnboardingRoute) {
+        if (kDebugMode) {
+          debugPrint('[Router] redirect: not authenticated → onboarding');
+        }
         return Routes.onboarding;
       }
 
       // If authenticated and on onboarding, redirect to home
       if (authState == AuthState.authenticated && isOnboardingRoute) {
+        if (kDebugMode) {
+          debugPrint('[Router] redirect: authenticated on onboarding → home');
+        }
         return Routes.home;
       }
 
       // If authenticated and route has an error, redirect to questionnaire so new users can continue (redirect runs on refresh and would otherwise send to home and re-trigger the error).
       if (authState == AuthState.authenticated && state.error != null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[Router] redirect: authenticated with error → onboardingQuestionnaire',
+          );
+        }
         return Routes.onboardingQuestionnaire;
       }
 
@@ -92,6 +118,9 @@ final routerProvider = Provider((ref) {
             Routes.completeGoodDollarFaceVerification) {
           final extra = state.extra;
           if (extra is! String || extra.isEmpty) {
+            if (kDebugMode) {
+              debugPrint('[Router] redirect: FV route missing extra → home');
+            }
             return Routes.home;
           }
         }
@@ -105,6 +134,9 @@ final routerProvider = Provider((ref) {
 
         // Don't show home until we know if user is new — stay on loading while account loads (not when syncing/refreshing)
         if (isAccountInitialOrLoading && state.matchedLocation == Routes.home) {
+          if (kDebugMode) {
+            debugPrint('[Router] redirect: account loading, on home → loading');
+          }
           return Routes.loading;
         }
 
@@ -113,6 +145,9 @@ final routerProvider = Provider((ref) {
           if (account != null) {
             // V2 users cannot use web — block and sign out from the block page
             if (kIsWeb && account.isV2) {
+              if (kDebugMode) {
+                debugPrint('[Router] redirect: web + v2 → v2WebBlocked');
+              }
               return Routes.v2WebBlocked;
             }
             final isNewUser =
@@ -123,13 +158,31 @@ final routerProvider = Provider((ref) {
 
             if (isNewUser) {
               if (onboardingType == null) {
+                if (kDebugMode) {
+                  debugPrint(
+                    '[Router] redirect: loading+loaded → onboardingQuestionnaire',
+                  );
+                }
                 return Routes.onboardingQuestionnaire;
               }
               if (onboardingType == 'v1_legacy') {
+                if (kDebugMode) {
+                  debugPrint('[Router] redirect: loading+loaded → home');
+                }
                 return Routes.home;
+              }
+              if (kDebugMode) {
+                debugPrint(
+                  '[Router] redirect: loading+loaded → createV2Wallet',
+                );
               }
               return Routes.createV2Wallet;
             }
+          }
+          if (kDebugMode) {
+            debugPrint(
+              '[Router] redirect: loading, account not loaded → home',
+            );
           }
           return Routes.home;
         }
@@ -151,17 +204,30 @@ final routerProvider = Provider((ref) {
 
           if (isNewUser) {
             if (onboardingType == null && !isOnQuestionnaireRoute) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[Router] redirect: new user, no onboardingType → onboardingQuestionnaire',
+                );
+              }
               return Routes.onboardingQuestionnaire;
             }
 
             // Let new users stay on the questionnaire (avoid redirect loop: questionnaire ⇄ createV2Wallet).
             if (isOnQuestionnaireRoute) {
+              if (kDebugMode) {
+                debugPrint(
+                  '[Router] redirect: new user on questionnaire → null',
+                );
+              }
               return null;
             }
 
             if (!isOnV2OnboardingRoute) {
               // V1 legacy: land on home; link withdrawal methods from Wallet when ready
               if (onboardingType == 'v1_legacy') {
+                if (kDebugMode) {
+                  debugPrint('[Router] redirect: v1_legacy → null');
+                }
                 return null;
               }
 
@@ -169,10 +235,20 @@ final routerProvider = Provider((ref) {
               final paxWalletState = ref.read(paxWalletProvider);
               if (paxWalletState.state == PaxWalletState.loaded &&
                   paxWalletState.wallet != null) {
+                if (kDebugMode) {
+                  debugPrint(
+                    '[Router] redirect: new user, pax wallet loaded → null',
+                  );
+                }
                 return null;
               }
 
               // Default to V2 wallet creation for v2_native and mixed
+              if (kDebugMode) {
+                debugPrint(
+                  '[Router] redirect: new user, default → createV2Wallet',
+                );
+              }
               return Routes.createV2Wallet;
             }
           }
@@ -184,12 +260,21 @@ final routerProvider = Provider((ref) {
             account != null &&
             account.isV2 &&
             state.matchedLocation != Routes.v2WebBlocked) {
+          if (kDebugMode) {
+            debugPrint('[Router] redirect: v2 on web → v2WebBlocked');
+          }
           return Routes.v2WebBlocked;
         }
 
+        if (kDebugMode) {
+          debugPrint('[Router] redirect: no redirect → null');
+        }
         return null;
       }
 
+      if (kDebugMode) {
+        debugPrint('[Router] redirect: no redirect → null');
+      }
       return null;
     },
     routes: [
