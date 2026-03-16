@@ -34,9 +34,9 @@ class UpdateDialog extends ConsumerWidget {
               final currentAppVersion = snapshot.data!;
               final needsUpdate =
                   config.forceUpdate &&
-                  VersionUtil.isVersionLower(
+                  VersionUtil.isVersionNotTheSame(
                     currentAppVersion,
-                    config.minimumVersion,
+                    config.currentVersion,
                   );
 
               if (!needsUpdate) return const SizedBox.shrink();
@@ -80,7 +80,7 @@ class UpdateDialog extends ConsumerWidget {
                                 size: 16,
                               ).withPadding(right: 8),
                               Text(
-                                '(v${config.minimumVersion})',
+                                '(v${config.currentVersion})',
                                 style: const TextStyle(fontSize: 16),
                                 textAlign: TextAlign.center,
                               ),

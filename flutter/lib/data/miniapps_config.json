@@ -1,0 +1,37 @@
+{
+  "are_miniapps_available": true,
+  "miniapps": [
+    {
+      "id": 1,
+      "name": "GoodDapp - Claim",
+      "is_miniapp_available": true,
+      "title": "Claim G$ Daily",
+      "imageURI": "https://firebasestorage.googleapis.com/v0/b/thepaxapp.firebasestorage.app/o/miniapps%2Fgooddollar.png?alt=media&token=561c316e-e86e-41f5-a191-02c1225edc5b",
+      "url": "https://gooddapp.org/#/claim"
+    },
+    {
+      "id": 2,
+      "name": "GoodDapp - Swap",
+      "is_miniapp_available": true,
+      "title": "Swap G$ for Dollars",
+      "imageURI": "https://firebasestorage.googleapis.com/v0/b/thepaxapp.firebasestorage.app/o/miniapps%2Fswap_g_for_cusd.png?alt=media&token=0e61c416-29b0-4664-8c85-ca921e824a00",
+      "url": "https://gooddapp.org/#/swap/celoReserve"
+    },
+    {
+      "id": 3,
+      "name": "Pretium",
+      "is_miniapp_available": true,
+      "title": "Buy airtime using Dollars",
+      "imageURI": "https://firebasestorage.googleapis.com/v0/b/thepaxapp.firebasestorage.app/o/miniapps%2Fpretium.jpeg?alt=media&token=f851b6de-1d92-49c0-94bb-a7256e65141c",
+      "url": "https://minipay.pretium.africa"
+    },
+    {
+      "id": 4,
+      "name": "Flowstate",
+      "is_miniapp_available": true,
+      "title": "Vote for Canvassing!",
+      "imageURI": "https://firebasestorage.googleapis.com/v0/b/thepaxapp.firebasestorage.app/o/miniapps%2Fflowstate.png?alt=media&token=7ff23404-0a42-4a90-9989-d2d2a7c90929",
+      "url": "https://flowstate.network/flow-councils/42220/0xfabef1abae4998146e8a8422813eb787caa26ec2"
+    }
+  ]
+}

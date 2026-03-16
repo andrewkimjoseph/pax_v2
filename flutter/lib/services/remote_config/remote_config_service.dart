@@ -17,6 +17,24 @@ class RemoteConfigService {
   DateTime? _lastFetchTime;
   static const _refreshInterval = Duration(seconds: 3);
 
+  static const _miniappsConfigAssetPath = 'lib/data/miniapps_config.json';
+
+  Future<String> _loadMiniappsConfigDefault() async {
+    try {
+      return await rootBundle.loadString(_miniappsConfigAssetPath);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'Remote Config Service: Could not load miniapps default from asset: $e',
+        );
+      }
+      return json.encode({
+        RemoteConfigKeys.areMiniappsAvailable: true,
+        RemoteConfigKeys.miniapps: [],
+      });
+    }
+  }
+
   Future<void> initialize() async {
     if (_isInitialized) {
       if (kDebugMode) {
@@ -36,9 +54,8 @@ class RemoteConfigService {
       // Set default values before fetching
       await _remoteConfig.setDefaults({
         RemoteConfigKeys.appVersionConfig: json.encode({
-          RemoteConfigKeys.minimumVersion: '1.0.0',
-          RemoteConfigKeys.currentVersion: '1.0.0',
-          RemoteConfigKeys.forceUpdate: false,
+          RemoteConfigKeys.currentVersion: '2.0.16+110',
+          RemoteConfigKeys.forceUpdate: true,
           RemoteConfigKeys.updateMessage: 'A new version is available',
           RemoteConfigKeys.updateUrl:
               'https://play.google.com/store/apps/details?id=app.thepax.android',
@@ -55,10 +72,7 @@ class RemoteConfigService {
           RemoteConfigKeys.areTasksCompletionsAvailable: true,
           RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
         }),
-        RemoteConfigKeys.miniappsConfig: json.encode({
-          RemoteConfigKeys.areMiniappsAvailable: false,
-          RemoteConfigKeys.miniapps: [],
-        }),
+        RemoteConfigKeys.miniappsConfig: await _loadMiniappsConfigDefault(),
       });
 
       final bool activated = await _remoteConfig.fetchAndActivate();
@@ -112,7 +126,6 @@ class RemoteConfigService {
       if (jsonString.isEmpty) {
         // Return default config if no remote config is available
         return AppVersionConfig(
-          minimumVersion: '1.0.0',
           currentVersion: '1.0.0',
           forceUpdate: false,
           updateMessage: 'A new version is available',
@@ -129,11 +142,12 @@ class RemoteConfigService {
       return AppVersionConfig.fromJson(configMap);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Remote Config Service: Error getting app version config: $e');
+        debugPrint(
+          'Remote Config Service: Error getting app version config: $e',
+        );
       }
       // Return default config on error
       return AppVersionConfig(
-        minimumVersion: '1.0.0',
         currentVersion: '1.0.0',
         forceUpdate: false,
         updateMessage: 'A new version is available',
@@ -187,7 +201,9 @@ class RemoteConfigService {
       return MaintenanceConfig.fromJson(configMap);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Remote Config Service: Error getting maintenance config: $e');
+        debugPrint(
+          'Remote Config Service: Error getting maintenance config: $e',
+        );
       }
       // Return default config on error
       return MaintenanceConfig(
@@ -265,7 +281,9 @@ class RemoteConfigService {
     try {
       final jsonString = _remoteConfig.getString(RemoteConfigKeys.featureFlags);
       if (kDebugMode) {
-        debugPrint('Remote Config Service: Raw feature flags string: $jsonString');
+        debugPrint(
+          'Remote Config Service: Raw feature flags string: $jsonString',
+        );
       }
 
       if (jsonString.isEmpty) {
@@ -283,7 +301,9 @@ class RemoteConfigService {
 
       final Map<String, dynamic> configMap = json.decode(jsonString);
       if (kDebugMode) {
-        debugPrint('Remote Config Service: Parsed feature flags map: $configMap');
+        debugPrint(
+          'Remote Config Service: Parsed feature flags map: $configMap',
+        );
       }
 
       return {
@@ -342,10 +362,7 @@ class RemoteConfigService {
       }
 
       if (jsonString.isEmpty) {
-        return MiniappsConfig(
-          areMiniappsAvailable: false,
-          miniapps: [],
-        );
+        return MiniappsConfig(areMiniappsAvailable: false, miniapps: []);
       }
 
       final Map<String, dynamic> configMap = json.decode(jsonString);
@@ -360,10 +377,7 @@ class RemoteConfigService {
       if (kDebugMode) {
         debugPrint('Remote Config Service: Error getting miniapps config: $e');
       }
-      return MiniappsConfig(
-        areMiniappsAvailable: false,
-        miniapps: [],
-      );
+      return MiniappsConfig(areMiniappsAvailable: false, miniapps: []);
     }
   }
 

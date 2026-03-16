@@ -169,15 +169,20 @@ class _AppState extends ConsumerState<App> {
                         child ?? const CircularProgressIndicator(),
                         appVersionConfigAsync.when(
                           data: (config) {
+                            // Do not show update or maintenance dialogs in debug builds
+                            if (kDebugMode) {
+                              return const SizedBox.shrink();
+                            }
+
                             if (_currentVersion == null) {
                               return const SizedBox.shrink();
                             }
 
                             final needsUpdate =
                                 config.forceUpdate &&
-                                VersionUtil.isVersionLower(
+                                VersionUtil.isVersionNotTheSame(
                                   _currentVersion!,
-                                  config.minimumVersion,
+                                  config.currentVersion,
                                 );
 
                             if (needsUpdate) return const UpdateDialog();

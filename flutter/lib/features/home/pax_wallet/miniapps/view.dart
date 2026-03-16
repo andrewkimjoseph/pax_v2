@@ -176,7 +176,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
             isCheckingAgain: _isCheckingAgain,
           ),
       data: (needsVerification) {
-        if (needsVerification) {
+        if (!needsVerification) {
           return _buildVerificationPrompt(
             context,
             onCheckAgain: _onCheckAgainPressed,
