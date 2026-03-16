@@ -74,7 +74,9 @@ class AppInitializer {
       } catch (e) {
         retryCount++;
         if (kDebugMode) {
-          debugPrint('Remote Config initialization attempt $retryCount failed: $e');
+          debugPrint(
+            'Remote Config initialization attempt $retryCount failed: $e',
+          );
         }
 
         if (retryCount == maxRetries) {
@@ -195,7 +197,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   if (kDebugMode) {
     debugPrint('Background message received: ${message.messageId}');
-    debugPrint('Background message notification: ${message.notification?.title}');
+    debugPrint(
+      'Background message notification: ${message.notification?.title}',
+    );
     debugPrint('Background message data: ${message.data}');
   }
 }
