@@ -52,8 +52,6 @@ class ParticipantsRepository {
         displayName: user.displayName,
         emailAddress: user.email,
         profilePictureURI: user.photoURL,
-        accountType: 'v1',
-        onboardingType: null,
         timeCreated: now,
         timeUpdated: now,
       );
