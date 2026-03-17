@@ -10,7 +10,6 @@ final referralLinkProvider = FutureProvider<String?>((ref) async {
 
   final response = await BranchService().generateReferralLink(
     referringParticipantId: participant.id,
-    displayName: participant.displayName,
   );
 
   if (response.success && response.result is String) {

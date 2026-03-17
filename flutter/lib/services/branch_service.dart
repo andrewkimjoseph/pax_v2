@@ -99,7 +99,6 @@ class BranchService {
 
   Future<BranchResponse> generateReferralLink({
     required String referringParticipantId,
-    String? displayName,
   }) async {
     if (kDebugMode) {
       debugPrint(
@@ -115,12 +114,10 @@ class BranchService {
       contentDescription:
           'Sign up to Pax using my referral link and start earning.',
       contentMetadata:
-          BranchContentMetaData()
-            ..addCustomMetadata(
-              'referringParticipantId',
-              referringParticipantId,
-            )
-            ..addCustomMetadata('referrerDisplayName', displayName ?? ''),
+          BranchContentMetaData()..addCustomMetadata(
+            'referringParticipantId',
+            referringParticipantId,
+          ),
     );
 
     final linkProperties =
