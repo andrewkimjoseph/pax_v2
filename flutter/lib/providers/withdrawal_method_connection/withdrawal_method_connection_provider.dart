@@ -21,6 +21,22 @@ final withdrawalMethodConnectionProvider =
       );
     });
 
+/// True if the user has at least one GoodDollar-verified withdrawal method.
+/// Used e.g. to show the referral card to eligible V1 users.
+final hasVerifiedWithdrawalMethodProvider = FutureProvider<bool>((ref) async {
+  final methods = ref.watch(withdrawalMethodsProvider).withdrawalMethods;
+  if (methods.isEmpty) return false;
+  final service = ref.watch(withdrawalMethodConnectionProvider);
+  for (final method in methods) {
+    final verified = await service.isGoodDollarVerified(
+      method.walletAddress,
+      true,
+    );
+    if (verified) return true;
+  }
+  return false;
+});
+
 // Define an enum for the connection state
 enum WithdrawalMethodConnectionState {
   initial,

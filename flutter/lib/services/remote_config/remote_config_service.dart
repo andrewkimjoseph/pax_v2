@@ -71,6 +71,7 @@ class RemoteConfigService {
           RemoteConfigKeys.areTasksAvailable: true,
           RemoteConfigKeys.areTasksCompletionsAvailable: true,
           RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
+          RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
         }),
         RemoteConfigKeys.miniappsConfig: await _loadMiniappsConfigDefault(),
       });
@@ -296,6 +297,7 @@ class RemoteConfigService {
           RemoteConfigKeys.isWithdrawalMethodConnectionAvailable: true,
           RemoteConfigKeys.isV2UpgradeAvailable: false,
           RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
+          RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
         };
       }
 
@@ -323,6 +325,8 @@ class RemoteConfigService {
         RemoteConfigKeys.isCustomAppAccessFeatureAvailable:
             configMap[RemoteConfigKeys.isCustomAppAccessFeatureAvailable] ??
             false,
+        RemoteConfigKeys.isV2ReferralFeatureAvailable:
+            configMap[RemoteConfigKeys.isV2ReferralFeatureAvailable] ?? false,
       };
     } catch (e) {
       if (kDebugMode) {
@@ -337,6 +341,7 @@ class RemoteConfigService {
         RemoteConfigKeys.isWithdrawalMethodConnectionAvailable: true,
         RemoteConfigKeys.isV2UpgradeAvailable: false,
         RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
+        RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
       };
     }
   }

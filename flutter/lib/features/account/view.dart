@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart' show Divider, InkWell;
+import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:flutter_svg/svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 // import 'package:pax/providers/local/activity_providers.dart';
@@ -12,6 +12,7 @@ import 'package:pax/widgets/account/account_option_card.dart';
 import 'package:pax/widgets/custom_avatar.dart';
 import 'package:pax/widgets/logout/logout_drawer.dart';
 import 'package:pax/widgets/toast.dart';
+import 'package:pax/widgets/referral_program_card.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
@@ -93,131 +94,8 @@ class _AccountViewState extends ConsumerState<AccountView> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            // Container(
-            //   padding: EdgeInsets.all(8),
-            //   width: double.infinity,
-            //   decoration: BoxDecoration(
-            //     color: PaxColors.white,
-            //     borderRadius: BorderRadius.circular(12),
-            //     border: Border.all(color: PaxColors.lightLilac, width: 1),
-            //   ),
-            //   child: Column(
-            //     children: [
-            //       Row(
-            //         mainAxisAlignment: MainAxisAlignment.spaceAround,
-            //         crossAxisAlignment: CrossAxisAlignment.start,
-            //         children: [
-            //           Column(
-            //             crossAxisAlignment: CrossAxisAlignment.start,
-            //             children: [
-            //               Column(
-            //                 children: [
-            //                   tasksCount
-            //                       .when(
-            //                         data:
-            //                             (count) => Text(
-            //                               count.toString(),
-            //                               style: TextStyle(
-            //                                 fontWeight: FontWeight.bold,
-            //                                 fontSize: 16,
-            //                                 color: PaxColors.black,
-            //                               ),
-            //                             ),
-            //                         loading:
-            //                             () => Text(
-            //                               '...',
-            //                               style: TextStyle(
-            //                                 fontWeight: FontWeight.bold,
-            //                                 fontSize: 16,
-            //                                 color: PaxColors.black,
-            //                               ),
-            //                             ),
-            //                         error:
-            //                             (_, __) => Text(
-            //                               '0',
-            //                               style: TextStyle(
-            //                                 fontWeight: FontWeight.bold,
-            //                                 fontSize: 16,
-            //                                 color: PaxColors.black,
-            //                               ),
-            //                             ),
-            //                       )
-            //                       .withPadding(bottom: 4),
-            //                   Text(
-            //                     'Completed Tasks',
-            //                     style: TextStyle(
-            //                       fontWeight: FontWeight.normal,
-            //                       fontSize: 12,
-            //                       color: PaxColors.black,
-            //                     ),
-            //                   ),
-            //                 ],
-            //               ),
-            //             ],
-            //           ),
-            //           Column(
-            //             crossAxisAlignment: CrossAxisAlignment.start,
-            //             children: [
-            //               Column(
-            //                 children: [
-            //                   totalGoodDollars
-            //                       .when(
-            //                         data:
-            //                             (amount) => Row(
-            //                               children: [
-            //                                 Text(
-            //                                   TokenBalanceUtil.getLocaleFormattedAmount(
-            //                                     amount,
-            //                                   ),
-            //                                   style: TextStyle(
-            //                                     fontWeight: FontWeight.bold,
-            //                                     fontSize: 16,
-            //                                     color: PaxColors.black,
-            //                                   ),
-            //                                 ).withPadding(right: 2),
-            //                                 SvgPicture.asset(
-            //                                   'lib/assets/svgs/currencies/good_dollar.svg',
-            //                                   height: 20,
-            //                                 ),
-            //                               ],
-            //                             ),
-            //                         loading:
-            //                             () => Text(
-            //                               "G\$ ...",
-            //                               style: TextStyle(
-            //                                 fontWeight: FontWeight.bold,
-            //                                 fontSize: 16,
-            //                                 color: PaxColors.black,
-            //                               ),
-            //                             ),
-            //                         error:
-            //                             (_, __) => Text(
-            //                               "G\$ 0.00",
-            //                               style: TextStyle(
-            //                                 fontWeight: FontWeight.bold,
-            //                                 fontSize: 16,
-            //                                 color: PaxColors.black,
-            //                               ),
-            //                             ),
-            //                       )
-            //                       .withPadding(bottom: 4),
-            //                   Text(
-            //                     'Lifetime G\$ Earnings',
-            //                     style: TextStyle(
-            //                       fontWeight: FontWeight.normal,
-            //                       fontSize: 12,
-            //                       color: PaxColors.black,
-            //                     ),
-            //                   ),
-            //                 ],
-            //               ),
-            //             ],
-            //           ),
-            //         ],
-            //       ).withPadding(bottom: 8, top: 8),
-            //     ],
-            //   ),
-            // ).withPadding(bottom: 8),
+            const ReferralProgramCard(),
+
             Container(
               padding: EdgeInsets.all(12),
               width: double.infinity,
@@ -331,8 +209,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
                       context.push("/profile");
                     },
                     child: AccountOptionCard(
-                      'profile',
-                      true,
+                      option: 'profile',
                     ).withPadding(bottom: 24),
                   ),
                   // InkWell(
@@ -351,18 +228,17 @@ class _AccountViewState extends ConsumerState<AccountView> {
                       context.push("/withdrawal-methods");
                     },
                     child: AccountOptionCard(
-                      'payment_methods',
-                      true,
+                      option: 'payment_methods',
                     ).withPadding(bottom: 24),
                   ),
+
                   InkWell(
                     onTap: () {
                       ref.read(analyticsProvider).helpAndSupportTapped();
                       context.push("/help-and-support");
                     },
                     child: AccountOptionCard(
-                      'help_and_support',
-                      true,
+                      option: 'help_and_support',
                     ).withPadding(bottom: 24),
                   ),
                   // InkWell(
@@ -379,7 +255,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
                       ref.read(analyticsProvider).logoutTapped();
                       _showLogoutDrawer(context);
                     },
-                    child: AccountOptionCard('logout', true),
+                    child: AccountOptionCard(option: 'logout'),
                   ),
                 ],
               ),

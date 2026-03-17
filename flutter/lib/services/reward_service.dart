@@ -126,6 +126,70 @@ class RewardService {
       rethrow;
     }
   }
+
+  Future<void> claimReferralReward({
+    required String referralId,
+  }) async {
+    try {
+      final paxAccount = ref.read(paxAccountProvider).account;
+      final isV2 = paxAccount?.isV2 ?? false;
+
+      final Map<String, dynamic> payload = {
+        'referralId': referralId,
+      };
+
+      if (isV2) {
+        final credState = ref.read(walletCredentialsProvider);
+        final credentials = credState.credentials;
+        if (credentials == null) {
+          throw Exception(
+            'Pax Wallet not loaded. Open Pax Wallet or restore from backup to claim rewards.',
+          );
+        }
+        final user = FirebaseAuth.instance.currentUser;
+        if (user == null) throw Exception('Not signed in');
+        final sessionKey = await user.getIdToken(true);
+        if (sessionKey == null) {
+          throw Exception('Failed to get session token');
+        }
+        final smartAccountService = SmartAccountService();
+        final v2Params = smartAccountService.getV2EncryptedParamsForBackend(
+          credentials: credentials,
+          sessionKey: sessionKey,
+        );
+        payload['encryptedPrivateKey'] = v2Params['encryptedPrivateKey'];
+        payload['sessionKey'] = v2Params['sessionKey'];
+        payload['eoWalletAddress'] = v2Params['eoWalletAddress'];
+      } else {
+        final serverWalletId = paxAccount?.serverWalletId;
+        if (serverWalletId == null || serverWalletId.isEmpty) {
+          throw Exception(
+            'Account is missing server wallet. Contact support or complete wallet setup.',
+          );
+        }
+        payload['serverWalletId'] = serverWalletId;
+      }
+
+      final httpsCallable = FirebaseFunctions.instance.httpsCallable(
+        'processReferralClaim',
+      );
+      await httpsCallable.call(payload);
+
+      ref.invalidate(activityRepositoryProvider);
+      await ref.read(paxAccountProvider.notifier).syncBalancesFromBlockchain();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Referral reward process error: $e');
+      }
+      throw Exception(
+        ErrorMessageUtil.userFacing(
+          e is FirebaseFunctionsException
+              ? e.message ?? e.toString()
+              : e.toString(),
+        ),
+      );
+    }
+  }
 }
 
 final rewardServiceProvider = Provider<RewardService>((ref) {

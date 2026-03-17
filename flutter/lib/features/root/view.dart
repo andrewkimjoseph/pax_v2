@@ -124,9 +124,16 @@ class _RootViewState extends ConsumerState<RootView> {
               buildButton(
                 'Activity',
                 selected == (isV2 ? 2 : 1),
-                badgeCount: ref
-                    .watch(unclaimedTaskCompletionsCountProvider)
-                    .maybeWhen(data: (c) => c, orElse: () => null),
+                badgeCount: () {
+                  final unclaimedTasks = ref
+                      .watch(unclaimedTaskCompletionsCountProvider)
+                      .maybeWhen(data: (c) => c, orElse: () => 0);
+                  final unclaimedReferrals = ref
+                      .watch(unclaimedReferralsCountProvider)
+                      .maybeWhen(data: (c) => c, orElse: () => 0);
+                  final total = unclaimedTasks + unclaimedReferrals;
+                  return total > 0 ? total : null;
+                }(),
                 isV2: isV2,
               ),
               buildButton(

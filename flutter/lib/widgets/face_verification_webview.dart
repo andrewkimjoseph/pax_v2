@@ -58,7 +58,7 @@ class FaceVerificationWebViewState
 
   Future<void> _initializeWeb3() async {
     _providerJavaScript = await rootBundle.loadString(
-      'assets/scripts/ethereum_provider.js',
+      'lib/assets/scripts/ethereum_provider.js',
     );
 
     _rpcUrl = 'https://lb.drpc.live/celo/${Env.drpcAPIKey}';
@@ -513,7 +513,7 @@ class FaceVerificationWebViewState
                 parsed: parsed,
                 urlString: urlString,
                 currentWebUri: url,
-                delay: const Duration(milliseconds: 800),
+                delay: const Duration(milliseconds: 600),
               );
             }
           }
@@ -550,7 +550,7 @@ class FaceVerificationWebViewState
               parsed: parsed,
               urlString: urlString!,
               currentWebUri: url,
-              delay: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 300),
             );
           }
         } else {
@@ -605,7 +605,7 @@ class FaceVerificationWebViewState
                 parsed: parsed,
                 urlString: urlString,
                 currentWebUri: url,
-                delay: const Duration(milliseconds: 500),
+                delay: const Duration(milliseconds: 300),
               );
             }
           }

@@ -31,95 +31,139 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
   }
 
   void _callBackFn() async {
-    final activityIsRewarded =
-        widget.activity.taskCompletion != null &&
-        widget.allActivities.any(
-          (activity) =>
-              activity.reward != null &&
-              activity.reward?.txnHash != null &&
-              activity.reward?.taskCompletionId ==
-                  widget.activity.taskCompletion?.id,
-        );
-
-    final isTaskComplete = widget.activity.isComplete;
-    final taskId = widget.activity.taskCompletion?.taskId;
-    final screeningId = widget.activity.taskCompletion?.screeningId;
-    final taskCompletionId = widget.activity.taskCompletion?.id;
-
-    // Find the matching reward in allActivities
-    final matchingReward = widget.allActivities.firstWhereOrNull(
-      (a) =>
-          a.reward != null &&
-          a.reward?.taskCompletionId == taskCompletionId &&
-          a.reward?.txnHash != null,
-    );
+    final isTaskCompletion = widget.activity.taskCompletion != null;
+    final isReferral = widget.activity.referral != null;
 
     // Capture before any await — ref is invalid after unmount.
     final tasksRepo = ref.read(tasksRepositoryProvider);
     final claimNotifier = ref.read(claimRewardContextProvider.notifier);
     final analytics = ref.read(analyticsProvider);
 
-    final task = await tasksRepo.getTaskById(taskId);
+    if (isTaskCompletion) {
+      final activityIsRewarded =
+          widget.allActivities.any(
+            (activity) =>
+                activity.reward != null &&
+                activity.reward?.txnHash != null &&
+                activity.reward?.taskCompletionId ==
+                    widget.activity.taskCompletion?.id,
+          );
 
-    final amount = task?.rewardAmountPerParticipant;
-    final tokenId = task?.rewardCurrencyId;
-    final numberOfCooldownHours = task?.numberOfCooldownHours ?? 0;
-    final timeCompleted = widget.activity.taskCompletion?.timeCompleted;
-    final timeCreated = widget.activity.taskCompletion?.timeCreated;
-    final isValid = widget.activity.taskCompletion?.isValid;
+      final isTaskComplete = widget.activity.isComplete;
+      final taskId = widget.activity.taskCompletion?.taskId;
+      final screeningId = widget.activity.taskCompletion?.screeningId;
+      final taskCompletionId = widget.activity.taskCompletion?.id;
 
-    claimNotifier.setContext(
-      screeningId: screeningId,
-      taskId: taskId,
-      taskCompletionId: taskCompletionId,
-      amount: amount,
-      tokenId: tokenId,
-      txnHash: matchingReward?.reward?.txnHash,
-      taskIsCompleted: isTaskComplete,
-      numberOfCooldownHours: numberOfCooldownHours,
-      timeCompleted: timeCompleted,
-      timeCreated: timeCreated,
-      isValid: isValid,
-    );
+      // Find the matching reward in allActivities
+      final matchingReward = widget.allActivities.firstWhereOrNull(
+        (a) =>
+            a.reward != null &&
+            a.reward?.taskCompletionId == taskCompletionId &&
+            a.reward?.txnHash != null,
+      );
 
-    if (!isTaskComplete) {
-      analytics.incompleteTaskCompletionTapped({
-        "taskId": taskId,
-        "screeningId": screeningId,
+      final task = await tasksRepo.getTaskById(taskId);
+
+      final amount = task?.rewardAmountPerParticipant;
+      final tokenId = task?.rewardCurrencyId;
+      final numberOfCooldownHours = task?.numberOfCooldownHours ?? 0;
+      final timeCompleted = widget.activity.taskCompletion?.timeCompleted;
+      final timeCreated = widget.activity.taskCompletion?.timeCreated;
+      final isValid = widget.activity.taskCompletion?.isValid;
+
+      claimNotifier.setContext(
+        screeningId: screeningId,
+        taskId: taskId,
+        taskCompletionId: taskCompletionId,
+        amount: amount,
+        tokenId: tokenId,
+        txnHash: matchingReward?.reward?.txnHash,
+        taskIsCompleted: isTaskComplete,
+        numberOfCooldownHours: numberOfCooldownHours,
+        timeCompleted: timeCompleted,
+        timeCreated: timeCreated,
+        isValid: isValid,
+        isReferral: false,
+        referralId: null,
+      );
+
+      if (!isTaskComplete) {
+        analytics.incompleteTaskCompletionTapped({
+          "taskId": taskId,
+          "screeningId": screeningId,
+        });
+      } else if (!activityIsRewarded) {
+        analytics.unrewardedTaskCompletionTapped({
+          "taskId": taskId,
+          "screeningId": screeningId,
+          "taskCompletionId": taskCompletionId,
+        });
+      }
+
+      if (mounted) {
+        context.push("/claim-reward");
+      }
+    } else if (isReferral) {
+      final referral = widget.activity.referral!;
+
+      if (referral.timeRewarded != null || referral.txnHash != null) {
+        return;
+      }
+
+      final amount = referral.amountReceived;
+      // For now, reuse the primary reward token id (1) for referrals
+      const int tokenId = 1;
+
+      claimNotifier.setContext(
+        screeningId: null,
+        taskId: null,
+        taskCompletionId: null,
+        referralId: referral.id,
+        amount: amount,
+        tokenId: tokenId,
+        txnHash: referral.txnHash,
+        taskIsCompleted: true,
+        numberOfCooldownHours: 0,
+        timeCompleted: referral.timeRewarded,
+        timeCreated: referral.timeCreated,
+        isValid: true,
+        isReferral: true,
+      );
+
+      analytics.referralActivityTapped({
+        "referralId": referral.id,
       });
-    } else if (!activityIsRewarded) {
-      analytics.unrewardedTaskCompletionTapped({
-        "taskId": taskId,
-        "screeningId": screeningId,
-        "taskCompletionId": taskCompletionId,
-      });
-    }
 
-    if (mounted) {
-      context.push("/claim-reward");
+      if (mounted) {
+        context.push("/claim-reward");
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isTaskCompletion = widget.activity.taskCompletion != null;
+    final isReferral = widget.activity.referral != null;
+
     final activityIsClaimed =
-        widget.activity.taskCompletion != null &&
-        widget.allActivities.any(
-          (activity) =>
-              activity.reward != null &&
-              activity.reward?.txnHash != null &&
-              activity.reward?.taskCompletionId ==
-                  widget.activity.taskCompletion?.id,
-        );
+        (isTaskCompletion &&
+            widget.allActivities.any(
+              (activity) =>
+                  activity.reward != null &&
+                  activity.reward?.txnHash != null &&
+                  activity.reward?.taskCompletionId ==
+                      widget.activity.taskCompletion?.id,
+            )) ||
+        (isReferral && widget.activity.referral?.timeRewarded != null);
 
     final isTaskComplete = widget.activity.isComplete;
-    final isTaskCompletion = widget.activity.taskCompletion != null;
     final isValid = widget.activity.taskCompletion?.isValid;
     final isExpired = widget.activity.isExpired;
 
     return InkWell(
       onTap:
-          isTaskCompletion && isValid != false && !activityIsClaimed
+          ((isTaskCompletion && isValid != false) || isReferral) &&
+                  !activityIsClaimed
               ? _callBackFn
               : null,
       child: Container(
@@ -183,38 +227,45 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
                         ),
                       ),
                       Visibility(
-                        visible: isTaskCompletion,
+                        visible: isTaskCompletion || isReferral,
                         child: Row(
                           children: [
                             OutlineBadge(
                               child: Row(
                                 children: [
                                   Text(
-                                    isValid == false
-                                        ? 'Invalid'
-                                        : activityIsClaimed
-                                        ? 'Claimed'
-                                        : isTaskComplete
-                                        ? 'Unclaimed'
-                                        : isExpired
-                                        ? 'Expired'
-                                        : 'Incomplete',
+                                    isReferral
+                                        ? (activityIsClaimed
+                                            ? 'Claimed'
+                                            : 'Unclaimed')
+                                        : isValid == false
+                                            ? 'Invalid'
+                                            : activityIsClaimed
+                                                ? 'Claimed'
+                                                : isTaskComplete
+                                                    ? 'Unclaimed'
+                                                    : isExpired
+                                                        ? 'Expired'
+                                                        : 'Incomplete',
                                   ).withPadding(right: 4),
                                   FaIcon(
                                     activityIsClaimed
                                         ? FontAwesomeIcons.solidCircleCheck
                                         : FontAwesomeIcons.solidCircleXmark,
                                     size: 16,
-                                    color:
-                                        activityIsClaimed
+                                    color: isReferral
+                                        ? (activityIsClaimed
+                                            ? PaxColors.green
+                                            : PaxColors.orange)
+                                        : activityIsClaimed
                                             ? PaxColors.green
                                             : isValid == false
-                                            ? PaxColors.red
-                                            : (isTaskComplete)
-                                            ? PaxColors.orange
-                                            : isExpired
-                                            ? PaxColors.red
-                                            : PaxColors.orange,
+                                                ? PaxColors.red
+                                                : (isTaskComplete)
+                                                    ? PaxColors.orange
+                                                    : isExpired
+                                                        ? PaxColors.red
+                                                        : PaxColors.orange,
                                   ),
                                 ],
                               ),
@@ -233,11 +284,13 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
                             ? isTaskComplete
                                 ? 'You have completed a task'
                                 : isExpired
-                                ? 'You have an expired task'
-                                : 'You have an incomplete task'
-                            : widget.activity.reward != null
-                            ? 'You have earned a reward'
-                            : 'You have made a withdrawal',
+                                    ? 'You have an expired task'
+                                    : 'You have an incomplete task'
+                            : isReferral
+                                ? 'You have made a referral'
+                                : widget.activity.reward != null
+                                    ? 'You have earned a reward'
+                                    : 'You have made a withdrawal',
                         style: TextStyle(
                           fontWeight: FontWeight.normal,
                           fontSize: 12,

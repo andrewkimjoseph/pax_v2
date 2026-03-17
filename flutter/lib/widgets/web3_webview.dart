@@ -78,7 +78,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
 
   Future<void> _initializeWeb3() async {
     _providerJavaScript = await rootBundle.loadString(
-      'assets/scripts/ethereum_provider.js',
+      'lib/assets/scripts/ethereum_provider.js',
     );
 
     _rpcUrl = "https://forno.celo.org";

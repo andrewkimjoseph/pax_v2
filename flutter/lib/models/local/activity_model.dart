@@ -4,16 +4,17 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:pax/exports/shadcn.dart';
 import 'package:pax/models/firestore/reward/reward_model.dart';
+import 'package:pax/models/firestore/referral/referral.dart';
 import 'package:pax/constants/task_timer.dart';
 import 'package:pax/models/firestore/task_completion/task_completion_model.dart';
 import 'package:pax/models/firestore/withdrawal/withdrawal_model.dart';
 
-enum ActivityType { taskCompletion, reward, withdrawal }
+enum ActivityType { taskCompletion, reward, withdrawal, referral }
 
 class Activity {
   final String id;
   final ActivityType type;
-  final dynamic data; // TaskCompletion, Reward, or Withdrawal
+  final dynamic data; // TaskCompletion, Reward, Withdrawal, or Referral
 
   Activity({required this.id, required this.type, required this.data});
 
@@ -23,6 +24,8 @@ class Activity {
   Reward? get reward => type == ActivityType.reward ? data as Reward : null;
   Withdrawal? get withdrawal =>
       type == ActivityType.withdrawal ? data as Withdrawal : null;
+  Referral? get referral =>
+      type == ActivityType.referral ? data as Referral : null;
 
   // Get timestamp for sorting activities
   Timestamp? get timestamp {
@@ -33,6 +36,8 @@ class Activity {
         return reward?.timeCreated;
       case ActivityType.withdrawal:
         return withdrawal?.timeCreated;
+      case ActivityType.referral:
+        return referral?.timeRewarded ?? referral?.timeCreated;
     }
   }
 
@@ -45,6 +50,8 @@ class Activity {
         return reward?.participantId;
       case ActivityType.withdrawal:
         return withdrawal?.participantId;
+      case ActivityType.referral:
+        return referral?.referredParticipantId;
     }
   }
 
@@ -57,6 +64,8 @@ class Activity {
         return 'Reward Earned';
       case ActivityType.withdrawal:
         return 'Withdrawal';
+      case ActivityType.referral:
+        return 'Referral';
     }
   }
 
@@ -72,6 +81,8 @@ class Activity {
             : 'Reward pending';
       case ActivityType.withdrawal:
         return 'Funds withdrawn';
+      case ActivityType.referral:
+        return 'You referred a friend';
     }
   }
 
@@ -87,6 +98,9 @@ class Activity {
     } else if (type == ActivityType.withdrawal &&
         withdrawal?.amountTakenOut != null) {
       return formatter.format(withdrawal!.amountTakenOut!);
+    } else if (type == ActivityType.referral &&
+        referral?.amountReceived != null) {
+      return formatter.format(referral!.amountReceived!);
     }
     return null;
   }
@@ -103,6 +117,9 @@ class Activity {
     if (type == ActivityType.withdrawal) {
       return FontAwesomeIcons.solidMoneyBill1;
     }
+    if (type == ActivityType.referral) {
+      return FontAwesomeIcons.bullhorn;
+    }
     return null;
   }
 
@@ -115,6 +132,8 @@ class Activity {
         return reward?.rewardCurrencyId;
       case ActivityType.withdrawal:
         return withdrawal?.rewardCurrencyId;
+      case ActivityType.referral:
+        return null;
     }
   }
 
@@ -136,6 +155,8 @@ class Activity {
         return reward?.isPaidOutToPaxAccount == true ? 'paid' : 'pending';
       case ActivityType.withdrawal:
         return 'processed';
+      case ActivityType.referral:
+        return referral?.timeRewarded != null ? 'claimed' : 'unclaimed';
     }
   }
 
@@ -171,6 +192,8 @@ extension ActivityExtensions on Activity {
         return reward?.timePaidOut != null;
       case ActivityType.withdrawal:
         return withdrawal?.timeRequested != null;
+      case ActivityType.referral:
+        return referral?.timeRewarded != null;
     }
   }
 

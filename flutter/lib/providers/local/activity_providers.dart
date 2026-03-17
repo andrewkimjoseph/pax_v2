@@ -13,6 +13,9 @@ import '../auth/auth_provider.dart';
 /// Filter for task completion activities, modeled like Achievement filters.
 enum CompletionFilter { all, claimed, unclaimed, incomplete, expired }
 
+/// Filter for referral activities.
+enum ReferralFilter { all, unclaimed, claimed }
+
 // Provider for repositories
 final taskCompletionRepositoryProvider = Provider<TaskCompletionRepository>((
   ref,
@@ -78,6 +81,7 @@ class ActivityState {
   final String? errorMessage;
   final ActivityType? filterType;
   final CompletionFilter completionFilter;
+  final ReferralFilter referralFilter;
 
   ActivityState({
     this.activities = const [],
@@ -85,6 +89,7 @@ class ActivityState {
     this.errorMessage,
     this.filterType,
     this.completionFilter = CompletionFilter.all,
+    this.referralFilter = ReferralFilter.all,
   });
 
   ActivityState copyWith({
@@ -93,6 +98,7 @@ class ActivityState {
     String? errorMessage,
     ActivityType? filterType,
     CompletionFilter? completionFilter,
+    ReferralFilter? referralFilter,
   }) {
     return ActivityState(
       activities: activities ?? this.activities,
@@ -100,6 +106,7 @@ class ActivityState {
       errorMessage: errorMessage,
       filterType: filterType ?? this.filterType,
       completionFilter: completionFilter ?? this.completionFilter,
+      referralFilter: referralFilter ?? this.referralFilter,
     );
   }
 }
@@ -124,6 +131,11 @@ class ActivityNotifier extends Notifier<ActivityState> {
   // Set completion filter (used when filterType is taskCompletion)
   void setCompletionFilter(CompletionFilter completionFilter) {
     state = state.copyWith(completionFilter: completionFilter);
+  }
+
+  // Set referral filter (used when filterType is referral)
+  void setReferralFilter(ReferralFilter referralFilter) {
+    state = state.copyWith(referralFilter: referralFilter);
   }
 
   // Load activities
@@ -223,6 +235,29 @@ final expiredTaskCompletionsCountProvider = Provider<AsyncValue<int>>((ref) {
   );
 });
 
+// Provider for count of unclaimed referrals
+final unclaimedReferralsCountProvider = Provider<AsyncValue<int>>((ref) {
+  final userId = ref.watch(authProvider).user.uid;
+  final allActivitiesAsync = ref.watch(allActivitiesProvider(userId));
+
+  return allActivitiesAsync.when(
+    data: (allActivities) {
+      int count = 0;
+      for (final activity in allActivities) {
+        if (activity.type != ActivityType.referral) continue;
+        final referral = activity.referral;
+        if (referral == null) continue;
+        final isClaimed = referral.timeRewarded != null ||
+            (referral.txnHash != null && referral.txnHash!.isNotEmpty);
+        if (!isClaimed) count++;
+      }
+      return AsyncValue.data(count);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+  );
+});
+
 // Provider for total G$ tokens earned
 final totalGoodDollarTokensEarnedProvider = Provider<AsyncValue<double>>((ref) {
   final userId = ref.watch(authProvider).user.uid;
@@ -301,6 +336,37 @@ List<Activity> filterTaskCompletionActivities(
           .toList();
     case CompletionFilter.expired:
       return taskCompletionActivities.where((a) => !a.isComplete && a.isExpired).toList();
+  }
+}
+
+/// Filters referral activities by ReferralFilter.
+List<Activity> filterReferralActivities(
+  List<Activity> referralActivities,
+  ReferralFilter filter,
+) {
+  switch (filter) {
+    case ReferralFilter.all:
+      return referralActivities;
+    case ReferralFilter.unclaimed:
+      return referralActivities
+          .where(
+            (a) =>
+                a.type == ActivityType.referral &&
+                a.referral?.timeRewarded == null &&
+                (a.referral?.txnHash == null ||
+                    a.referral!.txnHash!.isEmpty),
+          )
+          .toList();
+    case ReferralFilter.claimed:
+      return referralActivities
+          .where(
+            (a) =>
+                a.type == ActivityType.referral &&
+                (a.referral?.timeRewarded != null ||
+                    (a.referral?.txnHash != null &&
+                        a.referral!.txnHash!.isNotEmpty)),
+          )
+          .toList();
   }
 }
 

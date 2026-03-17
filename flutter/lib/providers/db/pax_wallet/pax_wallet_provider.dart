@@ -12,6 +12,7 @@ import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/providers/withdrawal_method_connection/withdrawal_method_connection_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
 import 'package:pax/utils/achievement_constants.dart';
+import 'package:pax/utils/branch_param_cleaner.dart';
 import 'package:pax/repositories/firestore/pax_wallet/pax_wallet_repository.dart';
 import 'package:pax/services/wallet/gooddollar_identity_service.dart';
 
@@ -258,6 +259,76 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
       // V2 face-verification route only: Verified Human before gas sponsorship
       await _createVerifiedHumanAfterV2FaceVerification(participantId);
+
+      // Non-blocking referral record creation based on Branch params
+      try {
+        final mergedParams =
+            await BranchParamCleaner.mergeWithBranchFirstReferringParams({});
+        final referringParticipantId =
+            mergedParams['referringParticipantId'] as String?;
+
+        if (referringParticipantId != null &&
+            referringParticipantId.isNotEmpty &&
+            referringParticipantId != participantId) {
+          if (kDebugMode) {
+            debugPrint(
+              'PaxWalletNotifier: creating referral record for '
+              'referringParticipantId=$referringParticipantId, '
+              'referredParticipantId=$participantId',
+            );
+          }
+
+          try {
+            await FirebaseFunctions.instance
+                .httpsCallable('createReferral')
+                .call(<String, dynamic>{
+              'referringParticipantId': referringParticipantId,
+              'referredParticipantId': participantId,
+            });
+            ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
+              'referringParticipantId_present': true,
+              'referredParticipantId': participantId,
+              'status': 'success',
+            });
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint(
+                'PaxWalletNotifier: createReferral failed (non-blocking): $e',
+              );
+            }
+            ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
+              'referringParticipantId_present': true,
+              'referredParticipantId': participantId,
+              'status': 'error',
+              'error': e.toString(),
+            });
+          }
+        } else {
+          if (kDebugMode) {
+            debugPrint(
+              'PaxWalletNotifier: skipping referral record creation '
+              '(no valid referringParticipantId in Branch params)',
+            );
+          }
+          ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
+            'referringParticipantId_present': false,
+            'referredParticipantId': participantId,
+            'status': 'skipped',
+          });
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            'PaxWalletNotifier: error while preparing referral record params (non-blocking): $e',
+          );
+        }
+        ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
+          'referringParticipantId_present': false,
+          'referredParticipantId': participantId,
+          'status': 'error_preparing_params',
+          'error': e.toString(),
+        });
+      }
 
       // Sponsor gas at most once per wallet per app session
       final eoAddress = wallet.eoAddress!;

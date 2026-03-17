@@ -92,7 +92,7 @@ class PaxColorScheme {
   static const Color inputBorder = PaxColors.mediumPurple;
 
   /// Lighter variant of the destructive color for subtle warnings
-  static const Color destructiveLight = PaxColors.whiteWithOpacity;
+  static const Color destructiveLight = PaxColors.white;
 
   /// Gradient colors for card3 component, transitioning from orange to pink
   static const List<Color> card3Gradient = PaxColors.orangeToPinkGradient;

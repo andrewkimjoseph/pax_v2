@@ -145,6 +145,8 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
     final taskId = claimContext.taskId;
     final screeningId = claimContext.screeningId;
     final taskCompletionId = claimContext.taskCompletionId;
+    final referralId = claimContext.referralId;
+    final isReferral = claimContext.isReferral == true;
 
     // Show loading dialog
     showDialog(
@@ -183,18 +185,24 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
     );
 
     try {
-      ref.read(analyticsProvider).claimRewardTapped({
-        "taskId": taskId,
-        "screeningId": screeningId,
-        "taskCompletionId": taskCompletionId,
-      });
-
-      if (taskCompletionId == null) {
-        _showErrorDialog('No task completion ID found.');
-        setState(() {
-          isClaiming = false;
+      if (isReferral) {
+        ref.read(analyticsProvider).referralRewardClaimStarted({
+          "referralId": referralId,
         });
-        return;
+      } else {
+        ref.read(analyticsProvider).claimRewardTapped({
+          "taskId": taskId,
+          "screeningId": screeningId,
+          "taskCompletionId": taskCompletionId,
+        });
+
+        if (taskCompletionId == null) {
+          _showErrorDialog('No task completion ID found.');
+          setState(() {
+            isClaiming = false;
+          });
+          return;
+        }
       }
 
       // Check CanvassingRewarder has sufficient balance before claiming
@@ -231,14 +239,30 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
         }
       }
 
-      await ref
-          .read(rewardServiceProvider)
-          .rewardParticipant(taskCompletionId: taskCompletionId);
-      ref.read(analyticsProvider).claimRewardComplete({
-        "taskId": taskId,
-        "screeningId": screeningId,
-        "taskCompletionId": taskCompletionId,
-      });
+      if (isReferral) {
+        if (referralId == null) {
+          _showErrorDialog('No referral ID found.');
+          setState(() {
+            isClaiming = false;
+          });
+          return;
+        }
+        await ref
+            .read(rewardServiceProvider)
+            .claimReferralReward(referralId: referralId);
+        ref.read(analyticsProvider).referralRewardClaimSucceeded({
+          "referralId": referralId,
+        });
+      } else {
+        await ref
+            .read(rewardServiceProvider)
+            .rewardParticipant(taskCompletionId: taskCompletionId!);
+        ref.read(analyticsProvider).claimRewardComplete({
+          "taskId": taskId,
+          "screeningId": screeningId,
+          "taskCompletionId": taskCompletionId,
+        });
+      }
       if (!context.mounted) return;
       context.pop(); // Close loading dialog
       // Show success dialog
@@ -291,15 +315,27 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
     } catch (e) {
       if (!context.mounted) return;
       context.pop(); // Close loading dialog
-      ref.read(analyticsProvider).claimRewardFailed({
-        "taskId": taskId,
-        "screeningId": screeningId,
-        "taskCompletionId": taskCompletionId,
-        "error": e.toString().substring(0, e.toString().length.clamp(0, 99)),
-      });
-      _showErrorDialog(
-        'Failed to claim reward: ${ErrorMessageUtil.userFacing(e.toString())}',
-      );
+      if (isReferral) {
+        ref.read(analyticsProvider).referralRewardClaimFailed({
+          "referralId": referralId,
+          "error":
+              e.toString().substring(0, e.toString().length.clamp(0, 99)),
+        });
+        _showErrorDialog(
+          'Failed to claim referral reward: ${ErrorMessageUtil.userFacing(e.toString())}',
+        );
+      } else {
+        ref.read(analyticsProvider).claimRewardFailed({
+          "taskId": taskId,
+          "screeningId": screeningId,
+          "taskCompletionId": taskCompletionId,
+          "error":
+              e.toString().substring(0, e.toString().length.clamp(0, 99)),
+        });
+        _showErrorDialog(
+          'Failed to claim reward: ${ErrorMessageUtil.userFacing(e.toString())}',
+        );
+      }
     } finally {
       if (context.mounted) {
         setState(() {
@@ -360,8 +396,11 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
     final timeCompleted = claimContext?.timeCompleted?.toDate();
     final timeCreated = claimContext?.timeCreated?.toDate();
     final isValid = claimContext?.isValid ?? true;
+    final isReferral = claimContext?.isReferral == true;
+    final referralId = claimContext?.referralId;
 
     final isExpired =
+        !isReferral &&
         taskIsCompleted == false &&
         (timeCreated == null ||
             DateTime.now().isAfter(
@@ -426,15 +465,21 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                       isClaiming
                           ? const CircularProgressIndicator()
                           : Text(
-                            taskIsCompleted == false
-                                ? (isExpired ? 'Task Expired' : 'Complete Task')
-                                : (txnHash != null && txnHash.isNotEmpty)
-                                ? 'Claimed'
-                                : isValid == false
-                                ? 'Invalid Submission'
-                                : !canClaim
-                                ? 'Cooldown Active'
-                                : 'Claim Reward',
+                            isReferral
+                                ? (txnHash != null && txnHash.isNotEmpty)
+                                    ? 'Claimed'
+                                    : 'Claim Referral Reward'
+                                : taskIsCompleted == false
+                                    ? (isExpired
+                                        ? 'Task Expired'
+                                        : 'Complete Task')
+                                    : (txnHash != null && txnHash.isNotEmpty)
+                                        ? 'Claimed'
+                                        : isValid == false
+                                            ? 'Invalid Submission'
+                                            : !canClaim
+                                                ? 'Cooldown Active'
+                                                : 'Claim Reward',
                             style: Theme.of(context).typography.base.copyWith(
                               fontWeight: FontWeight.normal,
                               fontSize: 14,
@@ -456,16 +501,21 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SvgPicture.asset('lib/assets/svgs/task_complete.svg'),
-                  // Only show reward amount if task is valid or not yet completed
-                  if (isValid != false || taskIsCompleted == false)
+                  SvgPicture.asset(
+                    isReferral
+                        ? 'lib/assets/svgs/pax_v2_referral.svg'
+                        : 'lib/assets/svgs/task_complete.svg',
+                  ),
+                  if (isReferral || isValid != false || taskIsCompleted == false)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
-                          taskIsCompleted == false
-                              ? "You will earn"
-                              : "You earned",
+                          isReferral
+                              ? "Referral Reward"
+                              : taskIsCompleted == false
+                                  ? "You will earn"
+                                  : "You earned",
                           textAlign: TextAlign.left,
                           style: TextStyle(
                             fontSize: 16,
@@ -497,8 +547,55 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ),
                       ],
                     ).withPadding(bottom: 12),
-                  // Only show task completion ID if task is valid or not yet completed
-                  if (taskCompletionId != null &&
+                  if (isReferral && referralId != null)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Referral ID: ${referralId.substring(0, 8)}...",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: PaxColors.darkGrey,
+                          ),
+                        ).withPadding(right: 8),
+                        InkWell(
+                          onTap: () async {
+                            await Clipboard.setData(
+                              ClipboardData(text: referralId),
+                            );
+                            if (context.mounted) {
+                              showToast(
+                                context: context,
+                                location: ToastLocation.topCenter,
+                                builder:
+                                    (context, overlay) => Toast(
+                                      toastColor: PaxColors.green,
+                                      text: 'Referral ID copied',
+                                      trailingIcon:
+                                          FontAwesomeIcons.solidCircleCheck,
+                                    ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: PaxColors.deepPurple.withValues(
+                                alpha: 0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: FaIcon(
+                              FontAwesomeIcons.copy,
+                              size: 12,
+                              color: PaxColors.deepPurple,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ).withPadding(top: 16),
+                  if (!isReferral &&
+                      taskCompletionId != null &&
                       (isValid != false || taskIsCompleted == false))
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -547,8 +644,8 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                       ],
                     ).withPadding(top: 16),
 
-                  // Show cooldown information if there's a cooldown, task is completed, task is valid, and not already claimed
-                  if (numberOfCooldownHours > 0 &&
+                  if (!isReferral &&
+                      numberOfCooldownHours > 0 &&
                       taskIsCompleted == true &&
                       isValid != false &&
                       (txnHash == null || txnHash.isEmpty))
@@ -630,8 +727,7 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                       ),
                     ),
 
-                  // Show expired task notice when task expired (past 6-hour window)
-                  if (taskIsCompleted == false && isExpired)
+                  if (!isReferral && taskIsCompleted == false && isExpired)
                     Container(
                       margin: EdgeInsets.only(top: 24),
                       padding: EdgeInsets.all(16),
@@ -680,8 +776,7 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                       ),
                     ),
 
-                  // Show invalid submission notice if isValid is false
-                  if (isValid == false && taskIsCompleted == true)
+                  if (!isReferral && isValid == false && taskIsCompleted == true)
                     Container(
                       margin: EdgeInsets.only(top: 24),
                       padding: EdgeInsets.all(16),

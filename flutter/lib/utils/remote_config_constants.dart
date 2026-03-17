@@ -39,6 +39,12 @@ class RemoteConfigKeys {
   static const String isCustomAppAccessFeatureAvailable =
       'is_custom_app_access_feature_available';
 
+  /// Controls whether the V2 referral program card is shown on the account screen.
+  /// When false, the card is hidden (unless in debug mode).
+  /// Key: 'is_v2_referral_feature_available'
+  static const String isV2ReferralFeatureAvailable =
+      'is_v2_referral_feature_available';
+
   // App version config keys
   /// The minimum version of the app that users must have installed.
   /// Users with versions below this will be prompted to update.
