@@ -445,6 +445,37 @@ class AnalyticsProvider {
     Map<String, dynamic>? properties,
   ]) => _logEvent('v2_face_verification_prompt_tapped', properties: properties);
 
+  Future<void> v2ReferralRecordCreatedAttempt([
+    Map<String, dynamic>? properties,
+  ]) =>
+      _logEvent(
+        'v2_referral_record_created_attempt',
+        properties: properties,
+      );
+
+  Future<void> referralsTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('referrals_tapped', properties: properties);
+
+  Future<void> referralActivityTapped([
+    Map<String, dynamic>? properties,
+  ]) =>
+      _logEvent('referral_activity_tapped', properties: properties);
+
+  Future<void> referralRewardClaimStarted([
+    Map<String, dynamic>? properties,
+  ]) =>
+      _logEvent('referral_reward_claim_started', properties: properties);
+
+  Future<void> referralRewardClaimSucceeded([
+    Map<String, dynamic>? properties,
+  ]) =>
+      _logEvent('referral_reward_claim_succeeded', properties: properties);
+
+  Future<void> referralRewardClaimFailed([
+    Map<String, dynamic>? properties,
+  ]) =>
+      _logEvent('referral_reward_claim_failed', properties: properties);
+
   // Onboarding questionnaire
   Future<void> onboardingQuestionnaireCompleted([
     Map<String, dynamic>? properties,

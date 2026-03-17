@@ -9,11 +9,9 @@ import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/utils/achievement_constants.dart';
 
 class AccountOptionCard extends ConsumerStatefulWidget {
-  const AccountOptionCard(this.option, this.isEarned, {super.key});
+  const AccountOptionCard({required this.option, super.key});
 
   final String option;
-
-  final bool isEarned;
 
   @override
   ConsumerState<AccountOptionCard> createState() => _AccountOptionCardState();
@@ -73,7 +71,7 @@ class _AccountOptionCardState extends ConsumerState<AccountOptionCard> {
 
             size: 20,
             color: widget.option == 'logout' ? Colors.red : PaxColors.black,
-          ).withPadding(right: 20),
+          ).withPadding(right: 18),
 
           // SvgPicture.asset(
           //   'lib/assets/svgs/${widget.option}.svg',

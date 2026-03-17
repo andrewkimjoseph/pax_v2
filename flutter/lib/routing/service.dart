@@ -28,6 +28,7 @@ import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/route/route_notifier_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/features/onboarding/onboarding_questionnaire/view.dart';
+import 'package:pax/features/referral/view.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'routes.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -35,7 +36,9 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 final routerProvider = Provider((ref) {
   final notifier = ref.watch(routerNotifierProvider);
   if (kDebugMode) {
-    debugPrint('[Router] Building GoRouter with initialLocation=${Routes.loading}');
+    debugPrint(
+      '[Router] Building GoRouter with initialLocation=${Routes.loading}',
+    );
   }
   return GoRouter(
     refreshListenable: notifier,
@@ -44,17 +47,13 @@ final routerProvider = Provider((ref) {
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
     ],
     errorBuilder: (context, state) {
-      // When a routing error occurs, navigate to the onboarding questionnaire so new users can continue.
-      // Redirect will send unauthenticated users to sign-in and already-onboarded users to the right step.
+      // When a routing error occurs (e.g. unknown deep-link path), show a simple
+      // loading screen and let the redirect logic decide what to do next.
       if (kDebugMode) {
         debugPrint(
-          '[Router] errorBuilder: matchedLocation=${state.matchedLocation}, error=${state.error}, redirecting to onboarding questionnaire',
+          '[Router] errorBuilder: matchedLocation=${state.matchedLocation}, error=${state.error}',
         );
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
-        context.go(Routes.onboardingQuestionnaire);
-      });
       return Scaffold(
         child: Center(
           child: Column(
@@ -72,7 +71,9 @@ final routerProvider = Provider((ref) {
           (state.matchedLocation == Routes.paxWallet ||
               state.matchedLocation == Routes.checkV2Eligibility)) {
         if (kDebugMode) {
-          debugPrint('[Router] redirect: web block paxWallet/checkV2Eligibility → home');
+          debugPrint(
+            '[Router] redirect: web block paxWallet/checkV2Eligibility → home',
+          );
         }
         return Routes.home;
       }
@@ -101,14 +102,15 @@ final routerProvider = Provider((ref) {
         return Routes.home;
       }
 
-      // If authenticated and route has an error, redirect to questionnaire so new users can continue (redirect runs on refresh and would otherwise send to home and re-trigger the error).
+      // If authenticated and route has an error, do not force questionnaire.
+      // Let the errorBuilder or current route handle it.
       if (authState == AuthState.authenticated && state.error != null) {
         if (kDebugMode) {
           debugPrint(
-            '[Router] redirect: authenticated with error → onboardingQuestionnaire',
+            '[Router] redirect: authenticated with error → null (no redirect)',
           );
         }
-        return Routes.onboardingQuestionnaire;
+        return null;
       }
 
       // If authenticated, check if new user needs onboarding
@@ -137,7 +139,7 @@ final routerProvider = Provider((ref) {
           if (kDebugMode) {
             debugPrint('[Router] redirect: account loading, on home → loading');
           }
-          return Routes.loading;
+          return null;
         }
 
         // Loading screen: once account is loaded, send to the right destination
@@ -160,10 +162,10 @@ final routerProvider = Provider((ref) {
               if (onboardingType == null) {
                 if (kDebugMode) {
                   debugPrint(
-                    '[Router] redirect: loading+loaded → onboardingQuestionnaire',
+                    '[Router] redirect: loading+loaded, no onboardingType → home',
                   );
                 }
-                return Routes.onboardingQuestionnaire;
+                return Routes.home;
               }
               if (onboardingType == 'v1_legacy') {
                 if (kDebugMode) {
@@ -180,9 +182,7 @@ final routerProvider = Provider((ref) {
             }
           }
           if (kDebugMode) {
-            debugPrint(
-              '[Router] redirect: loading, account not loaded → home',
-            );
+            debugPrint('[Router] redirect: loading, account not loaded → home');
           }
           return Routes.home;
         }
@@ -206,10 +206,10 @@ final routerProvider = Provider((ref) {
             if (onboardingType == null && !isOnQuestionnaireRoute) {
               if (kDebugMode) {
                 debugPrint(
-                  '[Router] redirect: new user, no onboardingType → onboardingQuestionnaire',
+                  '[Router] redirect: new user, no onboardingType → null',
                 );
               }
-              return Routes.onboardingQuestionnaire;
+              return null;
             }
 
             // Let new users stay on the questionnaire (avoid redirect loop: questionnaire ⇄ createV2Wallet).
@@ -388,6 +388,11 @@ final routerProvider = Provider((ref) {
       GoRoute(
         path: "/profile",
         builder: (BuildContext context, GoRouterState state) => ProfileView(),
+      ),
+      GoRoute(
+        path: Routes.referral,
+        builder:
+            (BuildContext context, GoRouterState state) => const ReferralView(),
       ),
       GoRoute(
         path: "/account-and-security",
@@ -572,6 +577,19 @@ final routerProvider = Provider((ref) {
       GoRoute(
         path: Routes.v2WebBlocked,
         builder: (context, state) => const V2WebBlockedView(),
+      ),
+      // Catch-all: any unknown path falls back to home instead of raising
+      // a routing error, which avoids extra flashes for deep links.
+      GoRoute(
+        path: '/:path(.*)',
+        redirect: (context, state) {
+          if (kDebugMode) {
+            debugPrint(
+              '[Router] catch-all redirect: ${state.matchedLocation} → ${Routes.home}',
+            );
+          }
+          return Routes.home;
+        },
       ),
     ],
   );

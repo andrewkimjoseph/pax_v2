@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
+import 'package:pax/routing/routes.dart';
 
 class BranchService {
   static final BranchService _instance = BranchService._internal();
@@ -94,5 +95,50 @@ class BranchService {
     _linkDataStreamSubscription?.cancel();
     _deepLinkHandler = null;
     _isListening = false;
+  }
+
+  Future<BranchResponse> generateReferralLink({
+    required String referringParticipantId,
+    String? displayName,
+  }) async {
+    if (kDebugMode) {
+      debugPrint(
+        'BranchService: Generating referral link for participant $referringParticipantId',
+      );
+    }
+
+    await waitForSdkInit();
+
+    final buo = BranchUniversalObject(
+      canonicalIdentifier: referringParticipantId,
+      title: 'Join Pax with my link',
+      contentDescription:
+          'Sign up to Pax using my referral link and start earning.',
+      contentMetadata:
+          BranchContentMetaData()
+            ..addCustomMetadata(
+              'referringParticipantId',
+              referringParticipantId,
+            )
+            ..addCustomMetadata('referrerDisplayName', displayName ?? ''),
+    );
+
+    final linkProperties =
+        BranchLinkProperties(
+            channel: 'app',
+            feature: 'referral',
+            campaign: 'road_to_twelve_k',
+            stage: 'new share',
+            tags: ['referral', 'participant'],
+          )
+          ..addControlParam('referringParticipantId', referringParticipantId)
+          // Force the app to open on a stable in-app path and treat the
+          // referringParticipantId purely as data.
+          ..addControlParam(r'$deeplink_path', Routes.loading);
+
+    return FlutterBranchSdk.getShortUrl(
+      buo: buo,
+      linkProperties: linkProperties,
+    );
   }
 }

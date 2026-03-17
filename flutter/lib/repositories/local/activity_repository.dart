@@ -3,20 +3,24 @@ import 'package:pax/models/local/activity_model.dart';
 import 'package:pax/repositories/firestore/reward/reward_repository.dart';
 import 'package:pax/repositories/firestore/task_completion/task_completion_repository.dart';
 import 'package:pax/repositories/firestore/withdrawal/withdrawal_repository.dart';
+import 'package:pax/repositories/firestore/referral/referral_repository.dart';
 
 class ActivityRepository {
   final TaskCompletionRepository _taskCompletionRepository;
   final RewardRepository _rewardRepository;
   final WithdrawalRepository _withdrawalRepository;
+  final ReferralRepository _referralRepository;
 
   ActivityRepository({
     TaskCompletionRepository? taskCompletionRepository,
     RewardRepository? rewardRepository,
     WithdrawalRepository? withdrawalRepository,
+    ReferralRepository? referralRepository,
   }) : _taskCompletionRepository =
            taskCompletionRepository ?? TaskCompletionRepository(),
        _rewardRepository = rewardRepository ?? RewardRepository(),
-       _withdrawalRepository = withdrawalRepository ?? WithdrawalRepository();
+       _withdrawalRepository = withdrawalRepository ?? WithdrawalRepository(),
+       _referralRepository = referralRepository ?? ReferralRepository();
 
   // Get all activities for a participant
   Future<List<Activity>> getAllActivitiesForParticipant(
@@ -31,6 +35,8 @@ class ActivityRepository {
       );
       final withdrawals = await _withdrawalRepository
           .getWithdrawalsForParticipant(participantId);
+      final referrals = await _referralRepository
+          .getReferralsForReferredParticipant(participantId);
 
       // Convert to activities
       final taskCompletionActivities =
@@ -39,12 +45,15 @@ class ActivityRepository {
           rewards.map((r) => Activity.fromReward(r)).toList();
       final withdrawalActivities =
           withdrawals.map((w) => Activity.fromWithdrawal(w)).toList();
+      final referralActivities =
+          referrals.map((r) => Activity(id: r.id, type: ActivityType.referral, data: r)).toList();
 
       // Combine all activities
       final allActivities = [
         ...taskCompletionActivities,
         ...rewardActivities,
         ...withdrawalActivities,
+        ...referralActivities,
       ];
 
       // Sort by timestamp (most recent first)

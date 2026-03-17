@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/models/local/activity_model.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
@@ -21,6 +22,7 @@ class ActivityView extends ConsumerStatefulWidget {
 
 class _ActivityViewState extends ConsumerState<ActivityView> {
   Timer? _refreshTimer;
+  bool _isRefreshingReferrals = false;
 
   @override
   void initState() {
@@ -49,6 +51,8 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
         return 1;
       case ActivityType.withdrawal:
         return 2;
+      case ActivityType.referral:
+        return 3;
       default:
         return 0;
     }
@@ -85,6 +89,45 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                   fontSize: 32,
                   color: PaxColors.black,
                 ),
+              ),
+              const Spacer(),
+              IconButton.outline(
+                onPressed:
+                    _isRefreshingReferrals
+                        ? null
+                        : () async {
+                          setState(() {
+                            _isRefreshingReferrals = true;
+                          });
+                          try {
+                            // Refresh only referral activities (backed by allActivitiesProvider).
+                            if (kDebugMode) {
+                              debugPrint('Refreshing referral activities');
+                            }
+                            ref.invalidate(allActivitiesProvider(userId));
+                            // Wait for the new activities to load before clearing the spinner.
+                            await ref.read(
+                              allActivitiesProvider(userId).future,
+                            );
+                          } catch (_) {
+                            // Ignore errors here; UI will show error state via provider.
+                          } finally {
+                            if (mounted) {
+                              setState(() {
+                                _isRefreshingReferrals = false;
+                              });
+                            }
+                          }
+                        },
+                density: ButtonDensity.icon,
+                icon:
+                    _isRefreshingReferrals
+                        ? const CircularProgressIndicator(size: 20)
+                        : const FaIcon(
+                          FontAwesomeIcons.arrowsRotate,
+                          size: 18,
+                          color: PaxColors.deepPurple,
+                        ),
               ),
             ],
           ).withPadding(bottom: 8),
@@ -245,6 +288,78 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                                   : PaxColors.black,
                         ),
                       ),
+                    ).withPadding(right: 8),
+
+                    Button(
+                      style: const ButtonStyle.primary(
+                            density: ButtonDensity.dense,
+                          )
+                          .withBackgroundColor(
+                            color:
+                                selectedIndex == 3
+                                    ? PaxColors.deepPurple
+                                    : Colors.transparent,
+                          )
+                          .withBorder(
+                            border: Border.all(
+                              color:
+                                  selectedIndex == 3
+                                      ? PaxColors.deepPurple
+                                      : PaxColors.lilac,
+                              width: 2,
+                            ),
+                          )
+                          .withBorderRadius(
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                      onPressed: () {
+                        activityNotifier.setFilterType(ActivityType.referral);
+                        ref.read(analyticsProvider).referralsTapped();
+                      },
+                      child: () {
+                        final unclaimedReferrals = ref
+                            .watch(unclaimedReferralsCountProvider)
+                            .maybeWhen(data: (c) => c, orElse: () => null);
+                        final textColor =
+                            selectedIndex == 3
+                                ? PaxColors.white
+                                : PaxColors.black;
+                        final hasBadge =
+                            unclaimedReferrals != null &&
+                            unclaimedReferrals > 0;
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Referrals',
+                              style: TextStyle(color: textColor),
+                            ).withPadding(right: 6),
+                            if (hasBadge) ...[
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: PaxColors.orange,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  unclaimedReferrals > 99
+                                      ? '99+'
+                                      : '$unclaimedReferrals',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: PaxColors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      }(),
                     ),
                   ],
                 ),
@@ -279,12 +394,21 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                   allActivities,
                   completionFilter,
                 );
+              } else if (filterType == ActivityType.referral) {
+                final referralFilter =
+                    ref.watch(activityNotifierProvider).referralFilter;
+                filteredActivities = filterReferralActivities(
+                  filteredActivities,
+                  referralFilter,
+                );
               }
               final activityNotifier = ref.watch(
                 activityNotifierProvider.notifier,
               );
               final completionFilter =
                   ref.watch(activityNotifierProvider).completionFilter;
+              final referralFilter =
+                  ref.watch(activityNotifierProvider).referralFilter;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -373,6 +497,60 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                         ),
                       ),
                     ).withPadding(bottom: 8),
+                  if (filterType == ActivityType.referral)
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: PaxColors.deepPurple,
+                          width: 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      padding: EdgeInsets.all(8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              FilterButton(
+                                label: 'All',
+                                isSelected:
+                                    referralFilter == ReferralFilter.all,
+                                onPressed:
+                                    () => activityNotifier.setReferralFilter(
+                                      ReferralFilter.all,
+                                    ),
+                              ),
+                              FilterButton(
+                                label: 'Unclaimed',
+                                isSelected:
+                                    referralFilter == ReferralFilter.unclaimed,
+                                onPressed:
+                                    () => activityNotifier.setReferralFilter(
+                                      ReferralFilter.unclaimed,
+                                    ),
+                                badgeCount: ref
+                                    .watch(unclaimedReferralsCountProvider)
+                                    .maybeWhen(
+                                      data: (c) => c,
+                                      orElse: () => null,
+                                    ),
+                              ),
+                              FilterButton(
+                                label: 'Claimed',
+                                isSelected:
+                                    referralFilter == ReferralFilter.claimed,
+                                onPressed:
+                                    () => activityNotifier.setReferralFilter(
+                                      ReferralFilter.claimed,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ).withPadding(bottom: 8),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Builder(
@@ -390,7 +568,9 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                                           ? 'No task completions'
                                           : selectedIndex == 1
                                           ? 'No rewards'
-                                          : 'No withdrawals',
+                                          : selectedIndex == 2
+                                          ? 'No withdrawals'
+                                          : 'No referrals',
                                       style: TextStyle(
                                         color: PaxColors.darkGrey,
                                       ),

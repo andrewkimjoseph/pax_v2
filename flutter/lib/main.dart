@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pax/providers/analytics/clarity/clarity_provider.dart';
-import 'package:pax/routing/routes.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
 import 'package:flutter/services.dart';
 
@@ -106,7 +105,6 @@ class _AppState extends ConsumerState<App> {
       debugPrint('Handling deep link in App: $linkData');
     }
 
-    final router = ref.read(routerProvider);
     if (linkData['+clicked_branch_link'] == true) {
       String? path;
       if (linkData.containsKey('~referring_link')) {
@@ -123,15 +121,40 @@ class _AppState extends ConsumerState<App> {
           debugPrint('[:_handleDeepLink] No path from Deep Link');
         }
       }
+
+      // Debug-print referringParticipantId if present in Branch params
+      String? referringParticipantId;
+      if (linkData.containsKey('referringParticipantId')) {
+        referringParticipantId = linkData['referringParticipantId']?.toString();
+      } else {
+        // Fallback: look for any key that contains 'referringParticipantId'
+        try {
+          final entry = linkData.entries.firstWhere(
+            (e) => e.key.toString().contains('referringParticipantId'),
+          );
+          referringParticipantId = entry.value?.toString();
+        } catch (_) {
+          referringParticipantId = null;
+        }
+      }
+
+      if (kDebugMode) {
+        if (referringParticipantId != null &&
+            referringParticipantId.isNotEmpty) {
+          debugPrint(
+            '[:_handleDeepLink] referringParticipantId from Deep Link: $referringParticipantId',
+          );
+        } else {
+          debugPrint(
+            '[:_handleDeepLink] No referringParticipantId found in Deep Link params',
+          );
+        }
+      }
     } else {
       if (kDebugMode) {
         debugPrint('[:_handleDeepLink] No +clicked_branch_link from Deep Link');
       }
     }
-    if (kDebugMode) {
-      debugPrint('[:_handleDeepLink] Navigating to home');
-    }
-    router.go(Routes.loading);
   }
 
   @override

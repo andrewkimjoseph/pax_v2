@@ -18,8 +18,7 @@ class RouterNotifier extends ChangeNotifier {
       }
     });
     ref.listen(paxWalletProvider, (previous, next) {
-      if (previous?.state != next.state ||
-          previous?.wallet != next.wallet) {
+      if (previous?.state != next.state || previous?.wallet != next.wallet) {
         notifyListeners();
       }
     });
