@@ -1,21 +1,5 @@
 export const canvassingRewarderABI = [
 	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "target",
-				"type": "address"
-			}
-		],
-		"name": "AddressEmptyCode",
-		"type": "error"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -64,52 +48,20 @@ export const canvassingRewarderABI = [
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "eoAddress",
+				"name": "target",
 				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "smartAccountContractAddress",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "recipientAddress",
-				"type": "address"
-			},
-			{
-				"internalType": "string",
-				"name": "taskId",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "nonce",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bytes",
-				"name": "signature",
-				"type": "bytes"
 			}
 		],
-		"name": "claimTaskReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
+		"name": "AddressEmptyCode",
+		"type": "error"
 	},
 	{
 		"inputs": [],
@@ -168,29 +120,6 @@ export const canvassingRewarderABI = [
 		"inputs": [],
 		"name": "FailedCall",
 		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_owner",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "_signer",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "_taskManager",
-				"type": "address"
-			}
-		],
-		"name": "initialize",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	},
 	{
 		"inputs": [],
@@ -284,6 +213,107 @@ export const canvassingRewarderABI = [
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "eoAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "referredEoAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "smartAccountContractAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "recipientAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "referralId",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "nonce",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
+			}
+		],
+		"name": "claimReferralReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "eoAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "smartAccountContractAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "recipientAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "taskId",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "nonce",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
+			}
+		],
+		"name": "claimTaskReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -313,6 +343,29 @@ export const canvassingRewarderABI = [
 		"inputs": [],
 		"name": "EIP712DomainChanged",
 		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_signer",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "_taskManager",
+				"type": "address"
+			}
+		],
+		"name": "initialize",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -367,8 +420,89 @@ export const canvassingRewarderABI = [
 		"type": "event"
 	},
 	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "eoAddress",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "referredEoAddress",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "smartAccountContractAddress",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "recipientAddress",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "referralId",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "ReferralRewarded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "oldRegistry",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newRegistry",
+				"type": "address"
+			}
+		],
+		"name": "RegistryUpdated",
+		"type": "event"
+	},
+	{
 		"inputs": [],
 		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newRegistry",
+				"type": "address"
+			}
+		],
+		"name": "setRegistry",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -638,6 +772,35 @@ export const canvassingRewarderABI = [
 		"inputs": [
 			{
 				"internalType": "string",
+				"name": "referralId",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "eoAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "referredEoAddress",
+				"type": "address"
+			}
+		],
+		"name": "checkIfReferralRewarded",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
 				"name": "taskId",
 				"type": "string"
 			},
@@ -729,6 +892,25 @@ export const canvassingRewarderABI = [
 			}
 		],
 		"name": "isAchievementRewarded",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "isReferralRewarded",
 		"outputs": [
 			{
 				"internalType": "bool",
@@ -837,6 +1019,19 @@ export const canvassingRewarderABI = [
 	},
 	{
 		"inputs": [],
+		"name": "registry",
+		"outputs": [
+			{
+				"internalType": "contract CanvassingWalletRegistry",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "signer",
 		"outputs": [
 			{
@@ -864,6 +1059,19 @@ export const canvassingRewarderABI = [
 	{
 		"inputs": [],
 		"name": "totalAchievementRewards",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalReferralRewards",
 		"outputs": [
 			{
 				"internalType": "uint256",

@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { Address, encodeFunctionData, http, parseEther } from "viem";
+import { Address, encodeFunctionData, http, parseUnits } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { celo } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
@@ -10,7 +10,6 @@ import {
   DB,
   AUTH,
   CANVASSING_REWARDER_PROXY_ADDRESS,
-  REWARD_TOKEN_ADDRESS,
   PIMLICO_URL,
   PAX_MASTER_PRIVATE_KEY_ACCOUNT,
 } from "../../utils/config";
@@ -20,8 +19,9 @@ import {
   createAchievementRewardClaimSignaturePackageCanvassing,
   generateRandomNonce,
 } from "../../utils/helpers/rewardingSignature";
-import { canvassingRewarderABI } from "../../utils/abis/new/canvassingRewarder";
+import { canvassingRewarderABI } from "../../utils/abis/canvassingRewarder";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
+import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
 export const processAchievementClaim = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
@@ -112,6 +112,8 @@ export const processAchievementClaim = onCall(
       }
 
       const smartAccountContractAddress = paxAccountContractAddress as Address;
+      // Achievements are paid in the primary reward currency (token id 1).
+      const { tokenAddress, decimals } = getTokenConfigForCurrencyId(1);
 
       const isV2 = !!eoWalletAddress && !!encryptedPrivateKey && !!sessionKey;
 
@@ -188,7 +190,7 @@ export const processAchievementClaim = onCall(
           eoAddress,
         });
 
-        const amountWei = parseEther(String(amountEarned));
+        const amountWei = parseUnits(String(amountEarned), decimals);
         const nonce = generateRandomNonce();
 
         const recipientAddress = (
@@ -202,7 +204,7 @@ export const processAchievementClaim = onCall(
             smartAccountContractAddress,
             recipientAddress,
             achievementId,
-            REWARD_TOKEN_ADDRESS,
+            tokenAddress,
             amountWei,
             nonce
           );
@@ -222,7 +224,7 @@ export const processAchievementClaim = onCall(
             smartAccountContractAddress,
             recipientAddress,
             achievementId,
-            REWARD_TOKEN_ADDRESS,
+            tokenAddress,
             amountWei,
             nonce,
             signaturePackage.signature,
@@ -274,7 +276,7 @@ export const processAchievementClaim = onCall(
         logger.info("[V1] Preparing V1 achievement claim transaction", {
           recipientAddress,
           amountEarned: amountEarned.toString(),
-          rewardTokenAddress: REWARD_TOKEN_ADDRESS,
+          rewardTokenAddress: tokenAddress,
         });
 
         const paxMasterSmartAccount = await toSimpleSmartAccount({
@@ -291,7 +293,7 @@ export const processAchievementClaim = onCall(
         });
 
         const balanceBefore = (await PUBLIC_CLIENT.readContract({
-          address: REWARD_TOKEN_ADDRESS,
+          address: tokenAddress,
           abi: erc20ABI,
           functionName: "balanceOf",
           args: [recipientAddress],
@@ -305,7 +307,7 @@ export const processAchievementClaim = onCall(
         const data = encodeFunctionData({
           abi: erc20ABI,
           functionName: "transfer",
-          args: [recipientAddress, parseEther(amountEarned.toString())],
+          args: [recipientAddress, parseUnits(amountEarned.toString(), decimals)],
         });
 
         logger.info("[V1] Encoded V1 achievement claim transaction data");
@@ -325,7 +327,7 @@ export const processAchievementClaim = onCall(
         const userOpTxnHash = await smartAccountClient.sendUserOperation({
           calls: [
             {
-              to: REWARD_TOKEN_ADDRESS,
+              to: tokenAddress,
               data,
             },
           ],
@@ -357,7 +359,7 @@ export const processAchievementClaim = onCall(
         });
 
         const balanceAfter = (await PUBLIC_CLIENT.readContract({
-          address: REWARD_TOKEN_ADDRESS,
+          address: tokenAddress,
           abi: erc20ABI,
           functionName: "balanceOf",
           args: [recipientAddress],
