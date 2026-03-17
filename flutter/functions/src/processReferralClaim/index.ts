@@ -15,15 +15,11 @@ import {
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
 import {
-  createTaskRewardClaimSignaturePackageCanvassing,
+  createReferralRewardClaimSignaturePackageCanvassing,
   generateRandomNonce,
 } from "../../utils/helpers/rewardingSignature";
-import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
-import {
-  createRewardRecord,
-  updateRewardWithTxnHash,
-} from "../../utils/helpers/createReward";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
+import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
 
 function isHttpsError(e: unknown): e is HttpsError {
   return (
@@ -34,13 +30,15 @@ function isHttpsError(e: unknown): e is HttpsError {
   );
 }
 
-/**
- * V1: serverWalletId + Privy -> toSimpleSmartAccount (same as screenParticipantProxy).
- *     Payout/caller = derived smart account address (not PaxAccount.contractAddress).
- *     If PaxAccount.smartAccountWalletAddress is set, it must match derived address.
- * V2: decrypted EOA + PaxAccount payout address + Pimlico (eoAddress = user EOA).
- */
-export const rewardParticipantProxy = onCall(
+interface ProcessReferralClaimRequest {
+  referralId: string;
+  serverWalletId?: string;
+  encryptedPrivateKey?: string;
+  sessionKey?: string;
+  eoWalletAddress?: string;
+}
+
+export const processReferralClaim = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
     try {
@@ -58,23 +56,17 @@ export const rewardParticipantProxy = onCall(
       }
 
       const {
-        taskCompletionId,
+        referralId,
         serverWalletId,
         encryptedPrivateKey,
         sessionKey,
         eoWalletAddress,
-      } = request.data as {
-        taskCompletionId: string;
-        serverWalletId?: string;
-        encryptedPrivateKey?: string;
-        sessionKey?: string;
-        eoWalletAddress?: string;
-      };
+      } = request.data as ProcessReferralClaimRequest;
 
-      if (!taskCompletionId) {
+      if (!referralId) {
         throw new HttpsError(
           "invalid-argument",
-          "Missing taskCompletionId parameter."
+          "Missing referralId parameter."
         );
       }
 
@@ -103,70 +95,95 @@ export const rewardParticipantProxy = onCall(
       }
 
       const firestore = DB();
-      const taskCompletionDoc = await firestore
-        .collection("task_completions")
-        .doc(taskCompletionId)
+
+      const referralDoc = await firestore
+        .collection("referrals")
+        .doc(referralId)
         .get();
 
-      if (!taskCompletionDoc.exists) {
-        throw new HttpsError("not-found", "Task completion not found");
+      if (!referralDoc.exists) {
+        throw new HttpsError("not-found", "Referral not found");
       }
 
-      const taskCompletionData = taskCompletionDoc.data();
-      if (!taskCompletionData) {
-        throw new HttpsError("not-found", "Task completion data is empty");
+      const referralData = referralDoc.data();
+      if (!referralData) {
+        throw new HttpsError("not-found", "Referral data is empty");
       }
 
-      if (taskCompletionData.isValid === false) {
-        throw new HttpsError(
-          "failed-precondition",
-          "Cannot claim reward for invalid task completion"
-        );
-      }
+      const {
+        referredParticipantId,
+        amountReceived,
+        txnHash,
+      }: {
+        referredParticipantId?: string;
+        amountReceived?: number;
+        txnHash?: string | null;
+      } = referralData;
 
-      const { taskId, participantId } = taskCompletionData;
-      if (!taskId || !participantId) {
+      if (!referredParticipantId) {
         throw new HttpsError(
           "invalid-argument",
-          "Task completion missing required fields"
+          "Referral missing required field: referredParticipantId"
         );
       }
 
-      if (userId !== participantId) {
+      if (txnHash) {
+        throw new HttpsError(
+          "already-exists",
+          "Referral reward has already been claimed."
+        );
+      }
+
+      if (userId !== referredParticipantId) {
         throw new HttpsError(
           "permission-denied",
-          "Only the participant may claim their reward."
+          "Only the referred participant may claim this referral reward."
         );
       }
 
-      const taskDoc = await firestore.collection("tasks").doc(taskId).get();
-      if (!taskDoc.exists) {
-        throw new HttpsError("not-found", "Task not found");
-      }
-
-      const taskData = taskDoc.data();
-      if (
-        !taskData ||
-        !taskData.rewardAmountPerParticipant ||
-        !taskData.rewardCurrencyId
-      ) {
+      if (!amountReceived || amountReceived <= 0) {
         throw new HttpsError(
-          "invalid-argument",
-          "Task missing required reward data"
+          "failed-precondition",
+          "Referral has no configured reward amount."
         );
       }
 
-      const rewardAmountPerParticipant = taskData.rewardAmountPerParticipant;
-      const rewardCurrencyId = taskData.rewardCurrencyId;
+      // Ensure the referred participant has a pax_wallets record with an eoAddress,
+      // and that the eoAddress we use for the claim matches that record.
+      const paxWalletSnapshot = await firestore
+        .collection("pax_wallets")
+        .where("participantId", "==", referredParticipantId)
+        .limit(1)
+        .get();
+
+      if (paxWalletSnapshot.empty) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Pax V2 wallet not found for referred participant"
+        );
+      }
+
+      const paxWalletData = paxWalletSnapshot.docs[0].data() as {
+        eoAddress?: string;
+        [key: string]: unknown;
+      };
+      const referredEoAddress = paxWalletData.eoAddress as string | undefined;
+
+      if (!referredEoAddress) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Pax V2 wallet missing eoAddress for referred participant"
+        );
+      }
 
       const participantPaxAccountDoc = await firestore
         .collection("pax_accounts")
-        .doc(participantId)
+        .doc(referredParticipantId)
         .get();
       if (!participantPaxAccountDoc.exists) {
         throw new HttpsError(
           "not-found",
-          "PaxAccount record not found for participant"
+          "PaxAccount (V2) not found for referred participant"
         );
       }
 
@@ -176,7 +193,7 @@ export const rewardParticipantProxy = onCall(
       const contractAddress = participantPaxAccountData?.contractAddress as
         | string
         | undefined;
-      /** V2: payout AA address (EOA-derived). V1: set after Privy smart account build (same as screening). */
+
       let paxAccountPayoutAddress: Address;
 
       const { toSimpleSmartAccount } = await import("permissionless/accounts");
@@ -188,7 +205,7 @@ export const rewardParticipantProxy = onCall(
       let logPrefix: string;
 
       if (isV1) {
-        logPrefix = "[V1]";
+        logPrefix = "[V1][Referral]";
         const serverWallet = await PRIVY_CLIENT.walletApi.getWallet({
           id: serverWalletId!,
         });
@@ -208,7 +225,6 @@ export const rewardParticipantProxy = onCall(
             version: "0.7",
           },
         });
-        // Same derivation as screenParticipantProxy V1; checkIfScreened(taskId, msg.sender) uses this address.
         paxAccountPayoutAddress = smartAccount.address as Address;
         if (smartAccountWalletAddress) {
           if (
@@ -230,7 +246,7 @@ export const rewardParticipantProxy = onCall(
         }
         eoAddress = serverWallet.address as Address;
       } else {
-        logPrefix = "[V2]";
+        logPrefix = "[V2][Referral]";
         paxAccountPayoutAddress = (contractAddress ||
           smartAccountWalletAddress) as Address;
         if (!paxAccountPayoutAddress) {
@@ -249,7 +265,7 @@ export const rewardParticipantProxy = onCall(
             privateKeyHex = "0x" + privateKeyHex;
           }
         } catch (error) {
-          logger.error("[V2] Decrypt failed (reward)", { error });
+          logger.error("[V2][Referral] Decrypt failed", { error });
           throw new HttpsError(
             "invalid-argument",
             "Failed to decrypt private key."
@@ -290,18 +306,18 @@ export const rewardParticipantProxy = onCall(
         ? ((contractAddress as Address) || smartAaAddress)
         : smartAaAddress;
 
-      const { tokenAddress, decimals } = getTokenConfigForCurrencyId(
-        Number(rewardCurrencyId)
-      );
-      const amountWei = parseUnits(String(rewardAmountPerParticipant), decimals);
+      // Referrals are currently paid in the primary reward currency (token id 1).
+      const { tokenAddress, decimals } = getTokenConfigForCurrencyId(1);
+      const amountWei = parseUnits(String(amountReceived), decimals);
 
       const signaturePackage =
-        await createTaskRewardClaimSignaturePackageCanvassing(
+        await createReferralRewardClaimSignaturePackageCanvassing(
           CANVASSING_REWARDER_PROXY_ADDRESS,
           eoAddress,
+          referredEoAddress as Address,
           smartAaAddress,
           recipientAddress,
-          taskId,
+          referralId,
           tokenAddress,
           amountWei,
           nonce
@@ -313,12 +329,13 @@ export const rewardParticipantProxy = onCall(
 
       const rewardClaimData = encodeFunctionData({
         abi: canvassingRewarderABI,
-        functionName: "claimTaskReward",
+        functionName: "claimReferralReward",
         args: [
           eoAddress,
+          referredEoAddress as Address,
           smartAaAddress,
           recipientAddress,
-          taskId,
+          referralId,
           tokenAddress,
           amountWei,
           nonce,
@@ -332,47 +349,31 @@ export const rewardParticipantProxy = onCall(
         logPrefix,
       });
 
-      const nonceString = signaturePackage.nonce;
-      const rewardRecordId = await createRewardRecord({
-        taskId,
-        participantId,
-        taskCompletionId,
-        signature: signaturePackage.signature,
-        nonce: nonceString,
-        amount: rewardAmountPerParticipant,
-        rewardCurrencyId,
-        logPrefix: isV2 ? "V2" : "V1",
+      const now = new Date();
+      await referralDoc.ref.update({
+        txnHash: bundleTxnHash,
+        timeRewarded: now,
+        timeUpdated: now,
       });
-
-      await updateRewardWithTxnHash(
-        rewardRecordId,
-        bundleTxnHash,
-        isV2 ? "V2" : "V1"
-      );
 
       return {
         success: true,
         participantProxy: smartAaAddress,
         paxAccountContractAddress: recipientAddress,
-        taskCompletionId,
-        taskId,
-        participantId,
-        signature: signaturePackage.signature,
-        nonce: nonceString,
+        referralId,
         txnHash: bundleTxnHash,
-        rewardRecordId,
-        amount: rewardAmountPerParticipant,
-        rewardCurrencyId,
+        amount: amountReceived,
       };
     } catch (error) {
       if (isHttpsError(error)) throw error;
-      logger.error("Reward process failed", { error });
+      logger.error("Referral reward process failed", { error });
       throw new HttpsError(
         "internal",
-        `Failed to reward participant: ${
+        `Failed to process referral claim: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
     }
   }
 );
+

@@ -10,7 +10,7 @@ import {
   AUTH,
   CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
 } from "../../utils/config";
-import { canvassingWalletRegistryABI } from "../../utils/abis/new/canvassingWalletRegistry";
+import { canvassingWalletRegistryABI } from "../../utils/abis/canvassingWalletRegistry";
 
 export const logWalletToRegistry = onCall(
   FUNCTION_RUNTIME_OPTS,

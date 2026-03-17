@@ -8,7 +8,7 @@ import { createViemAccount } from "@privy-io/server-auth/viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { FieldValue } from "firebase-admin/firestore";
 
-import { canvassingTaskManagerABI } from "../../utils/abis/new/canvassingTaskManager";
+import { canvassingTaskManagerABI } from "../../utils/abis/canvassingTaskManager";
 import {
   FUNCTION_RUNTIME_OPTS,
   PRIVY_CLIENT,

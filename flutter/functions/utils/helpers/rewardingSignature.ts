@@ -288,6 +288,144 @@ export async function createAchievementRewardClaimSignaturePackageCanvassing(
   };
 }
 
+// ---------------------------------------------------------------------------
+// CanvassingRewarder — EIP-712 ReferralRewardRequest
+// Types: ReferralRewardRequest(address eoAddress,address referredEoAddress,address smartAccountContractAddress,address recipientAddress,string referralId,address token,uint256 amount,uint256 nonce)
+// ---------------------------------------------------------------------------
+
+type ReferralRewardRequestTypes = {
+  EIP712Domain: [
+    { name: 'name'; type: 'string' },
+    { name: 'version'; type: 'string' },
+    { name: 'chainId'; type: 'uint256' },
+    { name: 'verifyingContract'; type: 'address' }
+  ];
+  ReferralRewardRequest: [
+    { name: 'eoAddress'; type: 'address' },
+    { name: 'referredEoAddress'; type: 'address' },
+    { name: 'smartAccountContractAddress'; type: 'address' },
+    { name: 'recipientAddress'; type: 'address' },
+    { name: 'referralId'; type: 'string' },
+    { name: 'token'; type: 'address' },
+    { name: 'amount'; type: 'uint256' },
+    { name: 'nonce'; type: 'uint256' }
+  ];
+};
+
+export async function signReferralRewardRequestCanvassing(
+  rewarderContractAddress: Address,
+  eoAddress: Address,
+  referredEoAddress: Address,
+  smartAccountContractAddress: Address,
+  recipientAddress: Address,
+  referralId: string,
+  token: Address,
+  amount: bigint,
+  nonce: bigint
+): Promise<Hex> {
+  const domain = createCanvassingRewarderDomain(rewarderContractAddress);
+  const types: ReferralRewardRequestTypes = {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' }
+    ],
+    ReferralRewardRequest: [
+      { name: 'eoAddress', type: 'address' },
+      { name: 'referredEoAddress', type: 'address' },
+      { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
+      { name: 'referralId', type: 'string' },
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' }
+    ]
+  };
+  const message = {
+    eoAddress,
+    referredEoAddress,
+    smartAccountContractAddress,
+    recipientAddress,
+    referralId,
+    token,
+    amount,
+    nonce,
+  };
+  return PAX_MASTER_PRIVATE_KEY_ACCOUNT.signTypedData({
+    domain,
+    types,
+    primaryType: 'ReferralRewardRequest',
+    message,
+  });
+}
+
+export async function createReferralRewardClaimSignaturePackageCanvassing(
+  rewarderContractAddress: Address,
+  eoAddress: Address,
+  referredEoAddress: Address,
+  smartAccountContractAddress: Address,
+  recipientAddress: Address,
+  referralId: string,
+  token: Address,
+  amount: bigint,
+  nonce: bigint
+) {
+  const signature = await signReferralRewardRequestCanvassing(
+    rewarderContractAddress,
+    eoAddress,
+    referredEoAddress,
+    smartAccountContractAddress,
+    recipientAddress,
+    referralId,
+    token,
+    amount,
+    nonce
+  );
+  const domain = createCanvassingRewarderDomain(rewarderContractAddress);
+  const types: ReferralRewardRequestTypes = {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' }
+    ],
+    ReferralRewardRequest: [
+      { name: 'eoAddress', type: 'address' },
+      { name: 'referredEoAddress', type: 'address' },
+      { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
+      { name: 'referralId', type: 'string' },
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' }
+    ]
+  };
+  const message = {
+    eoAddress,
+    referredEoAddress,
+    smartAccountContractAddress,
+    recipientAddress,
+    referralId,
+    token,
+    amount,
+    nonce,
+  };
+  const isValid = await verifyTypedData({
+    address: PAX_MASTER_PRIVATE_KEY_ACCOUNT.address,
+    domain,
+    types,
+    primaryType: 'ReferralRewardRequest',
+    message,
+    signature,
+  });
+  return {
+    signature,
+    isValid,
+    nonce: nonce.toString(),
+  };
+}
+
 // Define the types for reward claim requests
 type RewardClaimRequestTypes = {
   EIP712Domain: [

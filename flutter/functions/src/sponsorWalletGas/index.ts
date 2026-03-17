@@ -19,8 +19,8 @@ import {
   DB,
   DEFAULT_SPONSOR_AMOUNT_CELO,
 } from "../../utils/config";
-import { canvassingGasSponsorABI } from "../../utils/abis/new/canvassingGasSponsor";
-import { canvassingWalletRegistryABI } from "../../utils/abis/new/canvassingWalletRegistry";
+import { canvassingGasSponsorABI } from "../../utils/abis/canvassingGasSponsor";
+import { canvassingWalletRegistryABI } from "../../utils/abis/canvassingWalletRegistry";
 
 /**
  * Callable to sponsor gas for a registered wallet.
