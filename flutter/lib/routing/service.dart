@@ -162,10 +162,10 @@ final routerProvider = Provider((ref) {
               if (onboardingType == null) {
                 if (kDebugMode) {
                   debugPrint(
-                    '[Router] redirect: loading+loaded, no onboardingType → home',
+                    '[Router] redirect: loading+loaded, no onboardingType → onboardingQuestionnaire',
                   );
                 }
-                return Routes.home;
+                return Routes.onboardingQuestionnaire;
               }
               if (onboardingType == 'v1_legacy') {
                 if (kDebugMode) {
