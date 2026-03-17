@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./CanvassingTaskManager.sol";
+import "./CanvassingWalletRegistry.sol";
 
 /**
  * @title CanvassingRewarder
@@ -55,6 +56,12 @@ contract CanvassingRewarder is
             "AchievementRewardRequest(address eoAddress,address smartAccountContractAddress,address recipientAddress,string achievementId,address token,uint256 amount,uint256 nonce)"
         );
 
+    /// @dev EIP-712 typehash for referral reward claims.
+    bytes32 private constant REFERRAL_REWARD_TYPEHASH =
+        keccak256(
+            "ReferralRewardRequest(address eoAddress,address referredEoAddress,address smartAccountContractAddress,address recipientAddress,string referralId,address token,uint256 amount,uint256 nonce)"
+        );
+
     // -------------------------------------------------------------------------
     // State
     // -------------------------------------------------------------------------
@@ -75,6 +82,12 @@ contract CanvassingRewarder is
     CanvassingTaskManager public taskManager;
 
     /**
+     * @notice The CanvassingWalletRegistry instance used to validate EO wallets.
+     * @dev Referral claims are restricted to EO wallets that have been logged in this registry.
+     */
+    CanvassingWalletRegistry public registry;
+
+    /**
      * @notice Returns true if an eoAddress has already claimed a task reward for a given taskId (EOA path).
      * @dev Key: keccak256(abi.encodePacked(taskId, eoAddress))
      */
@@ -93,6 +106,12 @@ contract CanvassingRewarder is
     mapping(bytes32 => bool) public isAchievementRewarded;
 
     /**
+     * @notice Returns true if an eoAddress has already claimed a referral reward for a given referralId.
+     * @dev Key: keccak256(abi.encodePacked(referralId, eoAddress))
+     */
+    mapping(bytes32 => bool) public isReferralRewarded;
+
+    /**
      * @notice Returns true if a reward claim signature has already been used.
      * @dev Covers both task and achievement signatures — signatures are globally unique.
      */
@@ -107,6 +126,11 @@ contract CanvassingRewarder is
      * @notice Total number of achievement rewards distributed.
      */
     uint256 public totalAchievementRewards;
+
+    /**
+     * @notice Total number of referral rewards distributed.
+     */
+    uint256 public totalReferralRewards;
 
     // -------------------------------------------------------------------------
     // Events
@@ -147,6 +171,25 @@ contract CanvassingRewarder is
     );
 
     /**
+     * @notice Emitted when a referral reward is successfully distributed.
+     * @param eoAddress                   The EO wallet address of the participant.
+     * @param smartAccountContractAddress The smart account that called this function.
+     * @param recipientAddress            The ERC20 token transfer destination.
+     * @param referralId                  The referral identifier.
+     * @param token                       The ERC20 token address used for the reward.
+     * @param amount                      The amount of tokens transferred, in wei.
+     */
+    event ReferralRewarded(
+        address indexed eoAddress,
+        address indexed referredEoAddress,
+        address indexed smartAccountContractAddress,
+        address recipientAddress,
+        string referralId,
+        address token,
+        uint256 amount
+    );
+
+    /**
      * @notice Emitted when the task manager reference is updated.
      * @param oldTaskManager The previous task manager address.
      * @param newTaskManager The new task manager address.
@@ -154,6 +197,16 @@ contract CanvassingRewarder is
     event TaskManagerUpdated(
         address indexed oldTaskManager,
         address indexed newTaskManager
+    );
+
+    /**
+     * @notice Emitted when the wallet registry reference is updated.
+     * @param oldRegistry The previous registry address.
+     * @param newRegistry The new registry address.
+     */
+    event RegistryUpdated(
+        address indexed oldRegistry,
+        address indexed newRegistry
     );
 
     /**
@@ -389,6 +442,95 @@ contract CanvassingRewarder is
     }
 
     // -------------------------------------------------------------------------
+    // Core logic — Referral rewards
+    // -------------------------------------------------------------------------
+
+    /**
+     * @notice Claim a referral reward.
+     * @dev Sponsored userOp: msg.sender must be smartAccountContractAddress.
+     *
+     * @param eoAddress                   The EO wallet address of the participant (EIP-712 identity).
+     * @param smartAccountContractAddress The smart account that calls this function.
+     * @param recipientAddress            EIP-712; ERC20 transfer destination.
+     * @param referralId                  The unique identifier of the referral.
+     * @param token                       The ERC20 token to pay the reward in.
+     * @param amount                      The reward amount in wei, as specified by the backend.
+     * @param nonce                       A unique number to prevent signature replay.
+     * @param signature                   EIP-712 signature from the backend signer.
+     */
+    function claimReferralReward(
+        address eoAddress,
+        address referredEoAddress,
+        address smartAccountContractAddress,
+        address recipientAddress,
+        string calldata referralId,
+        address token,
+        uint256 amount,
+        uint256 nonce,
+        bytes calldata signature
+    ) external whenNotPaused {
+        require(
+            msg.sender == smartAccountContractAddress,
+            "CanvassingRewarder: sender must be smartAccountContractAddress"
+        );
+        require(eoAddress != address(0), "CanvassingRewarder: eoAddress cannot be zero address");
+        require(referredEoAddress != address(0), "CanvassingRewarder: referredEoAddress cannot be zero address");
+        require(smartAccountContractAddress != address(0), "CanvassingRewarder: smartAccount cannot be zero address");
+        require(recipientAddress != address(0), "CanvassingRewarder: recipient cannot be zero address");
+        require(bytes(referralId).length > 0, "CanvassingRewarder: referralId cannot be empty");
+        require(token != address(0), "CanvassingRewarder: token cannot be zero address");
+        require(amount > 0, "CanvassingRewarder: amount must be greater than zero");
+
+        require(address(registry) != address(0), "CanvassingRewarder: registry not configured");
+        require(
+            registry.isWalletLogged(referredEoAddress),
+            "CanvassingRewarder: referredEoAddress not registered"
+        );
+
+        bytes32 slot = _referralSlot(referralId, eoAddress, referredEoAddress);
+        require(!isReferralRewarded[slot], "CanvassingRewarder: referral reward already claimed");
+        require(!isSignatureUsed[signature], "CanvassingRewarder: signature already used");
+
+        require(
+            _verifyReferralRewardSignature(
+                eoAddress,
+                referredEoAddress,
+                smartAccountContractAddress,
+                recipientAddress,
+                referralId,
+                token,
+                amount,
+                nonce,
+                signature
+            ),
+            "CanvassingRewarder: invalid signature"
+        );
+
+        require(
+            IERC20(token).balanceOf(address(this)) >= amount,
+            "CanvassingRewarder: insufficient token balance"
+        );
+
+        isReferralRewarded[slot] = true;
+        isSignatureUsed[signature] = true;
+
+        unchecked { ++totalReferralRewards; }
+
+        bool success = IERC20(token).transfer(recipientAddress, amount);
+        require(success, "CanvassingRewarder: token transfer failed");
+
+        emit ReferralRewarded(
+            eoAddress,
+            referredEoAddress,
+            smartAccountContractAddress,
+            recipientAddress,
+            referralId,
+            token,
+            amount
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // View helpers
     // -------------------------------------------------------------------------
 
@@ -416,6 +558,20 @@ contract CanvassingRewarder is
         address eoAddress
     ) external view returns (bool) {
         return isAchievementRewarded[_achievementSlot(achievementId, eoAddress)];
+    }
+
+    /**
+     * @notice Check whether an eoAddress has claimed a referral reward for a given referralId.
+     * @param referralId The referral identifier.
+     * @param eoAddress  The EO wallet address to check.
+     * @return True if already claimed.
+     */
+    function checkIfReferralRewarded(
+        string calldata referralId,
+        address eoAddress,
+        address referredEoAddress
+    ) external view returns (bool) {
+        return isReferralRewarded[_referralSlot(referralId, eoAddress, referredEoAddress)];
     }
 
     /**
@@ -451,6 +607,17 @@ contract CanvassingRewarder is
         address oldTaskManager = address(taskManager);
         taskManager = CanvassingTaskManager(newTaskManager);
         emit TaskManagerUpdated(oldTaskManager, newTaskManager);
+    }
+
+    /**
+     * @notice Update the CanvassingWalletRegistry reference.
+     * @param newRegistry The new registry address.
+     */
+    function setRegistry(address newRegistry) external onlyOwner {
+        require(newRegistry != address(0), "CanvassingRewarder: registry cannot be zero address");
+        address oldRegistry = address(registry);
+        registry = CanvassingWalletRegistry(newRegistry);
+        emit RegistryUpdated(oldRegistry, newRegistry);
     }
 
     /**
@@ -525,6 +692,17 @@ contract CanvassingRewarder is
     }
 
     /**
+     * @dev Derives the storage slot key for a (referralId, eoAddress) pair.
+     */
+    function _referralSlot(
+        string calldata referralId,
+        address eoAddress,
+        address referredEoAddress
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(referralId, eoAddress, referredEoAddress));
+    }
+
+    /**
      * @dev Verifies an EIP-712 task reward signature against the stored signer.
      */
     function _verifyTaskRewardSignature(
@@ -584,6 +762,38 @@ contract CanvassingRewarder is
         return ECDSA.recover(digest, signature) == signer;
     }
 
+    /**
+     * @dev Verifies an EIP-712 referral reward signature against the stored signer.
+     */
+    function _verifyReferralRewardSignature(
+        address eoAddress,
+        address referredEoAddress,
+        address smartAccountContractAddress,
+        address recipientAddress,
+        string calldata referralId,
+        address token,
+        uint256 amount,
+        uint256 nonce,
+        bytes calldata signature
+    ) internal view returns (bool) {
+        bytes32 digest = _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    REFERRAL_REWARD_TYPEHASH,
+                    eoAddress,
+                    referredEoAddress,
+                    smartAccountContractAddress,
+                    recipientAddress,
+                    keccak256(bytes(referralId)),
+                    token,
+                    amount,
+                    nonce
+                )
+            )
+        );
+        return ECDSA.recover(digest, signature) == signer;
+    }
+
     // -------------------------------------------------------------------------
     // Upgrade mechanics
     // -------------------------------------------------------------------------
@@ -620,6 +830,6 @@ contract CanvassingRewarder is
     // Storage gap
     // -------------------------------------------------------------------------
 
-    uint256[50] private __gap;
+    uint256[47] private __gap;
 }
 
