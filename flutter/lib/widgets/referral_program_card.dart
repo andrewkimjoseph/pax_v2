@@ -35,8 +35,11 @@ class ReferralProgramCard extends ConsumerWidget {
         accountType == AccountType.v1 && hasVerifiedWithdrawal.value == true;
     final isV2WithFaceVerification =
         accountType == AccountType.v2 && v2NeedsVerification.value == false;
+
+    // Always show the referral card in debug, otherwise respect eligibility.
     final isVisible =
-        referralFeatureOn && (isV1WithVerified || isV2WithFaceVerification);
+        kDebugMode ||
+        (referralFeatureOn && (isV1WithVerified || isV2WithFaceVerification));
 
     if (!isVisible) return const SizedBox.shrink();
 

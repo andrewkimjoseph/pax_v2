@@ -80,24 +80,90 @@ final routerProvider = Provider((ref) {
 
       final authState = ref.read(authStateForRouterProvider);
       final isOnboardingRoute = state.matchedLocation == Routes.onboarding;
+      final isOnQuestionnaireRoute =
+          state.matchedLocation == Routes.onboardingQuestionnaire;
       if (kDebugMode) {
         debugPrint(
           '[Router] redirect: matchedLocation=${state.matchedLocation}, authState=$authState',
         );
       }
 
-      // If not authenticated and not on onboarding, redirect to onboarding
-      if (authState != AuthState.authenticated && !isOnboardingRoute) {
+      // If not authenticated and not on onboarding/questionnaire, redirect to onboarding
+      if (authState != AuthState.authenticated &&
+          !isOnboardingRoute &&
+          !isOnQuestionnaireRoute) {
         if (kDebugMode) {
           debugPrint('[Router] redirect: not authenticated → onboarding');
         }
         return Routes.onboarding;
       }
 
-      // If authenticated and on onboarding, redirect to home
+      // If authenticated and on onboarding, send brand‑new users to the questionnaire;
+      // existing users go home. Avoid making this decision while participant/account
+      // data are still loading to prevent transient misclassification.
       if (authState == AuthState.authenticated && isOnboardingRoute) {
+        final participantState = ref.read(participantProvider);
+        final paxAccountState = ref.read(paxAccountProvider);
+        final onboardingType = participantState.participant?.onboardingType;
+        final isParticipantLoaded =
+            participantState.state == ParticipantState.loaded;
+        final isAccountLoaded =
+            paxAccountState.state == PaxAccountState.loaded &&
+                paxAccountState.account != null;
+
+        // While either participant or account are not yet loaded, avoid pushing
+        // users into the questionnaire or home prematurely. Send them to the
+        // neutral loading route and let subsequent redirects decide once data
+        // is ready.
+        if (!isParticipantLoaded || !isAccountLoaded) {
+          if (kDebugMode) {
+            debugPrint(
+              '[Router] redirect: authenticated on onboarding while data loading → loading',
+            );
+          }
+          return Routes.loading;
+        }
+
+        final account = paxAccountState.account!;
+        final isNewUser =
+            account.contractAddress == null && account.eoWalletAddress == null;
+
+        if (isNewUser && onboardingType == null) {
+          if (kDebugMode) {
+            debugPrint(
+              '[Router] redirect: authenticated on onboarding, new user with no onboardingType → onboardingQuestionnaire',
+            );
+          }
+          return Routes.onboardingQuestionnaire;
+        }
+
         if (kDebugMode) {
-          debugPrint('[Router] redirect: authenticated on onboarding → home');
+          debugPrint(
+            '[Router] redirect: authenticated on onboarding (existing user or questionnaire complete) → home',
+          );
+        }
+        return Routes.home;
+      }
+
+      // If authenticated and on the questionnaire, only allow brand‑new users (no onboardingType);
+      // everyone else should be redirected away (typically home).
+      if (authState == AuthState.authenticated && isOnQuestionnaireRoute) {
+        final participantState = ref.read(participantProvider);
+        final onboardingType = participantState.participant?.onboardingType;
+
+        if (onboardingType == null) {
+          if (kDebugMode) {
+            debugPrint(
+              '[Router] redirect: authenticated on questionnaire with no onboardingType → null',
+            );
+          }
+          return null;
+        }
+
+        if (kDebugMode) {
+          debugPrint(
+            '[Router] redirect: authenticated on questionnaire with onboardingType=$onboardingType → home',
+          );
         }
         return Routes.home;
       }
@@ -157,25 +223,37 @@ final routerProvider = Provider((ref) {
                 account.eoWalletAddress == null;
             final participantState = ref.read(participantProvider);
             final onboardingType = participantState.participant?.onboardingType;
+            final isParticipantLoaded =
+                participantState.state == ParticipantState.loaded;
 
+            // New users: wait for participant to finish loading before deciding.
             if (isNewUser) {
+              if (!isParticipantLoaded) {
+                if (kDebugMode) {
+                  debugPrint(
+                    '[Router] redirect: loading+loaded, new user but participant still loading → null',
+                  );
+                }
+                return null;
+              }
+
               if (onboardingType == null) {
                 if (kDebugMode) {
                   debugPrint(
-                    '[Router] redirect: loading+loaded, no onboardingType → onboardingQuestionnaire',
+                    '[Router] redirect: loading+loaded, new user with no onboardingType → onboardingQuestionnaire',
                   );
                 }
                 return Routes.onboardingQuestionnaire;
               }
               if (onboardingType == 'v1_legacy') {
                 if (kDebugMode) {
-                  debugPrint('[Router] redirect: loading+loaded → home');
+                  debugPrint('[Router] redirect: loading+loaded V1 legacy → home');
                 }
                 return Routes.home;
               }
               if (kDebugMode) {
                 debugPrint(
-                  '[Router] redirect: loading+loaded → createV2Wallet',
+                  '[Router] redirect: loading+loaded new V2 user → createV2Wallet',
                 );
               }
               return Routes.createV2Wallet;
@@ -187,10 +265,11 @@ final routerProvider = Provider((ref) {
           return Routes.home;
         }
 
-        final participantState = ref.read(participantProvider);
-        final onboardingType = participantState.participant?.onboardingType;
-
         if (isAccountLoaded && account != null) {
+          final participantState = ref.read(participantProvider);
+          final onboardingType = participantState.participant?.onboardingType;
+          final isParticipantLoaded =
+              participantState.state == ParticipantState.loaded;
           final isNewUser =
               account.contractAddress == null &&
               account.eoWalletAddress == null;
@@ -201,6 +280,21 @@ final routerProvider = Provider((ref) {
               state.matchedLocation == Routes.completeProfile;
           final isOnQuestionnaireRoute =
               state.matchedLocation == Routes.onboardingQuestionnaire;
+
+          // Global guard: once both account and participant are loaded and the user
+          // is new with no onboardingType, force questionnaire from any route.
+          if (isNewUser &&
+              isParticipantLoaded &&
+              onboardingType == null &&
+              !isOnQuestionnaireRoute &&
+              state.matchedLocation != Routes.loading) {
+            if (kDebugMode) {
+              debugPrint(
+                '[Router] redirect: authenticated new user with no onboardingType → onboardingQuestionnaire',
+              );
+            }
+            return Routes.onboardingQuestionnaire;
+          }
 
           if (isNewUser) {
             if (onboardingType == null && !isOnQuestionnaireRoute) {
