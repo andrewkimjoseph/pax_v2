@@ -7,17 +7,18 @@ class ReferralRepository {
   final String collectionName = 'referrals';
 
   ReferralRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<List<Referral>> getReferralsForReferredParticipant(
     String participantId,
   ) async {
     try {
-      final snapshot = await _firestore
-          .collection(collectionName)
-          .where('referredParticipantId', isEqualTo: participantId)
-          .orderBy('timeCreated', descending: true)
-          .get();
+      final snapshot =
+          await _firestore
+              .collection(collectionName)
+              .where('referringParticipantId', isEqualTo: participantId)
+              .orderBy('timeCreated', descending: true)
+              .get();
 
       return snapshot.docs.map(Referral.fromFirestore).toList();
     } catch (e) {
@@ -28,4 +29,3 @@ class ReferralRepository {
     }
   }
 }
-

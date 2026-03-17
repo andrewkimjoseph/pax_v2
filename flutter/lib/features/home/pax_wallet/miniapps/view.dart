@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show InkWell, VoidCallback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -176,7 +177,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
             isCheckingAgain: _isCheckingAgain,
           ),
       data: (needsVerification) {
-        if (!needsVerification) {
+        if (needsVerification && !kDebugMode) {
           return _buildVerificationPrompt(
             context,
             onCheckAgain: _onCheckAgainPressed,
