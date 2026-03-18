@@ -35,7 +35,9 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-export const sendUbiReminder = onSchedule("0 12 * * *", async () => {
+export const sendUbiReminder = onSchedule(
+  { schedule: "0 15 * * *", timeZone: "Africa/Nairobi" },
+  async () => {
   const firestore = DB();
   logger.info("[UBI] Starting daily UBI reminder job");
 
@@ -203,5 +205,6 @@ export const sendUbiReminder = onSchedule("0 12 * * *", async () => {
   }
 
   logger.info("[UBI] Finished daily UBI reminder job");
-});
+  }
+);
 

@@ -15,4 +15,4 @@ export { createSmartAccountForPaxV2User } from './createSmartAccountForPaxV2User
 export { getWalletTransactions } from './getWalletTransactions';
 export { createReferral } from './createReferral';
 export { processReferralClaim } from './processReferralClaim';
-// export { sendUbiReminder } from './sendUbiReminder';
+export { sendUbiReminder } from './sendUbiReminder';
