@@ -34,6 +34,10 @@ admin.initializeApp();
 // Contract addresses
 export const CREATE2_FACTORY = "0x4e59b44847b379578588920cA78FbF26c0B4956C" as Address;
 
+// Identity / whitelist contract (used for UBI reminders)
+export const IDENTITY_PROXY_CONTRACT_ADDRESS =
+  "0xC361A6E67822a0EDc17D899227dd9FC50BD62F42" as Address;
+
 // Canvassing contract addresses (proxies)
 export const CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS: Address = "0x74Cc10C7c8EE72CbAB508f3A6142C90c68579f3F"; //Implm - 0x531b2AD505Efe7f24A9FEB74931F544aFfDeA69A
 export const CANVASSING_GAS_SPONSOR_PROXY_ADDRESS: Address = "0xBdA6e6b41a688eaB89C57d3DA3BF8b556B43AB2C"; // Implm - 0xE6570E2DD6A24f48092Ae4c9F60012Efd87CEcB7

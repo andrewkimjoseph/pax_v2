@@ -47,16 +47,16 @@ class AuthNotifier extends Notifier<AuthStateModel> {
         // Start periodic validation when user is authenticated
         _startTokenValidation();
       } else {
-        // Only change to unauthenticated if we were previously authenticated
-        // This prevents multiple sign-out events
-        if (state.state == AuthState.authenticated) {
+        // Move to unauthenticated for the initial null event too.
+        // Keep this idempotent to avoid repeated sign-out side effects.
+        if (state.state != AuthState.unauthenticated) {
           state = state.copyWith(
             user: AuthUser.empty(),
             state: AuthState.unauthenticated,
           );
-          // Cancel validation when user is signed out
-          _cancelTokenValidation();
         }
+        // Cancel validation when user is signed out
+        _cancelTokenValidation();
       }
     });
   }

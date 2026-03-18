@@ -87,7 +87,7 @@ export const createReferral = onCall(
         await sendParticipantNotification(
           referringParticipantId,
           "You have a new referral!",
-          "A new referral has been created for you. Check Activity > Referrals to claim its reward."
+          "A new referral has been created for you. Check Activity > Referrals to claim the reward."
         );
       }
 

@@ -20,6 +20,7 @@ import {
 } from "../../utils/helpers/rewardingSignature";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
+import type { ToSimpleSmartAccountReturnType } from "permissionless/accounts";
 
 function isHttpsError(e: unknown): e is HttpsError {
   return (
@@ -112,10 +113,12 @@ export const processReferralClaim = onCall(
 
       const {
         referredParticipantId,
+        referringParticipantId,
         amountReceived,
         txnHash,
       }: {
         referredParticipantId?: string;
+        referringParticipantId?: string;
         amountReceived?: number;
         txnHash?: string | null;
       } = referralData;
@@ -127,6 +130,13 @@ export const processReferralClaim = onCall(
         );
       }
 
+      if (!referringParticipantId) {
+        throw new HttpsError(
+          "invalid-argument",
+          "Referral missing required field: referringParticipantId"
+        );
+      }
+
       if (txnHash) {
         throw new HttpsError(
           "already-exists",
@@ -134,10 +144,16 @@ export const processReferralClaim = onCall(
         );
       }
 
-      if (userId !== referredParticipantId) {
+      if (userId !== referringParticipantId) {
+        logger.warn("Referral claim attempted by non-referrer", {
+          referralId,
+          callerUserId: userId,
+          referringParticipantId,
+          referredParticipantId,
+        });
         throw new HttpsError(
           "permission-denied",
-          "Only the referred participant may claim this referral reward."
+          "Only the referring participant may claim this referral reward."
         );
       }
 
@@ -178,12 +194,12 @@ export const processReferralClaim = onCall(
 
       const participantPaxAccountDoc = await firestore
         .collection("pax_accounts")
-        .doc(referredParticipantId)
-        .get();
+        .doc(referringParticipantId)
+        .get(); 
       if (!participantPaxAccountDoc.exists) {
         throw new HttpsError(
           "not-found",
-          "PaxAccount (V2) not found for referred participant"
+          "PaxAccount (V2) not found for referring participant"
         );
       }
 
@@ -200,8 +216,8 @@ export const processReferralClaim = onCall(
       const nonce = generateRandomNonce();
 
       let eoAddress: Address;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let smartAccount: any;
+
+      let smartAccount: ToSimpleSmartAccountReturnType;
       let logPrefix: string;
 
       if (isV1) {
@@ -226,21 +242,24 @@ export const processReferralClaim = onCall(
           },
         });
         paxAccountPayoutAddress = smartAccount.address as Address;
-        if (smartAccountWalletAddress) {
+        const expectedSmartAccountAddress =
+          smartAccountWalletAddress || contractAddress;
+        if (expectedSmartAccountAddress) {
           if (
             smartAccount.address.toLowerCase() !==
-            smartAccountWalletAddress.toLowerCase()
+            expectedSmartAccountAddress.toLowerCase()
           ) {
             logger.error(
-              `${logPrefix} Smart account mismatch vs PaxAccount.smartAccountWalletAddress`,
+              `${logPrefix} Smart account mismatch vs PaxAccount stored address`,
               {
                 derived: smartAccount.address,
                 smartAccountWalletAddress,
+                contractAddress,
               }
             );
             throw new HttpsError(
               "failed-precondition",
-              "serverWalletId does not match PaxAccount smartAccountWalletAddress."
+              "serverWalletId does not match PaxAccount stored smart account / contract address."
             );
           }
         }
