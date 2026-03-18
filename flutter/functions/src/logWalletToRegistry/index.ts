@@ -11,6 +11,7 @@ import {
   CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
 } from "../../utils/config";
 import { canvassingWalletRegistryABI } from "../../utils/abis/canvassingWalletRegistry";
+import { isWalletAlreadyLogged } from "../../utils/registry";
 
 export const logWalletToRegistry = onCall(
   FUNCTION_RUNTIME_OPTS,
@@ -42,8 +43,24 @@ export const logWalletToRegistry = onCall(
         );
       }
 
+      const eoAddress = eoWalletAddress as Address;
+
+      // Short-circuit if this wallet is already logged on-chain to avoid
+      // reverting with \"wallet already logged\" and surfacing an error.
+      const alreadyLogged = await isWalletAlreadyLogged(eoAddress);
+      if (alreadyLogged) {
+        logger.info(
+          `[V2] logWalletToRegistry: wallet ${eoAddress} already logged; skipping transaction for user ${userId}`
+        );
+        return {
+          txnHash: null,
+          timestamp: new Date().toISOString(),
+          alreadyLogged: true,
+        };
+      }
+
       logger.info(
-        `[V2] logWalletToRegistry: logging wallet ${eoWalletAddress} for user ${userId}`
+        `[V2] logWalletToRegistry: logging wallet ${eoAddress} for user ${userId}`
       );
 
       const walletClient = createWalletClient({
@@ -55,7 +72,7 @@ export const logWalletToRegistry = onCall(
       const data = encodeFunctionData({
         abi: canvassingWalletRegistryABI,
         functionName: "logWallet",
-        args: [eoWalletAddress as Address, userId],
+        args: [eoAddress, userId],
       });
 
       const txHash = await walletClient.sendTransaction({

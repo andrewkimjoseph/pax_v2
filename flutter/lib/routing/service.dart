@@ -88,8 +88,20 @@ final routerProvider = Provider((ref) {
         );
       }
 
+      // While auth state is still resolving, stay on a neutral loading route
+      // instead of sending users to onboarding.
+      if ((authState == AuthState.initial || authState == AuthState.loading) &&
+          state.matchedLocation != Routes.loading &&
+          !isOnboardingRoute &&
+          !isOnQuestionnaireRoute) {
+        if (kDebugMode) {
+          debugPrint('[Router] redirect: auth resolving → loading');
+        }
+        return Routes.loading;
+      }
+
       // If not authenticated and not on onboarding/questionnaire, redirect to onboarding
-      if (authState != AuthState.authenticated &&
+      if (authState == AuthState.unauthenticated &&
           !isOnboardingRoute &&
           !isOnQuestionnaireRoute) {
         if (kDebugMode) {
@@ -109,7 +121,7 @@ final routerProvider = Provider((ref) {
             participantState.state == ParticipantState.loaded;
         final isAccountLoaded =
             paxAccountState.state == PaxAccountState.loaded &&
-                paxAccountState.account != null;
+            paxAccountState.account != null;
 
         // While either participant or account are not yet loaded, avoid pushing
         // users into the questionnaire or home prematurely. Send them to the
@@ -247,7 +259,9 @@ final routerProvider = Provider((ref) {
               }
               if (onboardingType == 'v1_legacy') {
                 if (kDebugMode) {
-                  debugPrint('[Router] redirect: loading+loaded V1 legacy → home');
+                  debugPrint(
+                    '[Router] redirect: loading+loaded V1 legacy → home',
+                  );
                 }
                 return Routes.home;
               }

@@ -13,5 +13,6 @@ export { logWalletToRegistry } from './logWalletToRegistry';
 export { sponsorWalletGas } from './sponsorWalletGas';
 export { createSmartAccountForPaxV2User } from './createSmartAccountForPaxV2User';
 export { getWalletTransactions } from './getWalletTransactions';
-export { createReferral } from './createReferralRecord';
+export { createReferral } from './createReferral';
 export { processReferralClaim } from './processReferralClaim';
+// export { sendUbiReminder } from './sendUbiReminder';
