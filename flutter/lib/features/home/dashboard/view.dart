@@ -35,6 +35,8 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     final tasksCount = ref.watch(totalTaskCompletionsProvider);
     final totalGoodDollars = ref.watch(totalGoodDollarTokensEarnedProvider);
     final unclaimedCount = ref.watch(unclaimedTaskCompletionsCountProvider);
+    final totalReferralsCount = ref.watch(totalReferralsCountProvider);
+    final unclaimedReferralRewardsCount = ref.watch(unclaimedReferralsCountProvider);
     final achievementState = ref.watch(achievementsProvider);
     final accountType = ref.watch(accountTypeProvider);
     final isV2 = accountType == AccountType.v2;
@@ -99,6 +101,35 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                           ).withPadding(left: 4),
                       orElse: () => null,
                     ),
+                  ),
+                ),
+              ],
+            ).withPadding(bottom: 8),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _statCard(
+                    icon: FontAwesomeIcons.bullhorn,
+                    value: totalReferralsCount.when(
+                      data: (c) => c.toString(),
+                      loading: () => '--',
+                      error: (_, __) => '0',
+                    ),
+                    label: 'Total Referrals Made',
+                    isLoading: totalReferralsCount is AsyncLoading,
+                  ).withPadding(right: 8),
+                ),
+                Expanded(
+                  child: _statCard(
+                    icon: FontAwesomeIcons.solidStar,
+                    value: unclaimedReferralRewardsCount.when(
+                      data: (c) => c.toString(),
+                      loading: () => '--',
+                      error: (_, __) => '0',
+                    ),
+                    label: 'Unclaimed Referral Rewards',
+                    isLoading: unclaimedReferralRewardsCount is AsyncLoading,
                   ),
                 ),
               ],

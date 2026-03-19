@@ -235,6 +235,23 @@ final expiredTaskCompletionsCountProvider = Provider<AsyncValue<int>>((ref) {
   );
 });
 
+// Provider for total number of referrals made
+final totalReferralsCountProvider = Provider<AsyncValue<int>>((ref) {
+  final userId = ref.watch(authProvider).user.uid;
+  final allActivitiesAsync = ref.watch(allActivitiesProvider(userId));
+
+  return allActivitiesAsync.when(
+    data: (allActivities) {
+      final count = allActivities
+          .where((activity) => activity.type == ActivityType.referral)
+          .length;
+      return AsyncValue.data(count);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+  );
+});
+
 // Provider for count of unclaimed referrals
 final unclaimedReferralsCountProvider = Provider<AsyncValue<int>>((ref) {
   final userId = ref.watch(authProvider).user.uid;
@@ -262,6 +279,7 @@ final unclaimedReferralsCountProvider = Provider<AsyncValue<int>>((ref) {
 final totalGoodDollarTokensEarnedProvider = Provider<AsyncValue<double>>((ref) {
   final userId = ref.watch(authProvider).user.uid;
   final rewardsAsync = ref.watch(rewardActivitiesProvider(userId));
+  final allActivitiesAsync = ref.watch(allActivitiesProvider(userId));
   final achievementsAsync = ref.watch(achievementsProvider);
 
   return rewardsAsync.when(
@@ -286,7 +304,24 @@ final totalGoodDollarTokensEarnedProvider = Provider<AsyncValue<double>>((ref) {
         }
       }
 
-      return AsyncValue.data(total);
+      return allActivitiesAsync.when(
+        data: (allActivities) {
+          // Add amounts from claimed referral rewards
+          for (final activity in allActivities) {
+            if (activity.type != ActivityType.referral) continue;
+            final referral = activity.referral;
+            if (referral == null || referral.amountReceived == null) continue;
+            final isClaimed = referral.timeRewarded != null ||
+                (referral.txnHash != null && referral.txnHash!.isNotEmpty);
+            if (isClaimed) {
+              total += referral.amountReceived!.toDouble();
+            }
+          }
+          return AsyncValue.data(total);
+        },
+        loading: () => const AsyncValue.loading(),
+        error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+      );
     },
     loading: () => const AsyncValue.loading(),
     error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
