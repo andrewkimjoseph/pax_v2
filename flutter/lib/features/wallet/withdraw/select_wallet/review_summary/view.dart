@@ -191,7 +191,7 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                       'Withdrawal Complete!',
                       style: TextStyle(
                         color: PaxColors.deepPurple,
-                        fontSize: 28,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
@@ -314,7 +314,11 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                 onTap: () {
                   context.pop();
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               Spacer(),
               Text(
