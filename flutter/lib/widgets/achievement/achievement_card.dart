@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
@@ -57,12 +58,7 @@ class _AchievementCardState extends ConsumerState<AchievementCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Column(
-                children: [
-                  SvgPicture.asset(
-                    'lib/assets/svgs/achievements/${widget.achievement.svgAssetName}.svg',
-                    height: 48,
-                  ).withPadding(right: 12),
-                ],
+                children: [_buildAchievementIcon().withPadding(right: 12)],
               ),
               Expanded(
                 child: Column(
@@ -220,6 +216,53 @@ class _AchievementCardState extends ConsumerState<AchievementCard> {
         ],
       ),
     ).withPadding(bottom: 8);
+  }
+
+  Widget _buildAchievementIcon() {
+    final connectorLevel = widget.achievement.connectorLevelBadge;
+
+    if (connectorLevel != null && connectorLevel > 1) {
+      final iconCount = connectorLevel == 2 ? 2 : 3;
+
+      return SizedBox(
+        width: 48,
+        height: 48,
+        child: Stack(
+          children: List.generate(iconCount, (index) {
+            final reverseIndex = iconCount - 1 - index;
+            final offset = reverseIndex * 6.0;
+            return Positioned(
+              left: offset,
+              top: offset,
+              child: _buildGradientIcon(24),
+            );
+          }),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: Center(child: _buildGradientIcon(30)),
+    );
+  }
+
+  Widget _buildGradientIcon(double size) {
+    return ShaderMask(
+      shaderCallback:
+          (bounds) => LinearGradient(
+            colors: PaxColors.orangeToPinkGradient,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+      blendMode: BlendMode.srcIn,
+      child: FaIcon(
+        widget.achievement.icon,
+        size: size,
+        color: PaxColors.white,
+      ),
+    );
   }
 
   Future<void> _handleClaim() async {

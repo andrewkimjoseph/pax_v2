@@ -8,6 +8,7 @@ import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
 import 'package:pax/widgets/achievement/filter_button.dart';
 import 'package:pax/widgets/activity/activity_card.dart';
+import 'package:pax/widgets/common/gradient_badge.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import '../../theming/colors.dart' show PaxColors;
 import 'package:pax/providers/auth/auth_provider.dart';
@@ -190,25 +191,13 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                                 style: TextStyle(color: textColor),
                               ).withPadding(right: 6),
                               if (hasBadge) ...[
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: PaxColors.orange,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    unclaimedCount > 99
-                                        ? '99+'
-                                        : '$unclaimedCount',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: PaxColors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                                GradientBadge(
+                                  label:
+                                      unclaimedCount > 99
+                                          ? '99+'
+                                          : '$unclaimedCount',
+                                  isOverlay: false,
+                                  child: const SizedBox.shrink(),
                                 ),
                               ],
                             ],
@@ -336,25 +325,13 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                               style: TextStyle(color: textColor),
                             ).withPadding(right: 6),
                             if (hasBadge) ...[
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: PaxColors.orange,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  unclaimedReferrals > 99
-                                      ? '99+'
-                                      : '$unclaimedReferrals',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: PaxColors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                              GradientBadge(
+                                label:
+                                    unclaimedReferrals > 99
+                                        ? '99+'
+                                        : '$unclaimedReferrals',
+                                isOverlay: false,
+                                child: const SizedBox.shrink(),
                               ),
                             ],
                           ],

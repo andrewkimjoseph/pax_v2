@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter/material.dart' show Badge;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
@@ -14,6 +13,7 @@ import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/providers/route/root_selected_index_provider.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 import 'package:pax/utils/remote_config_constants.dart';
+import 'package:pax/widgets/common/gradient_badge.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import '../../theming/colors.dart' show PaxColors;
 import 'package:pax/utils/achievement_constants.dart';
@@ -210,35 +210,10 @@ class _RootViewState extends ConsumerState<RootView> {
               color: isSelected ? PaxColors.deepPurple : PaxColors.lilac,
             );
 
-    if (showHomeTasksBadge) {
-      navIcon = Stack(
-        clipBehavior: Clip.none,
-        children: [
-          navIcon,
-          Positioned(
-            right: -10,
-            top: -8,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: PaxColors.orangeToPinkGradient,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                countForBadge > 99 ? '99+' : '$countForBadge',
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: PaxColors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
+    final badgeLabel =
+        showHomeTasksBadge || showActivityBadge
+            ? (countForBadge > 99 ? '99+' : '$countForBadge')
+            : null;
 
     return NavigationItem(
       style: const ButtonStyle.ghost(density: ButtonDensity.icon),
@@ -251,22 +226,11 @@ class _RootViewState extends ConsumerState<RootView> {
           fontWeight: FontWeight.w900,
         ),
       ),
-      child: Badge(
-        isLabelVisible: showAccountBadge || showActivityBadge,
-        offset: const Offset(10, -5),
-        label:
-            showActivityBadge
-                ? Text(
-                  countForBadge > 99 ? '99+' : '$countForBadge',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: PaxColors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                )
-                : const Text(''),
-        backgroundColor: showActivityBadge ? PaxColors.orange : PaxColors.red,
-        smallSize: 10,
+      child: GradientBadge(
+        isVisible: showAccountBadge || showHomeTasksBadge || showActivityBadge,
+        label: badgeLabel,
+        offset: const Offset(-10, -8),
+        dotSize: 10,
         child: navIcon,
       ),
     );

@@ -36,7 +36,9 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     final totalGoodDollars = ref.watch(totalGoodDollarTokensEarnedProvider);
     final unclaimedCount = ref.watch(unclaimedTaskCompletionsCountProvider);
     final totalReferralsCount = ref.watch(totalReferralsCountProvider);
-    final unclaimedReferralRewardsCount = ref.watch(unclaimedReferralsCountProvider);
+    final unclaimedReferralRewardsCount = ref.watch(
+      unclaimedReferralsCountProvider,
+    );
     final achievementState = ref.watch(achievementsProvider);
     final accountType = ref.watch(accountTypeProvider);
     final isV2 = accountType == AccountType.v2;
@@ -256,10 +258,15 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FaIcon(
-            icon,
-            color: PaxColors.deepPurple,
-            size: 18,
+          ShaderMask(
+            shaderCallback:
+                (bounds) => LinearGradient(
+                  colors: PaxColors.orangeToPinkGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+            blendMode: BlendMode.srcIn,
+            child: FaIcon(icon, color: PaxColors.white, size: 18),
           ).withPadding(bottom: 8),
           Row(
             children: [
