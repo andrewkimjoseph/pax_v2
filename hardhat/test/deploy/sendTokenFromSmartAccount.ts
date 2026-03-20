@@ -42,9 +42,9 @@ const PK_HEX =
     ? (process.env.SEND_TOKEN_PK ?? process.env.PK)
     : `0x${process.env.SEND_TOKEN_PK ?? process.env.PK}`;
 
-const TO_ADDRESS = "0x351df8260080CA47386442Bb19d4D025277bbAe3";
+const TO_ADDRESS = "0x9cfa5C4BFE08A1A3F7c17D6503EeB23A0290c4Ca";
 const TOKEN_ADDRESS = (process.env.SEND_TOKEN_TOKEN ?? GOODDOLLAR_ADDRESS) as Address;
-const AMOUNT_STR = process.env.SEND_TOKEN_AMOUNT ?? "6250000";
+const AMOUNT_STR = process.env.SEND_TOKEN_AMOUNT ?? "13773799";
 
 async function main() {
   if (!PK_HEX || PK_HEX === "0xundefined") {
