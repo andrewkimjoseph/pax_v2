@@ -137,24 +137,23 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
             },
           ),
 
-          if (widget.nextLocation == "/wallet")
-            Row(
-              children: [
-                FaIcon(
-                  FontAwesomeIcons.circleInfo,
-                  size: 12,
+          Row(
+            children: [
+              FaIcon(
+                FontAwesomeIcons.circleInfo,
+                size: 12,
+                color: PaxColors.darkGrey,
+              ).withPadding(right: 6),
+              Text(
+                'Switch currency to view other balances',
+                style: TextStyle(
+                  fontSize: 12,
                   color: PaxColors.darkGrey,
-                ).withPadding(right: 6),
-                Text(
-                  'Switch currency to view other balances',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: PaxColors.darkGrey,
-                    fontWeight: FontWeight.normal,
-                  ),
+                  fontWeight: FontWeight.normal,
                 ),
-              ],
-            ).withPadding(bottom: 12),
+              ),
+            ],
+          ).withPadding(bottom: 12),
 
           Row(
             children: [

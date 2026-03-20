@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart' show Badge;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/theming/colors.dart';
@@ -7,6 +6,7 @@ import 'package:intl/intl.dart' show toBeginningOfSentenceCase;
 import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/utils/achievement_constants.dart';
+import 'package:pax/widgets/common/gradient_badge.dart';
 
 class AccountOptionCard extends ConsumerStatefulWidget {
   const AccountOptionCard({required this.option, super.key});
@@ -118,12 +118,10 @@ class _AccountOptionCardState extends ConsumerState<AccountOptionCard> {
                             widget.option == "payment_methods") &&
                         achievementState.state == AchievementState.loaded &&
                         missingCount > 0)
-                      Badge(
-                        isLabelVisible: true,
-                        label: Text(""),
-                        backgroundColor: PaxColors.red,
-                        offset: const Offset(24, -8),
-                        smallSize: 12,
+                      GradientBadge(
+                        isVisible: true,
+                        offset: const Offset(-24, -8),
+                        dotSize: 12,
                         child: SizedBox(width: 0, height: 0),
                       ),
                   ],

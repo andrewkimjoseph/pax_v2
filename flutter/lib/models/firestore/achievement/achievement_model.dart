@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/utils/achievement_constants.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 enum AchievementStatus { inProgress, earned, claimed }
 
@@ -90,7 +92,39 @@ class Achievement {
       case AchievementConstants.triplePayoutConnector:
         return 'payout_connector';
       default:
-        return '';
+        return 'task_expert';
+    }
+  }
+
+  IconData get icon {
+    switch (name) {
+      case AchievementConstants.payoutConnector:
+      case AchievementConstants.doublePayoutConnector:
+      case AchievementConstants.triplePayoutConnector:
+        return FontAwesomeIcons.wallet;
+      case AchievementConstants.verifiedHuman:
+        return FontAwesomeIcons.solidCircleCheck;
+      case AchievementConstants.profilePerfectionist:
+        return FontAwesomeIcons.solidAddressCard;
+      case AchievementConstants.taskStarter:
+        return FontAwesomeIcons.listCheck;
+      case AchievementConstants.taskExpert:
+        return FontAwesomeIcons.trophy;
+      default:
+        return FontAwesomeIcons.trophy;
+    }
+  }
+
+  int? get connectorLevelBadge {
+    switch (name) {
+      case AchievementConstants.payoutConnector:
+        return 1;
+      case AchievementConstants.doublePayoutConnector:
+        return 2;
+      case AchievementConstants.triplePayoutConnector:
+        return 3;
+      default:
+        return null;
     }
   }
 
