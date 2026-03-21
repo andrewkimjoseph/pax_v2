@@ -5,16 +5,17 @@ import 'package:intl/intl.dart';
 import 'package:pax/exports/shadcn.dart';
 import 'package:pax/models/firestore/reward/reward_model.dart';
 import 'package:pax/models/firestore/referral/referral.dart';
+import 'package:pax/models/firestore/donation/donation_model.dart';
 import 'package:pax/constants/task_timer.dart';
 import 'package:pax/models/firestore/task_completion/task_completion_model.dart';
 import 'package:pax/models/firestore/withdrawal/withdrawal_model.dart';
 
-enum ActivityType { taskCompletion, reward, withdrawal, referral }
+enum ActivityType { taskCompletion, reward, withdrawal, referral, donation }
 
 class Activity {
   final String id;
   final ActivityType type;
-  final dynamic data; // TaskCompletion, Reward, Withdrawal, or Referral
+  final dynamic data; // TaskCompletion, Reward, Withdrawal, Referral, or Donation
 
   Activity({required this.id, required this.type, required this.data});
 
@@ -26,6 +27,7 @@ class Activity {
       type == ActivityType.withdrawal ? data as Withdrawal : null;
   Referral? get referral =>
       type == ActivityType.referral ? data as Referral : null;
+  Donation? get donation => type == ActivityType.donation ? data as Donation : null;
 
   // Get timestamp for sorting activities
   Timestamp? get timestamp {
@@ -38,6 +40,8 @@ class Activity {
         return withdrawal?.timeCreated;
       case ActivityType.referral:
         return referral?.timeRewarded ?? referral?.timeCreated;
+      case ActivityType.donation:
+        return donation?.timeDonated ?? donation?.timeCreated;
     }
   }
 
@@ -52,6 +56,8 @@ class Activity {
         return withdrawal?.participantId;
       case ActivityType.referral:
         return referral?.referredParticipantId;
+      case ActivityType.donation:
+        return donation?.participantId;
     }
   }
 
@@ -66,6 +72,8 @@ class Activity {
         return 'Withdrawal';
       case ActivityType.referral:
         return 'Referral';
+      case ActivityType.donation:
+        return 'Donation';
     }
   }
 
@@ -83,6 +91,8 @@ class Activity {
         return 'Funds withdrawn';
       case ActivityType.referral:
         return 'You referred a friend';
+      case ActivityType.donation:
+        return 'You donated to a GoodCollective';
     }
   }
 
@@ -101,6 +111,9 @@ class Activity {
     } else if (type == ActivityType.referral &&
         referral?.amountReceived != null) {
       return formatter.format(referral!.amountReceived!);
+    } else if (type == ActivityType.donation &&
+        donation?.amountDonated != null) {
+      return formatter.format(donation!.amountDonated!);
     }
     return null;
   }
@@ -120,6 +133,9 @@ class Activity {
     if (type == ActivityType.referral) {
       return FontAwesomeIcons.bullhorn;
     }
+    if (type == ActivityType.donation) {
+      return FontAwesomeIcons.handHoldingHeart;
+    }
     return null;
   }
 
@@ -134,6 +150,8 @@ class Activity {
         return withdrawal?.rewardCurrencyId;
       case ActivityType.referral:
         return null;
+      case ActivityType.donation:
+        return 1;
     }
   }
 
@@ -157,6 +175,8 @@ class Activity {
         return 'processed';
       case ActivityType.referral:
         return referral?.timeRewarded != null ? 'claimed' : 'unclaimed';
+      case ActivityType.donation:
+        return 'processed';
     }
   }
 
@@ -181,6 +201,10 @@ class Activity {
       data: withdrawal,
     );
   }
+
+  factory Activity.fromDonation(Donation donation) {
+    return Activity(id: donation.id, type: ActivityType.donation, data: donation);
+  }
 }
 
 extension ActivityExtensions on Activity {
@@ -194,6 +218,8 @@ extension ActivityExtensions on Activity {
         return withdrawal?.timeRequested != null;
       case ActivityType.referral:
         return referral?.timeRewarded != null;
+      case ActivityType.donation:
+        return donation?.timeDonated != null;
     }
   }
 

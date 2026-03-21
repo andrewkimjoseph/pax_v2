@@ -70,6 +70,8 @@ class Achievement {
         return isCompleted
             ? 'Connected three payment methods'
             : 'Connect three payment methods';
+      case AchievementConstants.goodImpact:
+        return isCompleted ? 'Made 5 donations' : 'Make 5 donations of at least 500 G\$';
       default:
         return '';
     }
@@ -91,6 +93,8 @@ class Achievement {
         return 'payout_connector';
       case AchievementConstants.triplePayoutConnector:
         return 'payout_connector';
+      case AchievementConstants.goodImpact:
+        return 'task_expert';
       default:
         return 'task_expert';
     }
@@ -110,6 +114,8 @@ class Achievement {
         return FontAwesomeIcons.listCheck;
       case AchievementConstants.taskExpert:
         return FontAwesomeIcons.trophy;
+      case AchievementConstants.goodImpact:
+        return FontAwesomeIcons.handHoldingHeart;
       default:
         return FontAwesomeIcons.trophy;
     }

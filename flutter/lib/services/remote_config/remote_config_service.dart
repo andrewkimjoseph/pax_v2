@@ -2,6 +2,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:pax/models/remote_config/app_version_config.dart';
+import 'package:pax/models/remote_config/goodcollective_config.dart';
 import 'package:pax/models/remote_config/maintenance_config.dart';
 import 'package:pax/models/remote_config/miniapps_config.dart';
 import 'package:pax/utils/remote_config_constants.dart';
@@ -74,6 +75,10 @@ class RemoteConfigService {
           RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
         }),
         RemoteConfigKeys.miniappsConfig: await _loadMiniappsConfigDefault(),
+        RemoteConfigKeys.goodcollectiveConfig: json.encode({
+          RemoteConfigKeys.isDonationAvailable: false,
+          RemoteConfigKeys.goodcollectives: [],
+        }),
       });
 
       final bool activated = await _remoteConfig.fetchAndActivate();
@@ -383,6 +388,54 @@ class RemoteConfigService {
         debugPrint('Remote Config Service: Error getting miniapps config: $e');
       }
       return MiniappsConfig(areMiniappsAvailable: false, miniapps: []);
+    }
+  }
+
+  Future<GoodCollectiveConfig> getGoodCollectiveConfig() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    if (_lastFetchTime == null ||
+        DateTime.now().difference(_lastFetchTime!) > _refreshInterval) {
+      await refreshConfig();
+    }
+
+    try {
+      final jsonString = _remoteConfig.getString(
+        RemoteConfigKeys.goodcollectiveConfig,
+      );
+      if (kDebugMode) {
+        debugPrint(
+          'Remote Config Service: Raw goodcollective config string: $jsonString',
+        );
+      }
+
+      if (jsonString.isEmpty) {
+        return const GoodCollectiveConfig(
+          isDonationAvailable: false,
+          goodcollectives: [],
+        );
+      }
+
+      final Map<String, dynamic> configMap = json.decode(jsonString);
+      if (kDebugMode) {
+        debugPrint(
+          'Remote Config Service: Parsed goodcollective config map: $configMap',
+        );
+      }
+
+      return GoodCollectiveConfig.fromJson(configMap);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'Remote Config Service: Error getting goodcollective config: $e',
+        );
+      }
+      return const GoodCollectiveConfig(
+        isDonationAvailable: false,
+        goodcollectives: [],
+      );
     }
   }
 

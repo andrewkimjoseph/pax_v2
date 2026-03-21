@@ -491,6 +491,26 @@ final routerProvider = Provider((ref) {
               ),
             ],
           ),
+          GoRoute(
+            path: "/donate",
+            builder: (BuildContext context, GoRouterState state) => DonateView(),
+            routes: [
+              GoRoute(
+                path: "/select-goodcollective",
+                builder:
+                    (BuildContext context, GoRouterState state) =>
+                        SelectGoodCollectiveView(),
+                routes: [
+                  GoRoute(
+                    path: "/review-summary",
+                    builder:
+                        (BuildContext context, GoRouterState state) =>
+                            DonationReviewSummaryView(),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
       GoRoute(
