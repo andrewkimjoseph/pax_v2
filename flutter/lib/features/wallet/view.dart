@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
-import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/widgets/current_balance_card.dart';
 import 'package:pax/widgets/payment_method_cards/minipay_payment_method_card.dart';
 import 'package:pax/widgets/payment_method_cards/good_wallet_withdrawal_method_card.dart';
@@ -37,18 +36,6 @@ class _WalletViewViewState extends ConsumerState<WalletView> {
         withdrawalState.state == WithdrawalMethodsState.loading;
     final accountType = ref.watch(accountTypeProvider);
     final isV2 = accountType == AccountType.v2;
-    final paxWalletVerifiedAsync = ref.watch(
-      paxWalletNeedsVerificationProvider,
-    );
-
-    /// For V2, only show MiniPay/GoodWallet when Pax Wallet address is verified.
-    final bool showMinipayAndGoodWalletForV2 =
-        isV2
-            ? (paxWalletVerifiedAsync.maybeWhen(
-              data: (needsVerification) => !needsVerification,
-              orElse: () => false,
-            ))
-            : true;
 
     final paxWalletMethod =
         withdrawalMethods.isNotEmpty
@@ -109,13 +96,7 @@ class _WalletViewViewState extends ConsumerState<WalletView> {
     final cardChildren =
         isV2
             ? [
-              paxWalletCard.withPadding(
-                bottom: showMinipayAndGoodWalletForV2 ? 8 : 0,
-              ),
-              if (showMinipayAndGoodWalletForV2) ...[
-                minipayCard,
-                goodWalletCard,
-              ],
+              paxWalletCard,
             ]
             : [minipayCard, goodWalletCard];
 
