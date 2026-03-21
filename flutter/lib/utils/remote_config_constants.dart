@@ -104,6 +104,11 @@ class RemoteConfigKeys {
   /// Key: 'miniapps_config'
   static const String miniappsConfig = 'miniapps_config';
 
+  /// The name of the remote config parameter containing GoodCollective donation configuration.
+  /// Contains is_donation_available and goodcollectives array as a JSON string.
+  /// Key: 'goodcollective_config'
+  static const String goodcollectiveConfig = 'goodcollective_config';
+
   /// Whether the miniapps feature is enabled for V2 users.
   /// Key: 'are_miniapps_available'
   static const String areMiniappsAvailable = 'are_miniapps_available';
@@ -119,4 +124,13 @@ class RemoteConfigKeys {
   static const String miniappImageURI = 'imageURI';
   static const String miniappUrl = 'url';
   static const String isMiniappAvailable = 'is_miniapp_available';
+
+  // GoodCollective config keys
+  static const String isDonationAvailable = 'is_donation_available';
+  static const String goodcollectives = 'goodcollectives';
+  static const String goodcollectiveId = 'id';
+  static const String goodcollectiveName = 'name';
+  static const String isGoodcollectiveAvailable = 'is_goodcollective_available';
+  static const String donationContract = 'donationContract';
+  static const String coverURI = 'coverURI';
 }

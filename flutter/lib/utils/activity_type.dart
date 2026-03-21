@@ -20,6 +20,8 @@ class ActivityTypeConverter {
         return 'withdrawal';
       case ActivityType.referral:
         return 'referral';
+      case ActivityType.donation:
+        return 'donation';
     }
   }
 
@@ -36,6 +38,8 @@ class ActivityTypeConverter {
         return ActivityType.withdrawal;
       case 'referral':
         return ActivityType.referral;
+      case 'donation':
+        return ActivityType.donation;
       default:
         return null;
     }
@@ -52,6 +56,8 @@ class ActivityTypeConverter {
         return 'Withdrawal';
       case ActivityType.referral:
         return 'Referral';
+      case ActivityType.donation:
+        return 'Donation';
     }
   }
 
@@ -66,6 +72,8 @@ class ActivityTypeConverter {
         return 'Withdrawal';
       case ActivityType.referral:
         return 'Referral';
+      case ActivityType.donation:
+        return 'Donation';
     }
   }
 
@@ -80,6 +88,8 @@ class ActivityTypeConverter {
         return 'Withdrawals';
       case ActivityType.referral:
         return 'Referrals';
+      case ActivityType.donation:
+        return 'Donations';
     }
   }
 
@@ -94,6 +104,8 @@ class ActivityTypeConverter {
         return 'lib/assets/svgs/withdrawal_icon.svg';
       case ActivityType.referral:
         return 'lib/assets/svgs/pax_v2_referral.svg';
+      case ActivityType.donation:
+        return 'lib/assets/svgs/goodcollective.svg';
     }
   }
 
@@ -108,6 +120,8 @@ class ActivityTypeConverter {
         return PaxColors.deepPurple;
       case ActivityType.referral:
         return PaxColors.lilac;
+      case ActivityType.donation:
+        return PaxColors.green;
     }
   }
 
@@ -122,6 +136,8 @@ class ActivityTypeConverter {
         return 'You withdrew funds';
       case ActivityType.referral:
         return 'You referred a participant';
+      case ActivityType.donation:
+        return 'You donated to a GoodCollective';
     }
   }
 
@@ -136,6 +152,8 @@ class ActivityTypeConverter {
         return 'No withdrawals made yet';
       case ActivityType.referral:
         return 'No referrals yet';
+      case ActivityType.donation:
+        return 'No donations yet';
     }
   }
 
@@ -150,6 +168,8 @@ class ActivityTypeConverter {
         return 'withdrawals';
       case ActivityType.referral:
         return 'referrals';
+      case ActivityType.donation:
+        return 'donations';
     }
   }
 
@@ -160,6 +180,7 @@ class ActivityTypeConverter {
       ActivityType.reward,
       ActivityType.withdrawal,
       ActivityType.referral,
+      ActivityType.donation,
     ];
   }
 
@@ -167,7 +188,8 @@ class ActivityTypeConverter {
   static bool hasMonetaryValue(ActivityType type) {
     return type == ActivityType.reward ||
         type == ActivityType.withdrawal ||
-        type == ActivityType.referral;
+        type == ActivityType.referral ||
+        type == ActivityType.donation;
   }
 
   /// Returns the sort priority for the activity type (for sorting mixed lists)
@@ -181,6 +203,8 @@ class ActivityTypeConverter {
         return 3;
       case ActivityType.referral:
         return 4; // Lowest priority
+      case ActivityType.donation:
+        return 5;
     }
   }
 
@@ -197,6 +221,8 @@ class ActivityTypeConverter {
       case ActivityType.withdrawal:
         return [ActivityType.reward];
       case ActivityType.referral:
+        return [ActivityType.reward];
+      case ActivityType.donation:
         return [ActivityType.reward];
     }
   }

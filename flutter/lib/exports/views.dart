@@ -22,4 +22,7 @@ export 'package:pax/features/wallet/view.dart';
 export 'package:pax/features/wallet/withdraw/view.dart';
 export 'package:pax/features/wallet/withdraw/select_wallet/view.dart';
 export 'package:pax/features/wallet/withdraw/select_wallet/review_summary/view.dart';
+export 'package:pax/features/wallet/donate/view.dart';
+export 'package:pax/features/wallet/donate/select_goodcollective/view.dart';
+export 'package:pax/features/wallet/donate/select_goodcollective/review_summary/view.dart';
 export 'package:pax/features/developer_options/view.dart';

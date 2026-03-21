@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pax/models/remote_config/goodcollective_config.dart';
 import 'package:pax/models/remote_config/miniapps_config.dart';
 import 'package:pax/services/remote_config/remote_config_service.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
@@ -23,6 +24,13 @@ final featureFlagsProvider = FutureProvider((ref) async {
 final miniappsConfigProvider = FutureProvider<MiniappsConfig>((ref) async {
   final service = ref.watch(remoteConfigServiceProvider);
   return service.getMiniappsConfig();
+});
+
+final goodCollectiveConfigProvider = FutureProvider<GoodCollectiveConfig>((
+  ref,
+) async {
+  final service = ref.watch(remoteConfigServiceProvider);
+  return service.getGoodCollectiveConfig();
 });
 
 final remoteConfigUpdateProvider = StreamProvider<RemoteConfigUpdate>((ref) {

@@ -39,19 +39,16 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     final unclaimedReferralRewardsCount = ref.watch(
       unclaimedReferralsCountProvider,
     );
+    final donationsMadeCount = ref.watch(donationsMadeCountProvider);
+    final totalGoodDollarDonated = ref.watch(totalGoodDollarDonatedProvider);
     final achievementState = ref.watch(achievementsProvider);
     final accountType = ref.watch(accountTypeProvider);
     final isV2 = accountType == AccountType.v2;
 
-    final earnedCount =
+    final unclaimedAchievements =
         achievementState.achievements
-            .where(
-              (a) =>
-                  a.status == AchievementStatus.earned ||
-                  a.status == AchievementStatus.claimed,
-            )
+            .where((a) => a.status == AchievementStatus.earned)
             .length;
-    final totalAchievements = achievementState.achievements.length;
 
     return Scaffold(
       child: SingleChildScrollView(
@@ -112,6 +109,43 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
               children: [
                 Expanded(
                   child: _statCard(
+                    icon: FontAwesomeIcons.handHoldingHeart,
+                    value: donationsMadeCount.when(
+                      data: (c) => c.toString(),
+                      loading: () => '--',
+                      error: (_, __) => '0',
+                    ),
+                    label: 'Donations Made',
+                    isLoading: donationsMadeCount is AsyncLoading,
+                  ).withPadding(right: 8),
+                ),
+                Expanded(
+                  child: _statCard(
+                    icon: FontAwesomeIcons.seedling,
+                    value: totalGoodDollarDonated.when(
+                      data: (a) => TokenBalanceUtil.getLocaleFormattedAmount(a),
+                      loading: () => '--',
+                      error: (_, __) => '0',
+                    ),
+                    label: 'Total G\$ Donated',
+                    isLoading: totalGoodDollarDonated is AsyncLoading,
+                    suffix: totalGoodDollarDonated.maybeWhen(
+                      data:
+                          (_) => SvgPicture.asset(
+                            'lib/assets/svgs/currencies/good_dollar.svg',
+                            height: 18,
+                          ).withPadding(left: 4),
+                      orElse: () => null,
+                    ),
+                  ),
+                ),
+              ],
+            ).withPadding(bottom: 8),
+
+            Row(
+              children: [
+                Expanded(
+                  child: _statCard(
                     icon: FontAwesomeIcons.bullhorn,
                     value: totalReferralsCount.when(
                       data: (c) => c.toString(),
@@ -153,12 +187,12 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                 ),
                 Expanded(
                   child: _statCard(
-                    icon: FontAwesomeIcons.trophy,
+                    icon: FontAwesomeIcons.medal,
                     value:
                         achievementState.state == AchievementState.loading
                             ? '--'
-                            : '$earnedCount / $totalAchievements',
-                    label: 'Achievements',
+                            : unclaimedAchievements.toString(),
+                    label: 'Unclaimed Achievements',
                     isLoading:
                         achievementState.state == AchievementState.loading,
                   ),
@@ -258,15 +292,10 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ShaderMask(
-            shaderCallback:
-                (bounds) => LinearGradient(
-                  colors: PaxColors.orangeToPinkGradient,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ).createShader(bounds),
-            blendMode: BlendMode.srcIn,
-            child: FaIcon(icon, color: PaxColors.white, size: 18),
+          FaIcon(
+            icon,
+            color: PaxColors.deepPurple,
+            size: 18,
           ).withPadding(bottom: 8),
           Row(
             children: [

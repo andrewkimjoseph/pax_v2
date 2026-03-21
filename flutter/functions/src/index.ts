@@ -16,3 +16,4 @@ export { getWalletTransactions } from './getWalletTransactions';
 export { createReferral } from './createReferral';
 export { processReferralClaim } from './processReferralClaim';
 export { sendUbiReminder } from './sendUbiReminder';
+export { donateToGoodCollective } from './donateToGoodCollective';

@@ -203,7 +203,8 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
                       Visibility(
                         visible:
                             widget.activity.reward != null ||
-                            widget.activity.withdrawal != null,
+                            widget.activity.withdrawal != null ||
+                            widget.activity.donation != null,
                         child: Row(
                           children: [
                             Text(
@@ -290,6 +291,8 @@ class _ActivityCardState extends ConsumerState<ActivityCard> {
                                 ? 'You have made a referral'
                                 : widget.activity.reward != null
                                     ? 'You have earned a reward'
+                                    : widget.activity.donation != null
+                                    ? 'You have made a donation'
                                     : 'You have made a withdrawal',
                         style: TextStyle(
                           fontWeight: FontWeight.normal,

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pax/extensions/tooltip.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
+import 'package:pax/providers/local/donation_context_provider.dart';
 // import 'package:pax/providers/local/balance_update_provider.dart';
 import 'package:pax/providers/local/reward_currency_context.dart';
 import 'package:pax/providers/local/withdraw_context_provider.dart';
@@ -29,6 +30,48 @@ class CurrentBalanceCard extends ConsumerStatefulWidget {
 }
 
 class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
+  Widget _buildDonateButton({
+    required bool canDonate,
+    required int? tokenId,
+    required num? currentBalance,
+  }) {
+    return Button(
+      style:
+          const ButtonStyle.primary(
+            density: ButtonDensity.normal,
+          ).withBackgroundColor(color: PaxColors.deepPurple).withBorder(),
+      onPressed:
+          canDonate
+              ? () {
+                ref
+                    .read(donationContextProvider.notifier)
+                    .setDonationContext(tokenId ?? 1, currentBalance ?? 0);
+                context.push('/wallet/donate');
+              }
+              : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FaIcon(
+            FontAwesomeIcons.handHoldingHeart,
+            color: PaxColors.white,
+            size: 14,
+          ).withPadding(right: 6),
+          Text(
+            'Donate',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 14,
+              color: PaxColors.white,
+            ),
+          ),
+        ],
+      ),
+    ).withToolTip(
+      canDonate ? 'Donate to GoodCollective' : 'Minimum donation is 500 G\$',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final paxAccount = ref.watch(paxAccountProvider);
@@ -36,6 +79,8 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
         ref.watch(rewardCurrencyContextProvider).selectedCurrency;
     final tokenId = TokenBalanceUtil.getTokenIdForCurrency(selectedCurrency);
     final currentBalance = paxAccount.balances[tokenId];
+    final isWithdrawEntry = widget.nextLocation == "/wallet/withdraw";
+    final isGoodDollarSelected = selectedCurrency == "good_dollar";
 
     final isFetching =
         paxAccount.state == PaxAccountState.initial ||
@@ -235,7 +280,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                       final actionEnabled =
                           currentBalance != null && currentBalance > 0;
 
-                      return Button(
+                      final withdrawButton = Button(
                         style:
                             const ButtonStyle.primary(
                                   density: ButtonDensity.normal,
@@ -315,6 +360,40 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                             ? 'Account & wallet'
                             : 'Withdraw',
                       );
+
+                      return ref
+                          .watch(goodCollectiveConfigProvider)
+                          .when(
+                            data: (goodCollectiveConfig) {
+                              final canShowDonateButton =
+                                  isWithdrawEntry &&
+                                  isGoodDollarSelected &&
+                                  goodCollectiveConfig.isDonationAvailable &&
+                                  goodCollectiveConfig
+                                      .goodcollectives
+                                      .isNotEmpty;
+                              final canDonate =
+                                  currentBalance != null &&
+                                  currentBalance >= 500;
+
+                              if (!canShowDonateButton) {
+                                return withdrawButton;
+                              }
+
+                              return Row(
+                                children: [
+                                  withdrawButton.withPadding(right: 8),
+                                  _buildDonateButton(
+                                    canDonate: canDonate,
+                                    tokenId: tokenId,
+                                    currentBalance: currentBalance,
+                                  ),
+                                ],
+                              );
+                            },
+                            loading: () => withdrawButton,
+                            error: (_, __) => withdrawButton,
+                          );
                     },
                     loading: () => const SizedBox.shrink(),
                     error: (_, __) => const SizedBox.shrink(),

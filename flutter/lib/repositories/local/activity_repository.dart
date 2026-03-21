@@ -4,23 +4,27 @@ import 'package:pax/repositories/firestore/reward/reward_repository.dart';
 import 'package:pax/repositories/firestore/task_completion/task_completion_repository.dart';
 import 'package:pax/repositories/firestore/withdrawal/withdrawal_repository.dart';
 import 'package:pax/repositories/firestore/referral/referral_repository.dart';
+import 'package:pax/repositories/firestore/donation/donation_repository.dart';
 
 class ActivityRepository {
   final TaskCompletionRepository _taskCompletionRepository;
   final RewardRepository _rewardRepository;
   final WithdrawalRepository _withdrawalRepository;
   final ReferralRepository _referralRepository;
+  final DonationRepository _donationRepository;
 
   ActivityRepository({
     TaskCompletionRepository? taskCompletionRepository,
     RewardRepository? rewardRepository,
     WithdrawalRepository? withdrawalRepository,
     ReferralRepository? referralRepository,
+    DonationRepository? donationRepository,
   }) : _taskCompletionRepository =
            taskCompletionRepository ?? TaskCompletionRepository(),
        _rewardRepository = rewardRepository ?? RewardRepository(),
        _withdrawalRepository = withdrawalRepository ?? WithdrawalRepository(),
-       _referralRepository = referralRepository ?? ReferralRepository();
+       _referralRepository = referralRepository ?? ReferralRepository(),
+       _donationRepository = donationRepository ?? DonationRepository();
 
   // Get all activities for a participant
   Future<List<Activity>> getAllActivitiesForParticipant(
@@ -37,6 +41,9 @@ class ActivityRepository {
           .getWithdrawalsForParticipant(participantId);
       final referrals = await _referralRepository
           .getReferralsForReferredParticipant(participantId);
+      final donations = await _donationRepository.getDonationsForParticipant(
+        participantId,
+      );
 
       // Convert to activities
       final taskCompletionActivities =
@@ -47,6 +54,8 @@ class ActivityRepository {
           withdrawals.map((w) => Activity.fromWithdrawal(w)).toList();
       final referralActivities =
           referrals.map((r) => Activity(id: r.id, type: ActivityType.referral, data: r)).toList();
+      final donationActivities =
+          donations.map((d) => Activity.fromDonation(d)).toList();
 
       // Combine all activities
       final allActivities = [
@@ -54,6 +63,7 @@ class ActivityRepository {
         ...rewardActivities,
         ...withdrawalActivities,
         ...referralActivities,
+        ...donationActivities,
       ];
 
       // Sort by timestamp (most recent first)
@@ -128,6 +138,22 @@ class ActivityRepository {
         debugPrint('Error getting withdrawal activities: $e');
       }
       // Return empty list on error
+      return [];
+    }
+  }
+
+  Future<List<Activity>> getDonationActivitiesForParticipant(
+    String participantId,
+  ) async {
+    try {
+      final donations = await _donationRepository.getDonationsForParticipant(
+        participantId,
+      );
+      return donations.map((d) => Activity.fromDonation(d)).toList();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error getting donation activities: $e');
+      }
       return [];
     }
   }

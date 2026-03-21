@@ -4,6 +4,7 @@ import 'package:pax/models/local/activity_model.dart';
 import 'package:pax/repositories/firestore/reward/reward_repository.dart';
 import 'package:pax/repositories/firestore/task_completion/task_completion_repository.dart';
 import 'package:pax/repositories/firestore/withdrawal/withdrawal_repository.dart';
+import 'package:pax/repositories/firestore/donation/donation_repository.dart';
 import 'package:pax/repositories/local/activity_repository.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/models/firestore/achievement/achievement_model.dart';
@@ -31,15 +32,21 @@ final withdrawalRepositoryProvider = Provider<WithdrawalRepository>((ref) {
   return WithdrawalRepository();
 });
 
+final donationRepositoryProvider = Provider<DonationRepository>((ref) {
+  return DonationRepository();
+});
+
 final activityRepositoryProvider = Provider<ActivityRepository>((ref) {
   final taskCompletionRepo = ref.watch(taskCompletionRepositoryProvider);
   final rewardRepo = ref.watch(rewardRepositoryProvider);
   final withdrawalRepo = ref.watch(withdrawalRepositoryProvider);
+  final donationRepo = ref.watch(donationRepositoryProvider);
 
   return ActivityRepository(
     taskCompletionRepository: taskCompletionRepo,
     rewardRepository: rewardRepo,
     withdrawalRepository: withdrawalRepo,
+    donationRepository: donationRepo,
   );
 });
 
@@ -72,6 +79,12 @@ final withdrawalActivitiesProvider =
     FutureProvider.family<List<Activity>, String>((ref, userId) async {
       final repository = ref.watch(activityRepositoryProvider);
       return repository.getWithdrawalActivitiesForParticipant(userId);
+    });
+
+final donationActivitiesProvider =
+    FutureProvider.family<List<Activity>, String>((ref, userId) async {
+      final repository = ref.watch(activityRepositoryProvider);
+      return repository.getDonationActivitiesForParticipant(userId);
     });
 
 // Activity state class
@@ -322,6 +335,36 @@ final totalGoodDollarTokensEarnedProvider = Provider<AsyncValue<double>>((ref) {
         loading: () => const AsyncValue.loading(),
         error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
       );
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+  );
+});
+
+final donationsMadeCountProvider = Provider<AsyncValue<int>>((ref) {
+  final userId = ref.watch(authProvider).user.uid;
+  final donationsAsync = ref.watch(donationActivitiesProvider(userId));
+
+  return donationsAsync.when(
+    data: (donations) => AsyncValue.data(donations.length),
+    loading: () => const AsyncValue.loading(),
+    error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+  );
+});
+
+final totalGoodDollarDonatedProvider = Provider<AsyncValue<double>>((ref) {
+  final userId = ref.watch(authProvider).user.uid;
+  final donationsAsync = ref.watch(donationActivitiesProvider(userId));
+
+  return donationsAsync.when(
+    data: (donations) {
+      double total = 0;
+      for (final donationActivity in donations) {
+        if (donationActivity.donation?.amountDonated != null) {
+          total += donationActivity.donation!.amountDonated!.toDouble();
+        }
+      }
+      return AsyncValue.data(total);
     },
     loading: () => const AsyncValue.loading(),
     error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
