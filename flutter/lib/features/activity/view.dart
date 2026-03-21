@@ -373,16 +373,16 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                                       CompletionFilter.all,
                                     ),
                               ),
-                              FilterButton(
-                                label: 'Claimed',
-                                isSelected:
-                                    completionFilter ==
-                                    CompletionFilter.claimed,
-                                onPressed:
-                                    () => activityNotifier.setCompletionFilter(
-                                      CompletionFilter.claimed,
-                                    ),
-                              ),
+                              // FilterButton(
+                              //   label: 'Claimed',
+                              //   isSelected:
+                              //       completionFilter ==
+                              //       CompletionFilter.claimed,
+                              //   onPressed:
+                              //       () => activityNotifier.setCompletionFilter(
+                              //         CompletionFilter.claimed,
+                              //       ),
+                              // ),
                               FilterButton(
                                 label: 'Unclaimed',
                                 isSelected:
