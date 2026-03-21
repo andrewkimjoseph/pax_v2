@@ -21,6 +21,20 @@ class ActivityView extends ConsumerStatefulWidget {
   ConsumerState<ConsumerStatefulWidget> createState() => _ActivityViewState();
 }
 
+class _ActivityFilterChipConfig {
+  final String label;
+  final ActivityType type;
+  final VoidCallback? onTap;
+  final int? badgeCount;
+
+  const _ActivityFilterChipConfig({
+    required this.label,
+    required this.type,
+    this.onTap,
+    this.badgeCount,
+  });
+}
+
 class _ActivityViewState extends ConsumerState<ActivityView> {
   Timer? _refreshTimer;
   bool _isRefreshingReferrals = false;
@@ -54,9 +68,52 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
         return 2;
       case ActivityType.referral:
         return 3;
+      case ActivityType.donation:
+        return 4;
       default:
         return 0;
     }
+  }
+
+  AbstractButtonStyle _chipStyle(bool isSelected) {
+    return const ButtonStyle.primary(density: ButtonDensity.dense)
+        .withBackgroundColor(
+          color: isSelected ? PaxColors.deepPurple : Colors.transparent,
+        )
+        .withBorder(
+          border: Border.all(
+            color: isSelected ? PaxColors.deepPurple : PaxColors.lilac,
+            width: 2,
+          ),
+        )
+        .withBorderRadius(borderRadius: BorderRadius.circular(7));
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onPressed,
+    int? badgeCount,
+  }) {
+    final textColor = isSelected ? PaxColors.white : PaxColors.black;
+    final hasBadge = badgeCount != null && badgeCount > 0;
+    return Button(
+      style: _chipStyle(isSelected),
+      onPressed: onPressed,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label, style: TextStyle(color: textColor)).withPadding(right: 6),
+          if (hasBadge)
+            GradientBadge(
+              label: badgeCount > 99 ? '99+' : '$badgeCount',
+              isOverlay: false,
+              child: const SizedBox.shrink(),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -137,206 +194,107 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
               bool showTaskCompletions =
                   kDebugMode ||
                   flags['are_tasks_completions_available'] == true;
+              final unclaimedCompletions = ref
+                  .watch(unclaimedTaskCompletionsCountProvider)
+                  .maybeWhen(data: (c) => c, orElse: () => null);
+              final unclaimedReferrals = ref
+                  .watch(unclaimedReferralsCountProvider)
+                  .maybeWhen(data: (c) => c, orElse: () => null);
+
+              final primaryConfigs = <_ActivityFilterChipConfig>[
+                if (showTaskCompletions)
+                  _ActivityFilterChipConfig(
+                    label: 'Completions',
+                    type: ActivityType.taskCompletion,
+                    onTap: ref.read(analyticsProvider).taskCompletionsTapped,
+                    badgeCount: unclaimedCompletions,
+                  ),
+                _ActivityFilterChipConfig(
+                  label: 'Rewards',
+                  type: ActivityType.reward,
+                  onTap: ref.read(analyticsProvider).rewardsTapped,
+                ),
+                _ActivityFilterChipConfig(
+                  label: 'Referrals',
+                  type: ActivityType.referral,
+                  onTap: ref.read(analyticsProvider).referralsTapped,
+                  badgeCount: unclaimedReferrals,
+                ),
+              ];
+
+              final overflowConfigs = const <_ActivityFilterChipConfig>[
+                _ActivityFilterChipConfig(
+                  label: 'Withdrawals',
+                  type: ActivityType.withdrawal,
+                ),
+                _ActivityFilterChipConfig(
+                  label: 'Donations',
+                  type: ActivityType.donation,
+                ),
+              ];
+
+              final isOverflowSelection = overflowConfigs.any(
+                (config) => config.type == filterType,
+              );
+
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.zero,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (showTaskCompletions)
-                      Button(
-                        style: const ButtonStyle.primary(
-                              density: ButtonDensity.dense,
-                            )
-                            .withBackgroundColor(
-                              color:
-                                  selectedIndex == 0
-                                      ? PaxColors.deepPurple
-                                      : Colors.transparent,
-                            )
-                            .withBorder(
-                              border: Border.all(
-                                color:
-                                    selectedIndex == 0
-                                        ? PaxColors.deepPurple
-                                        : PaxColors.lilac,
-                                width: 2,
-                              ),
-                            )
-                            .withBorderRadius(
-                              borderRadius: BorderRadius.circular(7),
-                            ),
+                    for (final config in primaryConfigs)
+                      _buildFilterChip(
+                        label: config.label,
+                        isSelected: filterType == config.type,
+                        badgeCount: config.badgeCount,
                         onPressed: () {
-                          activityNotifier.setFilterType(
-                            ActivityType.taskCompletion,
-                          );
-                          ref.read(analyticsProvider).taskCompletionsTapped();
+                          activityNotifier.setFilterType(config.type);
+                          config.onTap?.call();
                         },
-                        child: () {
-                          final unclaimedCount = ref
-                              .watch(unclaimedTaskCompletionsCountProvider)
-                              .maybeWhen(data: (c) => c, orElse: () => null);
-                          final textColor =
-                              selectedIndex == 0
-                                  ? PaxColors.white
-                                  : PaxColors.black;
-                          final hasBadge =
-                              unclaimedCount != null && unclaimedCount > 0;
-                          return Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                'Completions',
-                                style: TextStyle(color: textColor),
-                              ).withPadding(right: 6),
-                              if (hasBadge) ...[
-                                GradientBadge(
-                                  label:
-                                      unclaimedCount > 99
-                                          ? '99+'
-                                          : '$unclaimedCount',
-                                  isOverlay: false,
-                                  child: const SizedBox.shrink(),
-                                ),
-                              ],
-                            ],
-                          );
-                        }(),
                       ).withPadding(right: 8),
-
                     Button(
-                      style: const ButtonStyle.primary(
-                            density: ButtonDensity.dense,
-                          )
-                          .withBackgroundColor(
-                            color:
-                                selectedIndex == 1
-                                    ? PaxColors.deepPurple
-                                    : Colors.transparent,
-                          )
-                          .withBorder(
-                            border: Border.all(
-                              color:
-                                  selectedIndex == 1
-                                      ? PaxColors.deepPurple
-                                      : PaxColors.lilac,
-                              width: 2,
-                            ),
-                          )
-                          .withBorderRadius(
-                            borderRadius: BorderRadius.circular(7),
-                          ),
+                      style: _chipStyle(isOverflowSelection),
                       onPressed: () {
-                        activityNotifier.setFilterType(ActivityType.reward);
-                        ref.read(analyticsProvider).rewardsTapped();
-                      },
-                      child: Text(
-                        'Rewards',
-                        style: TextStyle(
-                          color:
-                              selectedIndex == 1
-                                  ? PaxColors.white
-                                  : PaxColors.black,
-                        ),
-                      ),
-                    ).withPadding(right: 8),
-
-                    Button(
-                      style: const ButtonStyle.primary(
-                            density: ButtonDensity.dense,
-                          )
-                          .withBackgroundColor(
-                            color:
-                                selectedIndex == 2
-                                    ? PaxColors.deepPurple
-                                    : Colors.transparent,
-                          )
-                          .withBorder(
-                            border: Border.all(
-                              color:
-                                  selectedIndex == 2
-                                      ? PaxColors.deepPurple
-                                      : PaxColors.lilac,
-                              width: 2,
-                            ),
-                          )
-                          .withBorderRadius(
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                      onPressed: () {
-                        activityNotifier.setFilterType(ActivityType.withdrawal);
-                        ref.read(analyticsProvider).withdrawalsTapped();
-                      },
-                      child: Text(
-                        'Withdrawals',
-                        style: TextStyle(
-                          color:
-                              selectedIndex == 2
-                                  ? PaxColors.white
-                                  : PaxColors.black,
-                        ),
-                      ),
-                    ).withPadding(right: 8),
-
-                    Button(
-                      style: const ButtonStyle.primary(
-                            density: ButtonDensity.dense,
-                          )
-                          .withBackgroundColor(
-                            color:
-                                selectedIndex == 3
-                                    ? PaxColors.deepPurple
-                                    : Colors.transparent,
-                          )
-                          .withBorder(
-                            border: Border.all(
-                              color:
-                                  selectedIndex == 3
-                                      ? PaxColors.deepPurple
-                                      : PaxColors.lilac,
-                              width: 2,
-                            ),
-                          )
-                          .withBorderRadius(
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                      onPressed: () {
-                        activityNotifier.setFilterType(ActivityType.referral);
-                        ref.read(analyticsProvider).referralsTapped();
-                      },
-                      child: () {
-                        final unclaimedReferrals = ref
-                            .watch(unclaimedReferralsCountProvider)
-                            .maybeWhen(data: (c) => c, orElse: () => null);
-                        final textColor =
-                            selectedIndex == 3
-                                ? PaxColors.white
-                                : PaxColors.black;
-                        final hasBadge =
-                            unclaimedReferrals != null &&
-                            unclaimedReferrals > 0;
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Referrals',
-                              style: TextStyle(color: textColor),
-                            ).withPadding(right: 6),
-                            if (hasBadge) ...[
-                              GradientBadge(
-                                label:
-                                    unclaimedReferrals > 99
-                                        ? '99+'
-                                        : '$unclaimedReferrals',
-                                isOverlay: false,
-                                child: const SizedBox.shrink(),
+                        showPopover(
+                          context: context,
+                          alignment: Alignment.topCenter,
+                          offset: const Offset(0, 8),
+                          builder: (popoverContext) {
+                            return ModalContainer(
+                              child: SizedBox(
+                                width: MediaQuery.of(context).size.width,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    for (final config in overflowConfigs)
+                                      _buildFilterChip(
+                                        label: config.label,
+                                        isSelected: filterType == config.type,
+                                        onPressed: () {
+                                          activityNotifier.setFilterType(
+                                            config.type,
+                                          );
+                                          closeOverlay(popoverContext);
+                                        },
+                                      ).withPadding(bottom: 8),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ],
+                            );
+                          },
                         );
-                      }(),
+                      },
+                      child: FaIcon(
+                        FontAwesomeIcons.ellipsis,
+                        size: 14,
+                        color:
+                            isOverflowSelection
+                                ? PaxColors.white
+                                : PaxColors.black,
+                      ),
                     ),
                   ],
                 ),
@@ -547,7 +505,9 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                                           ? 'No rewards'
                                           : selectedIndex == 2
                                           ? 'No withdrawals'
-                                          : 'No referrals',
+                                          : selectedIndex == 3
+                                          ? 'No referrals'
+                                          : 'No donations',
                                       style: TextStyle(
                                         color: PaxColors.darkGrey,
                                       ),
