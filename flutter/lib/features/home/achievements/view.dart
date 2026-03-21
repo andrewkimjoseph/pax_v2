@@ -30,6 +30,12 @@ class _AchievementsViewState extends ConsumerState<AchievementsView> {
   @override
   Widget build(BuildContext context) {
     final achievementState = ref.watch(achievementsProvider);
+    final earnedCount = achievementState.achievements
+        .where((a) => a.status == AchievementStatus.earned)
+        .length;
+    final inProgressCount = achievementState.achievements
+        .where((a) => a.status == AchievementStatus.inProgress)
+        .length;
     // final participantState = ref.watch(participantProvider);
     // final participant = participantState.participant;
     // final isProfileComplete = _isProfileComplete(participant);
@@ -121,11 +127,13 @@ class _AchievementsViewState extends ConsumerState<AchievementsView> {
                         label: 'In Progress',
                         isSelected: index == 2,
                         onPressed: () => setState(() => index = 2),
+                        badgeCount: inProgressCount > 0 ? inProgressCount : null,
                       ),
                       FilterButton(
                         label: 'Earned',
                         isSelected: index == 1,
                         onPressed: () => setState(() => index = 1),
+                        badgeCount: earnedCount > 0 ? earnedCount : null,
                       ),
                       FilterButton(
                         label: 'Claimed',
