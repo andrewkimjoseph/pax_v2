@@ -11,6 +11,7 @@ import 'package:pax/utils/currency_symbol.dart';
 import 'package:pax/utils/donation_constants.dart';
 import 'package:pax/utils/token_address_util.dart';
 import 'package:pax/utils/token_balance_util.dart';
+import 'package:pax/utils/url_handler.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
 
 class DonationReviewSummaryView extends ConsumerStatefulWidget {
@@ -307,15 +308,48 @@ class _DonationReviewSummaryViewState
                           color: PaxColors.black,
                         ),
                       ).withPadding(bottom: 8),
-                      Text(
-                        collective?.donationContract != null
-                            ? '${collective!.donationContract.substring(0, 20)}...'
-                            : '-',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          color: PaxColors.lilac,
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final contract = collective?.donationContract;
+                          if (contract == null) {
+                            return const Text(
+                              '-',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                color: PaxColors.lilac,
+                              ),
+                            );
+                          }
+                          return InkWell(
+                            onTap:
+                                () => UrlHandler.launchCustomTab(
+                                  context,
+                                  'https://goodcollective.xyz/collective/$contract',
+                                ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${contract.substring(0, 20)}...',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                    color: PaxColors.lilac,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: PaxColors.lilac,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const FaIcon(
+                                  FontAwesomeIcons.arrowUpRightFromSquare,
+                                  size: 10,
+                                  color: PaxColors.lilac,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

@@ -508,9 +508,11 @@ class _ClaimImpactReviewSummaryViewState
                                 );
                               }
                               return InkWell(
-                                onTap: () => UrlHandler.launchInAppBrowserView(
-                                  'https://goodcollective.xyz/collective/$contract',
-                                ),
+                                onTap:
+                                    () => UrlHandler.launchCustomTab(
+                                      context,
+                                      'https://goodcollective.xyz/collective/$contract',
+                                    ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
