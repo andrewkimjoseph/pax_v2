@@ -86,7 +86,18 @@ class ClaimPayoutContextNotifier extends Notifier<ClaimPayoutContext?> {
 
   void setSelectedGoodCollective(GoodCollective? collective) {
     if (state == null) return;
-    state = state!.copyWith(selectedGoodCollective: collective);
+    state = ClaimPayoutContext(
+      claimKind: state!.claimKind,
+      tokenId: state!.tokenId,
+      amount: state!.amount,
+      selectedWithdrawalMethod: state!.selectedWithdrawalMethod,
+      isDonation: state!.isDonation,
+      selectedGoodCollective: collective,
+      donationBasisPoints: state!.donationBasisPoints,
+      achievementId: state!.achievementId,
+      taskCompletionId: state!.taskCompletionId,
+      referralId: state!.referralId,
+    );
   }
 
   void clear() {

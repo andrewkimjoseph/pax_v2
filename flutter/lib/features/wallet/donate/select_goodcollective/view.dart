@@ -113,34 +113,6 @@ class SelectGoodCollectiveView extends ConsumerWidget {
                             collective: collective,
                           ).withPadding(bottom: 8),
                         ),
-                        if (selected != null)
-                          InkWell(
-                            onTap:
-                                () => UrlHandler.launchInAppBrowserView(
-                                  'https://goodcollective.xyz/collective/${selected.donationContract}',
-                                ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Text(
-                                  'Learn about this GoodCollective pool',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                    color: PaxColors.lilac,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: PaxColors.lilac,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                FaIcon(
-                                  FontAwesomeIcons.arrowUpRightFromSquare,
-                                  size: 10,
-                                  color: PaxColors.lilac,
-                                ),
-                              ],
-                            ).withPadding(top: 2, bottom: 10),
-                          ),
                       ],
                     ),
                   );
@@ -156,6 +128,35 @@ class SelectGoodCollectiveView extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Column(
               children: [
+                if (selected != null)
+                  InkWell(
+                    onTap:
+                        () => UrlHandler.launchCustomTab(
+                          context,
+                          'https://goodcollective.xyz/collective/${selected.donationContract}',
+                        ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Text(
+                          'View selected pool details',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                            color: PaxColors.lilac,
+                            decoration: TextDecoration.underline,
+                            decorationColor: PaxColors.lilac,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        FaIcon(
+                          FontAwesomeIcons.arrowUpRightFromSquare,
+                          size: 10,
+                          color: PaxColors.lilac,
+                        ),
+                      ],
+                    ).withPadding(bottom: 10),
+                  ),
                 const Divider().withPadding(top: 10, bottom: 10),
                 SizedBox(
                   width: double.infinity,
@@ -222,63 +223,68 @@ class _GoodCollectiveTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: PaxColors.lightLilac, width: 1),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if ((collective.coverURI ?? '').isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      collective.coverURI!,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return SvgPicture.asset(
-                          'lib/assets/svgs/goodcollective.svg',
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    if ((collective.coverURI ?? '').isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          collective.coverURI!,
                           width: 48,
                           height: 48,
-                        );
-                      },
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return SvgPicture.asset(
+                              'lib/assets/svgs/goodcollective.svg',
+                              width: 48,
+                              height: 48,
+                            );
+                          },
+                        ),
+                      )
+                    else
+                      SvgPicture.asset(
+                        'lib/assets/svgs/goodcollective.svg',
+                        width: 48,
+                        height: 48,
+                      ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            collective.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                              color: PaxColors.black,
+                            ),
+                          ).withPadding(bottom: 8),
+                          Text(
+                            '${collective.donationContract.substring(0, 20)}...',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                              color: PaxColors.lilac,
+                            ),
+                          ).withPadding(bottom: 8),
+                        ],
+                      ),
                     ),
-                  )
-                else
-                  SvgPicture.asset(
-                    'lib/assets/svgs/goodcollective.svg',
-                    width: 48,
-                    height: 48,
-                  ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        collective.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                          color: PaxColors.black,
-                        ),
-                      ).withPadding(bottom: 8),
-                      Text(
-                        '${collective.donationContract.substring(0, 20)}...',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                          color: PaxColors.lilac,
-                        ),
-                      ).withPadding(bottom: 8),
-                    ],
-                  ),
-                ),
-                Checkbox(
-                  state:
-                      isSelected
-                          ? CheckboxState.checked
-                          : CheckboxState.unchecked,
-                  onChanged: (_) => _toggleSelection(ref, isSelected),
+                    Checkbox(
+                      state:
+                          isSelected
+                              ? CheckboxState.checked
+                              : CheckboxState.unchecked,
+                      onChanged: (_) => _toggleSelection(ref, isSelected),
+                    ),
+                  ],
                 ),
               ],
             ),

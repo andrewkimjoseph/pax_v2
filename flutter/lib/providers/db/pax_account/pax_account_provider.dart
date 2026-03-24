@@ -97,9 +97,9 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
     if (account == null || !account.isV2) return;
     final participant = ref.read(participantProvider).participant;
     if (participant == null || participant.accountType == 'v2') return;
-    await ref
-        .read(participantProvider.notifier)
-        .updateProfile({'accountType': 'v2'});
+    await ref.read(participantProvider.notifier).updateProfile({
+      'accountType': 'v2',
+    });
   }
 
   // Sync account data with auth state
@@ -115,7 +115,10 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
 
     try {
       // Set loading state
-      state = state.copyWith(state: PaxAccountState.loading, isBalanceSynced: false);
+      state = state.copyWith(
+        state: PaxAccountState.loading,
+        isBalanceSynced: false,
+      );
 
       // Handle signup - create or get account
       final account = await _repository.handleUserSignup(authState!.user.uid);
@@ -146,7 +149,9 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
         final walletSmart = wallet?.smartAccountAddress;
         final accountEo = state.account?.eoWalletAddress;
         final needsBackfill =
-            walletEo != null && walletEo.isNotEmpty && (accountEo == null || accountEo.isEmpty);
+            walletEo != null &&
+            walletEo.isNotEmpty &&
+            (accountEo == null || accountEo.isEmpty);
         if (needsBackfill) {
           final update = <String, dynamic>{'eoWalletAddress': walletEo};
           if (walletSmart != null && walletSmart.isNotEmpty) {
@@ -156,7 +161,9 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('PaxAccount backfill from PaxWallet failed (non-blocking): $e');
+          debugPrint(
+            'PaxAccount backfill from PaxWallet failed (non-blocking): $e',
+          );
         }
       }
 
@@ -182,13 +189,20 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       if (authState.state != AuthState.authenticated || state.account == null) {
         throw Exception('User must be authenticated to update balance');
       }
-      state = state.copyWith(state: PaxAccountState.loading, isBalanceSynced: false);
+      state = state.copyWith(
+        state: PaxAccountState.loading,
+        isBalanceSynced: false,
+      );
       await _repository.updateBalance(authState.user.uid, tokenId, amount);
       var balances = await LocalDBHelper().getWalletBalances(state.account!.id);
       if (balances.isEmpty) {
         balances = await LocalDBHelper().getBalances(state.account!.id);
       }
-      state = state.copyWith(balances: balances, state: PaxAccountState.loaded, isBalanceSynced: true);
+      state = state.copyWith(
+        balances: balances,
+        state: PaxAccountState.loaded,
+        isBalanceSynced: true,
+      );
     } catch (e) {
       state = state.copyWith(
         state: PaxAccountState.error,
@@ -204,7 +218,10 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       if (authState.state != AuthState.authenticated || state.account == null) {
         throw Exception('User must be authenticated to update account');
       }
-      state = state.copyWith(state: PaxAccountState.loading, isBalanceSynced: false);
+      state = state.copyWith(
+        state: PaxAccountState.loading,
+        isBalanceSynced: false,
+      );
       final updatedAccount = await _repository.updateAccount(
         authState.user.uid,
         data,
@@ -240,14 +257,11 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       final accountId = state.account!.id;
       if (accountId.isNotEmpty) {
         try {
-          final info =
-              await LocalDBHelper().getRefreshments(accountId);
+          final info = await LocalDBHelper().getRefreshments(accountId);
           final lastMillis = info['accountRefreshTime'];
           if (lastMillis != null) {
-            final last =
-                DateTime.fromMillisecondsSinceEpoch(lastMillis);
-            if (DateTime.now().difference(last) <
-                const Duration(seconds: 30)) {
+            final last = DateTime.fromMillisecondsSinceEpoch(lastMillis);
+            if (DateTime.now().difference(last) < const Duration(seconds: 30)) {
               return;
             }
           }
@@ -257,7 +271,10 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       }
 
       if (!silent) {
-        state = state.copyWith(state: PaxAccountState.syncing, isBalanceSynced: false);
+        state = state.copyWith(
+          state: PaxAccountState.syncing,
+          isBalanceSynced: false,
+        );
       }
       await _repository.syncBalancesFromBlockchain(authState.user.uid);
       var balances = await LocalDBHelper().getWalletBalances(state.account!.id);
@@ -326,7 +343,10 @@ class PaxAccountNotifier extends Notifier<PaxAccountStateModel> {
       }
 
       // Set loading state
-      state = state.copyWith(state: PaxAccountState.loading, isBalanceSynced: false);
+      state = state.copyWith(
+        state: PaxAccountState.loading,
+        isBalanceSynced: false,
+      );
 
       // Get account from repository
       final account = await _repository.getAccount(authState.user.uid);

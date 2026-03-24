@@ -132,7 +132,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
 
                             ref
                                 .read(paxAccountProvider.notifier)
-                                .syncBalancesFromBlockchain(silent: false);
+                                .syncBalancesFromBlockchain();
                           },
                   density: ButtonDensity.icon,
                   icon:
