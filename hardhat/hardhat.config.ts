@@ -5,30 +5,38 @@ import { Address } from "viem";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const PK_ONE = process.env.PK_ONE;
+const rawPk = process.env.SEND_TOKEN_PK ?? process.env.PK_ONE;
 const INFURA_API_KEY = process.env.INFURA_API_KEY;
-const CELOSCAN_API_KEY = process.env.CELOSCAN_API_KEY;
+const ETHERSCAN_API_KEY =
+  process.env.ETHERSCAN_API_KEY ?? process.env.CELOSCAN_API_KEY;
 
-if (!PK_ONE) throw new Error("PK_ONE not found in environment variables");
+if (!rawPk) {
+  throw new Error("SEND_TOKEN_PK or PK_ONE not found in environment variables");
+}
 if (!INFURA_API_KEY)
   throw new Error("INFURA_API_KEY not found in environment variables");
-if (!CELOSCAN_API_KEY)
-  throw new Error("CELOSCAN_API_KEY not found in environment variables");
+if (!ETHERSCAN_API_KEY)
+  throw new Error(
+    "ETHERSCAN_API_KEY (or fallback CELOSCAN_API_KEY) not found in environment variables"
+  );
 
 const ALFAJORES_INFURA_RPC_URL = `https://celo-alfajores.infura.io/v3/${INFURA_API_KEY}`;
 
 const MAINNET_INFURA_RPC_URL = `https://celo-mainnet.infura.io/v3/${INFURA_API_KEY}`;
 
-const PK = `0x${process.env.PK_ONE}` as Address;
+const normalizedPk = rawPk.startsWith("0x") ? rawPk : `0x${rawPk}`;
+const PK = normalizedPk as Address;
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.29",
+    version: "0.8.34",
     settings: {
       optimizer: {
         enabled: true,
         runs: 200,
       },
+      viaIR: true,
+      evmVersion: "cancun",
     },
   },
   networks: {
@@ -47,16 +55,13 @@ const config: HardhatUserConfig = {
     enabled: true
   },
   etherscan: {
-    apiKey: {
-      celoAlfajores: CELOSCAN_API_KEY,
-      celo: CELOSCAN_API_KEY,
-    },
+    apiKey: ETHERSCAN_API_KEY,
     customChains: [
       {
         network: "celoAlfajores",
         chainId: 44787,
         urls: {
-          apiURL: "https://api-alfajores.celoscan.io/api",
+          apiURL: "https://api.etherscan.io/v2/api",
           browserURL: "https://alfajores.celoscan.io",
         },
       },
@@ -64,7 +69,7 @@ const config: HardhatUserConfig = {
         network: "celo",
         chainId: 42220,
         urls: {
-          apiURL: "https://api.celoscan.io/api",
+          apiURL: "https://api.etherscan.io/v2/api",
           browserURL: "https://celoscan.io",
         },
       },
