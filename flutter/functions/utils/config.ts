@@ -42,7 +42,7 @@ export const IDENTITY_PROXY_CONTRACT_ADDRESS =
 export const CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS: Address = "0x74Cc10C7c8EE72CbAB508f3A6142C90c68579f3F"; //Implm - 0x531b2AD505Efe7f24A9FEB74931F544aFfDeA69A
 export const CANVASSING_GAS_SPONSOR_PROXY_ADDRESS: Address = "0xBdA6e6b41a688eaB89C57d3DA3BF8b556B43AB2C"; // Implm - 0xE6570E2DD6A24f48092Ae4c9F60012Efd87CEcB7
 export const CANVASSING_TASK_MANAGER_PROXY_ADDRESS: Address = "0x339a7328289ef6f51be3f4d0Cb19cc46EB9eF4f1"; // Implm - 0xed1c55593C82E13E3D7bbF39bCAa3071eE76Fc12
-export const CANVASSING_REWARDER_PROXY_ADDRESS: Address = "0x4D167933D742B31229bc730eADf5f2E3c4feceA2"; // Implm - 0x6A4dAa82A71D0Ca74Ce04ED028b84831aa0896Da
+export const CANVASSING_REWARDER_PROXY_ADDRESS: Address = "0x4D167933D742B31229bc730eADf5f2E3c4feceA2"; // Implm - 0xEdC0D00857962893c0BD69AFd65C1E3A99F6f6dC
 
 // API endpoint configs
 export const PIMLICO_URL = `https://api.pimlico.io/v2/42220/rpc?apikey=${PIMLICO_API_KEY}`;
@@ -59,6 +59,9 @@ export const DEFAULT_SPONSOR_AMOUNT_CELO = "0.05";
 
 /** Default referral reward amount (off-chain, stored as numeric). */
 export const REFERRAL_REWARD_AMOUNT = 1000;
+
+/** Minimum donation amount in G$ for GoodCollective donations. */
+export const MIN_DONATION_AMOUNT_GD = 100;
 
 export const PUBLIC_CLIENT = createPublicClient({
   chain: celo,

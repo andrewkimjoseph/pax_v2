@@ -16,10 +16,12 @@ import {
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
 import {
   createReferralRewardClaimSignaturePackageCanvassing,
+  createReferralRewardWithDonationSignaturePackageCanvassing,
   generateRandomNonce,
 } from "../../utils/helpers/rewardingSignature";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
+import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
 import type { ToSimpleSmartAccountReturnType } from "permissionless/accounts";
 
 function isHttpsError(e: unknown): e is HttpsError {
@@ -37,6 +39,10 @@ interface ProcessReferralClaimRequest {
   encryptedPrivateKey?: string;
   sessionKey?: string;
   eoWalletAddress?: string;
+  /** Direct-to-EOA payout; must match a payment_methods wallet for the referrer. */
+  recipientAddress?: string;
+  donationContractAddress?: string;
+  donationBasisPoints?: number;
 }
 
 export const processReferralClaim = onCall(
@@ -62,6 +68,9 @@ export const processReferralClaim = onCall(
         encryptedPrivateKey,
         sessionKey,
         eoWalletAddress,
+        recipientAddress: recipientAddressFromClient,
+        donationContractAddress,
+        donationBasisPoints,
       } = request.data as ProcessReferralClaimRequest;
 
       if (!referralId) {
@@ -321,46 +330,97 @@ export const processReferralClaim = onCall(
       }
 
       const smartAaAddress = smartAccount.address as Address;
-      const recipientAddress: Address = isV1
-        ? ((contractAddress as Address) || smartAaAddress)
-        : smartAaAddress;
+
+      let recipientAddress: Address;
+      if (
+        recipientAddressFromClient &&
+        recipientAddressFromClient.trim() !== ""
+      ) {
+        await assertRecipientIsUserWithdrawalMethod(
+          referringParticipantId,
+          recipientAddressFromClient
+        );
+        recipientAddress = recipientAddressFromClient as Address;
+      } else {
+        recipientAddress = isV1
+          ? ((contractAddress as Address) || smartAaAddress)
+          : smartAaAddress;
+      }
+
+      const hasDonationSplit =
+        !!donationContractAddress &&
+        donationContractAddress.trim() !== "" &&
+        Number.isInteger(donationBasisPoints) &&
+        Number(donationBasisPoints) > 0 &&
+        Number(donationBasisPoints) <= 10000;
 
       // Referrals are currently paid in the primary reward currency (token id 1).
       const { tokenAddress, decimals } = getTokenConfigForCurrencyId(1);
       const amountWei = parseUnits(String(amountReceived), decimals);
 
-      const signaturePackage =
-        await createReferralRewardClaimSignaturePackageCanvassing(
-          CANVASSING_REWARDER_PROXY_ADDRESS,
-          eoAddress,
-          referredEoAddress as Address,
-          smartAaAddress,
-          recipientAddress,
-          referralId,
-          tokenAddress,
-          amountWei,
-          nonce
-        );
+      const signaturePackage = hasDonationSplit
+        ? await createReferralRewardWithDonationSignaturePackageCanvassing(
+            CANVASSING_REWARDER_PROXY_ADDRESS,
+            eoAddress,
+            referredEoAddress as Address,
+            smartAaAddress,
+            recipientAddress,
+            donationContractAddress as Address,
+            referralId,
+            tokenAddress,
+            amountWei,
+            BigInt(Number(donationBasisPoints)),
+            nonce
+          )
+        : await createReferralRewardClaimSignaturePackageCanvassing(
+            CANVASSING_REWARDER_PROXY_ADDRESS,
+            eoAddress,
+            referredEoAddress as Address,
+            smartAaAddress,
+            recipientAddress,
+            referralId,
+            tokenAddress,
+            amountWei,
+            nonce
+          );
 
       if (!signaturePackage.isValid) {
         throw new HttpsError("internal", "Signature validation failed");
       }
 
-      const rewardClaimData = encodeFunctionData({
-        abi: canvassingRewarderABI,
-        functionName: "claimReferralReward",
-        args: [
-          eoAddress,
-          referredEoAddress as Address,
-          smartAaAddress,
-          recipientAddress,
-          referralId,
-          tokenAddress,
-          amountWei,
-          nonce,
-          signaturePackage.signature,
-        ],
-      });
+      const rewardClaimData = hasDonationSplit
+        ? encodeFunctionData({
+            abi: canvassingRewarderABI,
+            functionName: "claimReferralRewardWithDonation",
+            args: [
+              eoAddress,
+              referredEoAddress as Address,
+              smartAaAddress,
+              recipientAddress,
+              donationContractAddress as Address,
+              referralId,
+              tokenAddress,
+              amountWei,
+              BigInt(Number(donationBasisPoints)),
+              nonce,
+              signaturePackage.signature,
+            ],
+          })
+        : encodeFunctionData({
+            abi: canvassingRewarderABI,
+            functionName: "claimReferralReward",
+            args: [
+              eoAddress,
+              referredEoAddress as Address,
+              smartAaAddress,
+              recipientAddress,
+              referralId,
+              tokenAddress,
+              amountWei,
+              nonce,
+              signaturePackage.signature,
+            ],
+          });
 
       const { bundleTxnHash } = await submitSponsoredRewarderCall({
         smartAccount,

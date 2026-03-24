@@ -13,9 +13,9 @@ import {
   PUBLIC_CLIENT,
   PIMLICO_URL,
   AUTH,
+  MIN_DONATION_AMOUNT_GD,
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
-import { createDonationRecord } from "../../utils/helpers/createDonation";
 
 export const donateToGoodCollective = onCall(
   FUNCTION_RUNTIME_OPTS,
@@ -93,10 +93,10 @@ export const donateToGoodCollective = onCall(
       }
 
       const amountFloat = parseFloat(amountDonated);
-      if (Number.isNaN(amountFloat) || amountFloat < 500) {
+      if (Number.isNaN(amountFloat) || amountFloat < MIN_DONATION_AMOUNT_GD) {
         throw new HttpsError(
           "invalid-argument",
-          "Minimum donation amount is 500 G$."
+          `Minimum donation amount is ${MIN_DONATION_AMOUNT_GD} G$.`
         );
       }
       const multiplier = BigInt(10) ** BigInt(decimals);
@@ -251,13 +251,6 @@ export const donateToGoodCollective = onCall(
       }
 
       const bundleTxnHash = userOpReceipt.receipt.transactionHash;
-      const donationId = await createDonationRecord({
-        participantId: userId,
-        amountDonated: amountFloat,
-        collectiveDonatedTo: donationContract,
-        txnHash: bundleTxnHash,
-      });
-
       logger.info("Donation submitted successfully", {
         userId,
         paxAccountAddress,
@@ -269,7 +262,6 @@ export const donateToGoodCollective = onCall(
       return {
         success: true,
         txnHash: bundleTxnHash,
-        donationId,
         details: {
           paxAccountAddress,
           donationContract,

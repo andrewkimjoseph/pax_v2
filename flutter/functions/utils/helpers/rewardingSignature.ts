@@ -158,6 +158,90 @@ export async function createTaskRewardClaimSignaturePackageCanvassing(
   };
 }
 
+type TaskRewardWithDonationRequestTypes = {
+  EIP712Domain: [
+    { name: 'name'; type: 'string' },
+    { name: 'version'; type: 'string' },
+    { name: 'chainId'; type: 'uint256' },
+    { name: 'verifyingContract'; type: 'address' }
+  ];
+  TaskRewardWithDonationRequest: [
+    { name: 'eoAddress'; type: 'address' },
+    { name: 'smartAccountContractAddress'; type: 'address' },
+    { name: 'recipientAddress'; type: 'address' },
+    { name: 'donationContractAddress'; type: 'address' },
+    { name: 'taskId'; type: 'string' },
+    { name: 'token'; type: 'address' },
+    { name: 'amount'; type: 'uint256' },
+    { name: 'donationBasisPoints'; type: 'uint256' },
+    { name: 'nonce'; type: 'uint256' }
+  ];
+};
+
+export async function createTaskRewardWithDonationSignaturePackageCanvassing(
+  rewarderContractAddress: Address,
+  eoAddress: Address,
+  smartAccountContractAddress: Address,
+  recipientAddress: Address,
+  donationContractAddress: Address,
+  taskId: string,
+  token: Address,
+  amount: bigint,
+  donationBasisPoints: bigint,
+  nonce: bigint
+) {
+  const domain = createCanvassingRewarderDomain(rewarderContractAddress);
+  const types: TaskRewardWithDonationRequestTypes = {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' }
+    ],
+    TaskRewardWithDonationRequest: [
+      { name: 'eoAddress', type: 'address' },
+      { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
+      { name: 'donationContractAddress', type: 'address' },
+      { name: 'taskId', type: 'string' },
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'donationBasisPoints', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' }
+    ]
+  };
+  const message = {
+    eoAddress,
+    smartAccountContractAddress,
+    recipientAddress,
+    donationContractAddress,
+    taskId,
+    token,
+    amount,
+    donationBasisPoints,
+    nonce,
+  };
+  const signature = await PAX_MASTER_PRIVATE_KEY_ACCOUNT.signTypedData({
+    domain,
+    types,
+    primaryType: 'TaskRewardWithDonationRequest',
+    message,
+  });
+  const isValid = await verifyTypedData({
+    address: PAX_MASTER_PRIVATE_KEY_ACCOUNT.address,
+    domain,
+    types,
+    primaryType: 'TaskRewardWithDonationRequest',
+    message,
+    signature,
+  });
+  return {
+    signature,
+    isValid,
+    nonce: nonce.toString(),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // CanvassingRewarder — EIP-712 AchievementRewardRequest
 // Types: AchievementRewardRequest(address eoAddress, address smartAccountContractAddress, string achievementId, address token, uint256 amount, uint256 nonce)
@@ -278,6 +362,90 @@ export async function createAchievementRewardClaimSignaturePackageCanvassing(
     domain,
     types,
     primaryType: 'AchievementRewardRequest',
+    message,
+    signature,
+  });
+  return {
+    signature,
+    isValid,
+    nonce: nonce.toString(),
+  };
+}
+
+type AchievementRewardWithDonationRequestTypes = {
+  EIP712Domain: [
+    { name: 'name'; type: 'string' },
+    { name: 'version'; type: 'string' },
+    { name: 'chainId'; type: 'uint256' },
+    { name: 'verifyingContract'; type: 'address' }
+  ];
+  AchievementRewardWithDonationRequest: [
+    { name: 'eoAddress'; type: 'address' },
+    { name: 'smartAccountContractAddress'; type: 'address' },
+    { name: 'recipientAddress'; type: 'address' },
+    { name: 'donationContractAddress'; type: 'address' },
+    { name: 'achievementId'; type: 'string' },
+    { name: 'token'; type: 'address' },
+    { name: 'amount'; type: 'uint256' },
+    { name: 'donationBasisPoints'; type: 'uint256' },
+    { name: 'nonce'; type: 'uint256' }
+  ];
+};
+
+export async function createAchievementRewardWithDonationSignaturePackageCanvassing(
+  rewarderContractAddress: Address,
+  eoAddress: Address,
+  smartAccountContractAddress: Address,
+  recipientAddress: Address,
+  donationContractAddress: Address,
+  achievementId: string,
+  token: Address,
+  amount: bigint,
+  donationBasisPoints: bigint,
+  nonce: bigint
+) {
+  const domain = createCanvassingRewarderDomain(rewarderContractAddress);
+  const types: AchievementRewardWithDonationRequestTypes = {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' }
+    ],
+    AchievementRewardWithDonationRequest: [
+      { name: 'eoAddress', type: 'address' },
+      { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
+      { name: 'donationContractAddress', type: 'address' },
+      { name: 'achievementId', type: 'string' },
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'donationBasisPoints', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' }
+    ]
+  };
+  const message = {
+    eoAddress,
+    smartAccountContractAddress,
+    recipientAddress,
+    donationContractAddress,
+    achievementId,
+    token,
+    amount,
+    donationBasisPoints,
+    nonce,
+  };
+  const signature = await PAX_MASTER_PRIVATE_KEY_ACCOUNT.signTypedData({
+    domain,
+    types,
+    primaryType: 'AchievementRewardWithDonationRequest',
+    message,
+  });
+  const isValid = await verifyTypedData({
+    address: PAX_MASTER_PRIVATE_KEY_ACCOUNT.address,
+    domain,
+    types,
+    primaryType: 'AchievementRewardWithDonationRequest',
     message,
     signature,
   });
@@ -416,6 +584,94 @@ export async function createReferralRewardClaimSignaturePackageCanvassing(
     domain,
     types,
     primaryType: 'ReferralRewardRequest',
+    message,
+    signature,
+  });
+  return {
+    signature,
+    isValid,
+    nonce: nonce.toString(),
+  };
+}
+
+type ReferralRewardWithDonationRequestTypes = {
+  EIP712Domain: [
+    { name: 'name'; type: 'string' },
+    { name: 'version'; type: 'string' },
+    { name: 'chainId'; type: 'uint256' },
+    { name: 'verifyingContract'; type: 'address' }
+  ];
+  ReferralRewardWithDonationRequest: [
+    { name: 'eoAddress'; type: 'address' },
+    { name: 'referredEoAddress'; type: 'address' },
+    { name: 'smartAccountContractAddress'; type: 'address' },
+    { name: 'recipientAddress'; type: 'address' },
+    { name: 'donationContractAddress'; type: 'address' },
+    { name: 'referralId'; type: 'string' },
+    { name: 'token'; type: 'address' },
+    { name: 'amount'; type: 'uint256' },
+    { name: 'donationBasisPoints'; type: 'uint256' },
+    { name: 'nonce'; type: 'uint256' }
+  ];
+};
+
+export async function createReferralRewardWithDonationSignaturePackageCanvassing(
+  rewarderContractAddress: Address,
+  eoAddress: Address,
+  referredEoAddress: Address,
+  smartAccountContractAddress: Address,
+  recipientAddress: Address,
+  donationContractAddress: Address,
+  referralId: string,
+  token: Address,
+  amount: bigint,
+  donationBasisPoints: bigint,
+  nonce: bigint
+) {
+  const domain = createCanvassingRewarderDomain(rewarderContractAddress);
+  const types: ReferralRewardWithDonationRequestTypes = {
+    EIP712Domain: [
+      { name: 'name', type: 'string' },
+      { name: 'version', type: 'string' },
+      { name: 'chainId', type: 'uint256' },
+      { name: 'verifyingContract', type: 'address' }
+    ],
+    ReferralRewardWithDonationRequest: [
+      { name: 'eoAddress', type: 'address' },
+      { name: 'referredEoAddress', type: 'address' },
+      { name: 'smartAccountContractAddress', type: 'address' },
+      { name: 'recipientAddress', type: 'address' },
+      { name: 'donationContractAddress', type: 'address' },
+      { name: 'referralId', type: 'string' },
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'donationBasisPoints', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' }
+    ]
+  };
+  const message = {
+    eoAddress,
+    referredEoAddress,
+    smartAccountContractAddress,
+    recipientAddress,
+    donationContractAddress,
+    referralId,
+    token,
+    amount,
+    donationBasisPoints,
+    nonce,
+  };
+  const signature = await PAX_MASTER_PRIVATE_KEY_ACCOUNT.signTypedData({
+    domain,
+    types,
+    primaryType: 'ReferralRewardWithDonationRequest',
+    message,
+  });
+  const isValid = await verifyTypedData({
+    address: PAX_MASTER_PRIVATE_KEY_ACCOUNT.address,
+    domain,
+    types,
+    primaryType: 'ReferralRewardWithDonationRequest',
     message,
     signature,
   });
