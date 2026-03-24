@@ -17,11 +17,13 @@ import { erc20ABI } from "../../utils/abis/erc20";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
 import {
   createAchievementRewardClaimSignaturePackageCanvassing,
+  createAchievementRewardWithDonationSignaturePackageCanvassing,
   generateRandomNonce,
 } from "../../utils/helpers/rewardingSignature";
 import { canvassingRewarderABI } from "../../utils/abis/canvassingRewarder";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
+import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
 export const processAchievementClaim = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
@@ -56,6 +58,8 @@ export const processAchievementClaim = onCall(
         eoWalletAddress,
         encryptedPrivateKey,
         sessionKey,
+        donationContractAddress,
+        donationBasisPoints,
       } = request.data as {
         achievementId: string;
         paxAccountContractAddress: string;
@@ -65,6 +69,8 @@ export const processAchievementClaim = onCall(
         eoWalletAddress?: string;
         encryptedPrivateKey?: string;
         sessionKey?: string;
+        donationContractAddress?: string;
+        donationBasisPoints?: number;
       };
 
       if (
@@ -114,6 +120,12 @@ export const processAchievementClaim = onCall(
       const smartAccountContractAddress = paxAccountContractAddress as Address;
       // Achievements are paid in the primary reward currency (token id 1).
       const { tokenAddress, decimals } = getTokenConfigForCurrencyId(1);
+      const hasDonationSplit =
+        !!donationContractAddress &&
+        donationContractAddress.trim() !== "" &&
+        Number.isInteger(donationBasisPoints) &&
+        Number(donationBasisPoints) > 0 &&
+        Number(donationBasisPoints) <= 10000;
 
       const isV2 = !!eoWalletAddress && !!encryptedPrivateKey && !!sessionKey;
 
@@ -193,21 +205,40 @@ export const processAchievementClaim = onCall(
         const amountWei = parseUnits(String(amountEarned), decimals);
         const nonce = generateRandomNonce();
 
-        const recipientAddress = (
-          recipientAddressRaw || paxAccountContractAddress
-        ) as Address;
-
-        const signaturePackage =
-          await createAchievementRewardClaimSignaturePackageCanvassing(
-            CANVASSING_REWARDER_PROXY_ADDRESS,
-            eoAddress,
-            smartAccountContractAddress,
-            recipientAddress,
-            achievementId,
-            tokenAddress,
-            amountWei,
-            nonce
+        let recipientAddress: Address;
+        if (recipientAddressRaw && recipientAddressRaw.trim() !== "") {
+          await assertRecipientIsUserWithdrawalMethod(
+            userId,
+            recipientAddressRaw
           );
+          recipientAddress = recipientAddressRaw as Address;
+        } else {
+          recipientAddress = paxAccountContractAddress as Address;
+        }
+
+        const signaturePackage = hasDonationSplit
+          ? await createAchievementRewardWithDonationSignaturePackageCanvassing(
+              CANVASSING_REWARDER_PROXY_ADDRESS,
+              eoAddress,
+              smartAccountContractAddress,
+              recipientAddress,
+              donationContractAddress as Address,
+              achievementId,
+              tokenAddress,
+              amountWei,
+              BigInt(Number(donationBasisPoints)),
+              nonce
+            )
+          : await createAchievementRewardClaimSignaturePackageCanvassing(
+              CANVASSING_REWARDER_PROXY_ADDRESS,
+              eoAddress,
+              smartAccountContractAddress,
+              recipientAddress,
+              achievementId,
+              tokenAddress,
+              amountWei,
+              nonce
+            );
 
         if (!signaturePackage.isValid) {
           logger.error("[V2] Achievement claim signature validation failed", {
@@ -216,20 +247,37 @@ export const processAchievementClaim = onCall(
           throw new HttpsError("internal", "Signature validation failed");
         }
 
-        const data = encodeFunctionData({
-          abi: canvassingRewarderABI,
-          functionName: "claimAchievementReward",
-          args: [
-            eoAddress,
-            smartAccountContractAddress,
-            recipientAddress,
-            achievementId,
-            tokenAddress,
-            amountWei,
-            nonce,
-            signaturePackage.signature,
-          ],
-        });
+        const data = hasDonationSplit
+          ? encodeFunctionData({
+              abi: canvassingRewarderABI,
+              functionName: "claimAchievementRewardWithDonation",
+              args: [
+                eoAddress,
+                smartAccountContractAddress,
+                recipientAddress,
+                donationContractAddress as Address,
+                achievementId,
+                tokenAddress,
+                amountWei,
+                BigInt(Number(donationBasisPoints)),
+                nonce,
+                signaturePackage.signature,
+              ],
+            })
+          : encodeFunctionData({
+              abi: canvassingRewarderABI,
+              functionName: "claimAchievementReward",
+              args: [
+                eoAddress,
+                smartAccountContractAddress,
+                recipientAddress,
+                achievementId,
+                tokenAddress,
+                amountWei,
+                nonce,
+                signaturePackage.signature,
+              ],
+            });
 
         const { bundleTxnHash } = await submitSponsoredRewarderCall({
           smartAccount,
@@ -271,7 +319,16 @@ export const processAchievementClaim = onCall(
           },
         });
 
-        const recipientAddress = smartAccountContractAddress;
+        let recipientAddress: Address;
+        if (recipientAddressRaw && recipientAddressRaw.trim() !== "") {
+          await assertRecipientIsUserWithdrawalMethod(
+            userId,
+            recipientAddressRaw
+          );
+          recipientAddress = recipientAddressRaw as Address;
+        } else {
+          recipientAddress = smartAccountContractAddress;
+        }
 
         logger.info("[V1] Preparing V1 achievement claim transaction", {
           recipientAddress,

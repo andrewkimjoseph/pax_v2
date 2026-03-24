@@ -16,6 +16,7 @@ import {
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
 import {
   createTaskRewardClaimSignaturePackageCanvassing,
+  createTaskRewardWithDonationSignaturePackageCanvassing,
   generateRandomNonce,
 } from "../../utils/helpers/rewardingSignature";
 import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
@@ -24,6 +25,7 @@ import {
   updateRewardWithTxnHash,
 } from "../../utils/helpers/createReward";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
+import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
 
 function isHttpsError(e: unknown): e is HttpsError {
   return (
@@ -63,12 +65,19 @@ export const rewardParticipantProxy = onCall(
         encryptedPrivateKey,
         sessionKey,
         eoWalletAddress,
+        recipientAddress: recipientAddressFromClient,
+        donationContractAddress,
+        donationBasisPoints,
       } = request.data as {
         taskCompletionId: string;
         serverWalletId?: string;
         encryptedPrivateKey?: string;
         sessionKey?: string;
         eoWalletAddress?: string;
+        /** Direct-to-EOA payout; must match a payment_methods wallet for this participant. */
+        recipientAddress?: string;
+        donationContractAddress?: string;
+        donationBasisPoints?: number;
       };
 
       if (!taskCompletionId) {
@@ -286,45 +295,94 @@ export const rewardParticipantProxy = onCall(
       }
 
       const smartAaAddress = smartAccount.address as Address;
-      const recipientAddress: Address = isV1
-        ? ((contractAddress as Address) || smartAaAddress)
-        : smartAaAddress;
+
+      let recipientAddress: Address;
+      if (
+        recipientAddressFromClient &&
+        recipientAddressFromClient.trim() !== ""
+      ) {
+        await assertRecipientIsUserWithdrawalMethod(
+          participantId,
+          recipientAddressFromClient
+        );
+        recipientAddress = recipientAddressFromClient as Address;
+      } else {
+        recipientAddress = isV1
+          ? ((contractAddress as Address) || smartAaAddress)
+          : smartAaAddress;
+      }
+
+      const hasDonationSplit =
+        !!donationContractAddress &&
+        donationContractAddress.trim() !== "" &&
+        Number.isInteger(donationBasisPoints) &&
+        Number(donationBasisPoints) > 0 &&
+        Number(donationBasisPoints) <= 10000;
 
       const { tokenAddress, decimals } = getTokenConfigForCurrencyId(
         Number(rewardCurrencyId)
       );
       const amountWei = parseUnits(String(rewardAmountPerParticipant), decimals);
 
-      const signaturePackage =
-        await createTaskRewardClaimSignaturePackageCanvassing(
-          CANVASSING_REWARDER_PROXY_ADDRESS,
-          eoAddress,
-          smartAaAddress,
-          recipientAddress,
-          taskId,
-          tokenAddress,
-          amountWei,
-          nonce
-        );
+      const signaturePackage = hasDonationSplit
+        ? await createTaskRewardWithDonationSignaturePackageCanvassing(
+            CANVASSING_REWARDER_PROXY_ADDRESS,
+            eoAddress,
+            smartAaAddress,
+            recipientAddress,
+            donationContractAddress as Address,
+            taskId,
+            tokenAddress,
+            amountWei,
+            BigInt(Number(donationBasisPoints)),
+            nonce
+          )
+        : await createTaskRewardClaimSignaturePackageCanvassing(
+            CANVASSING_REWARDER_PROXY_ADDRESS,
+            eoAddress,
+            smartAaAddress,
+            recipientAddress,
+            taskId,
+            tokenAddress,
+            amountWei,
+            nonce
+          );
 
       if (!signaturePackage.isValid) {
         throw new HttpsError("internal", "Signature validation failed");
       }
 
-      const rewardClaimData = encodeFunctionData({
-        abi: canvassingRewarderABI,
-        functionName: "claimTaskReward",
-        args: [
-          eoAddress,
-          smartAaAddress,
-          recipientAddress,
-          taskId,
-          tokenAddress,
-          amountWei,
-          nonce,
-          signaturePackage.signature,
-        ],
-      });
+      const rewardClaimData = hasDonationSplit
+        ? encodeFunctionData({
+            abi: canvassingRewarderABI,
+            functionName: "claimTaskRewardWithDonation",
+            args: [
+              eoAddress,
+              smartAaAddress,
+              recipientAddress,
+              donationContractAddress as Address,
+              taskId,
+              tokenAddress,
+              amountWei,
+              BigInt(Number(donationBasisPoints)),
+              nonce,
+              signaturePackage.signature,
+            ],
+          })
+        : encodeFunctionData({
+            abi: canvassingRewarderABI,
+            functionName: "claimTaskReward",
+            args: [
+              eoAddress,
+              smartAaAddress,
+              recipientAddress,
+              taskId,
+              tokenAddress,
+              amountWei,
+              nonce,
+              signaturePackage.signature,
+            ],
+          });
 
       const { bundleTxnHash } = await submitSponsoredRewarderCall({
         smartAccount,
