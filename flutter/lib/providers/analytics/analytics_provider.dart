@@ -326,30 +326,30 @@ class AnalyticsProvider {
 
   Future<void> claimSelectGoodcollectiveBackTapped([
     Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_select_goodcollective_back_tapped', properties: properties);
+  ]) => _logEvent('claim_select_gc_back_tapped', properties: properties);
 
   Future<void> claimSelectGoodcollectiveInfoTapped([
     Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_select_goodcollective_info_tapped', properties: properties);
+  ]) => _logEvent('claim_select_gc_info_tapped', properties: properties);
 
   Future<void> claimSelectGoodcollectiveInfoCloseTapped([
     Map<String, dynamic>? properties,
   ]) => _logEvent(
-    'claim_select_goodcollective_info_close_tapped',
+    'claim_select_gc_info_close_tapped',
     properties: properties,
   );
 
   Future<void> claimSelectGoodcollectiveOptionTapped([
     Map<String, dynamic>? properties,
   ]) => _logEvent(
-    'claim_select_goodcollective_option_tapped',
+    'claim_select_gc_option_tapped',
     properties: properties,
   );
 
   Future<void> claimSelectGoodcollectiveContinueTapped([
     Map<String, dynamic>? properties,
   ]) => _logEvent(
-    'claim_select_goodcollective_continue_tapped',
+    'claim_select_gc_continue_tapped',
     properties: properties,
   );
 

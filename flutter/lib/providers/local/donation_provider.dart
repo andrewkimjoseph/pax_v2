@@ -83,12 +83,14 @@ class DonationNotifier extends Notifier<DonationStateModel> {
         throw Exception('Donation succeeded but txn hash was missing.');
       }
 
-      await ref.read(donationRepositoryProvider).createDonation(
-        participantId: userId,
-        amountDonated: amountToDonate,
-        collectiveDonatedTo: donationContract,
-        txnHash: txnHash,
-      );
+      await ref
+          .read(donationRepositoryProvider)
+          .createDonation(
+            participantId: userId,
+            amountDonated: amountToDonate,
+            collectiveDonatedTo: donationContract,
+            txnHash: txnHash,
+          );
 
       state = state.copyWith(
         state: DonationState.success,
@@ -99,6 +101,12 @@ class DonationNotifier extends Notifier<DonationStateModel> {
 
       await _handleGoodImpactAchievement(userId, amountToDonate);
       ref.invalidate(activityRepositoryProvider);
+
+      await Future.wait([
+        ref.refresh(donationActivitiesProvider(userId).future),
+        ref.refresh(allActivitiesProvider(userId).future),
+      ]);
+      await ref.read(paxAccountProvider.notifier).syncBalancesFromBlockchain();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error donating: $e');
