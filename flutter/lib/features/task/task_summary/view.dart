@@ -391,7 +391,7 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
               Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         Divider(color: PaxColors.lightGrey),
       ],
       footers: [

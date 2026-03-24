@@ -72,7 +72,7 @@ class _AccountAndSecurityView extends ConsumerState<AccountAndSecurityView> {
               Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         Divider().withPadding(top: 8),
       ],
 

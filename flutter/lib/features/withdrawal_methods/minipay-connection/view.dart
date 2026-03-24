@@ -330,7 +330,7 @@ class _MiniPayConnectionViewState extends ConsumerState<MiniPayConnectionView> {
               const Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         const Divider(color: PaxColors.lightGrey),
       ],
 

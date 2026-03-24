@@ -52,7 +52,7 @@ class _SelectWalletViewState extends ConsumerState<SelectWalletView> {
               const Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         const Divider(color: PaxColors.lightGrey),
       ],
 
