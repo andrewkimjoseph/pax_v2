@@ -33,6 +33,37 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'routes.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
+class _RouteDebugObserver extends NavigatorObserver {
+  String _describeRoute(Route<dynamic>? route) {
+    if (route == null) return 'unknown';
+    return route.settings.name ?? route.settings.toString();
+  }
+
+  void _logCurrentRoute(Route<dynamic>? route) {
+    if (kDebugMode) {
+      debugPrint('[Router] Current route: ${_describeRoute(route)}');
+    }
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _logCurrentRoute(route);
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _logCurrentRoute(newRoute);
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _logCurrentRoute(previousRoute);
+    super.didPop(route, previousRoute);
+  }
+}
+
 final routerProvider = Provider((ref) {
   final notifier = ref.watch(routerNotifierProvider);
   if (kDebugMode) {
@@ -45,6 +76,7 @@ final routerProvider = Provider((ref) {
     initialLocation: Routes.loading,
     observers: [
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      _RouteDebugObserver(),
     ],
     errorBuilder: (context, state) {
       // When a routing error occurs (e.g. unknown deep-link path), show a simple
@@ -493,7 +525,8 @@ final routerProvider = Provider((ref) {
           ),
           GoRoute(
             path: "/donate",
-            builder: (BuildContext context, GoRouterState state) => DonateView(),
+            builder:
+                (BuildContext context, GoRouterState state) => DonateView(),
             routes: [
               GoRoute(
                 path: "/select-goodcollective",
@@ -679,6 +712,38 @@ final routerProvider = Provider((ref) {
         path: "/claim-reward",
         builder:
             (BuildContext context, GoRouterState state) => ClaimRewardView(),
+      ),
+      GoRoute(
+        path: "/claim-reward/claim-payout/select-wallet",
+        builder:
+            (BuildContext context, GoRouterState state) =>
+                ClaimSelectWalletView(),
+        routes: [
+          GoRoute(
+            path: "review-summary",
+            builder:
+                (BuildContext context, GoRouterState state) =>
+                    ClaimReviewSummaryView(),
+          ),
+          GoRoute(
+            path: "select-goodcollective",
+            builder:
+                (BuildContext context, GoRouterState state) =>
+                    ClaimSelectGoodCollectiveView(),
+            routes: [
+              GoRoute(
+                path: "impact-review-summary",
+                builder:
+                    (BuildContext context, GoRouterState state) =>
+                        ClaimImpactReviewSummaryView(),
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: "/claim-payout/select-wallet",
+        redirect: (_, __) => "/claim-reward/claim-payout/select-wallet",
       ),
       GoRoute(
         path: Routes.createV2Wallet,

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pax/providers/local/donation_context_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/currency_symbol.dart';
+import 'package:pax/utils/donation_constants.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -17,7 +18,6 @@ class DonateView extends ConsumerStatefulWidget {
 }
 
 class _DonateViewState extends ConsumerState<DonateView> {
-  static const num minDonation = 500;
   final _donationAmountKey = const TextFieldKey(#amount);
   late final TextEditingController _amountController;
   num? _lastAmount;
@@ -63,7 +63,7 @@ class _DonateViewState extends ConsumerState<DonateView> {
           }
         }
         final amount = double.parse(value);
-        return amount >= minDonation && amount <= balance;
+        return amount >= kMinDonationAmountGd && amount <= balance;
       } catch (_) {
         return false;
       }
@@ -93,7 +93,7 @@ class _DonateViewState extends ConsumerState<DonateView> {
               const Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
       ],
       child: Form(
         onSubmit: (context, values) {
@@ -120,7 +120,7 @@ class _DonateViewState extends ConsumerState<DonateView> {
                     color: PaxColors.white,
                   ),
                 ],
-              ).withPadding(top: 16),
+              ).withPadding(top: 16, horizontal: 8),
               const Spacer(flex: 1),
               FormField(
                 label: const SizedBox.shrink(),
@@ -164,8 +164,8 @@ class _DonateViewState extends ConsumerState<DonateView> {
                   ).withPadding(left: 4),
                 ],
               ).withPadding(top: 8),
-              const Text(
-                'Minimum donation is 500 G\$',
+              Text(
+                'Minimum donation is ${kMinDonationAmountGd.toInt()} G\$',
                 style: TextStyle(fontSize: 12, color: PaxColors.white),
               ).withPadding(top: 8),
               const Spacer(flex: 2),

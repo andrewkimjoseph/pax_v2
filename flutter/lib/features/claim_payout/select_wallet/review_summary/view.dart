@@ -4,170 +4,158 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:pax/models/local/withdrawal_state_model.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
-import 'package:pax/providers/local/withdraw_context_provider.dart';
-import 'package:pax/providers/local/withdrawal_provider.dart';
-import 'package:pax/providers/remote_config/remote_config_provider.dart';
+import 'package:pax/providers/local/claim_payout_context_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/currency_symbol.dart';
-import 'package:pax/utils/token_address_util.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/widgets/change_withdrawal_method_card.dart';
-import 'package:flutter/foundation.dart';
+import 'package:pax/services/reward_service.dart';
+import 'package:pax/providers/local/achievement_claim_provider.dart';
+import 'package:pax/providers/db/achievement/achievement_provider.dart';
+import 'package:pax/utils/error_message_util.dart';
 
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
 
-class ReviewSummaryView extends ConsumerStatefulWidget {
-  const ReviewSummaryView({super.key});
+class ClaimReviewSummaryView extends ConsumerStatefulWidget {
+  const ClaimReviewSummaryView({super.key});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
-      _ReviewSummaryViewState();
+      _ClaimReviewSummaryViewState();
 }
 
-class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
+class _ClaimReviewSummaryViewState
+    extends ConsumerState<ClaimReviewSummaryView> {
   bool _isProcessing = false;
 
-  @override
-  void initState() {
-    super.initState();
-    // Reset withdraw provider state after the first frame is rendered
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(withdrawProvider.notifier).resetState();
-    });
-  }
-
-  // Handle withdrawal process
-  Future<void> _processWithdrawal() async {
-    ref.read(analyticsProvider).reviewSummaryWithdrawTapped();
-
-    final withdrawContext = ref.read(withdrawContextProvider);
-    if (withdrawContext == null) {
-      _showErrorDialog('Withdrawal details not found');
+  Future<void> _processClaim() async {
+    final claimContext = ref.read(claimPayoutContextProvider);
+    if (claimContext == null) {
+      _showErrorDialog('Claim details not found');
       return;
     }
 
-    final amountToWithdraw = withdrawContext.amountToWithdraw;
-    final tokenId = withdrawContext.tokenId;
-    final withdrawalMethod = withdrawContext.selectedWithdrawalMethod;
-
+    final withdrawalMethod = claimContext.selectedWithdrawalMethod;
     if (withdrawalMethod == null) {
       _showErrorDialog('No payment method selected');
       return;
     }
 
-    // Get currency address and decimals for the tokenId
-    final currencyAddress = TokenAddressUtil.getAddressForCurrency(tokenId);
-    final decimals = TokenAddressUtil.getDecimalsForCurrency(tokenId);
-
     setState(() {
       _isProcessing = true;
     });
 
-    // Call withdraw provider to process the withdrawal
-    ref.read(analyticsProvider).withdrawalStarted({
-      "amount": amountToWithdraw,
-      "tokenId": tokenId,
+    ref.read(analyticsProvider).claimReviewSummarySubmitTapped({
+      "claimKind": claimContext.claimKind.name,
       "selectedPaymentMethodId": withdrawalMethod.id,
-      "selectedWalletAddress": withdrawalMethod.walletAddress,
     });
+    ref.read(analyticsProvider).reviewSummaryWithdrawTapped();
 
-    ref
-        .read(withdrawProvider.notifier)
-        .withdrawToWithdrawalMethod(
-          paymentMethodId: withdrawalMethod.id,
-          amountToWithdraw: amountToWithdraw!.toDouble(),
-          tokenId: tokenId,
-          currencyAddress: currencyAddress,
-          decimals: decimals,
-          selectedWalletAddress: withdrawalMethod.walletAddress,
-          predefinedId: withdrawalMethod.predefinedId,
-          walletName: withdrawalMethod.name,
-        );
-
-    // Show processing dialog
-    await showDialog(
+    showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _buildProcessingDialog(),
-    );
-
-    setState(() {
-      _isProcessing = false;
-    });
-  }
-
-  // Dialog showing processing state
-  Widget _buildProcessingDialog() {
-    return PopScope(
-      canPop: false,
-      child: Consumer(
-        builder: (context, ref, _) {
-          final withdrawState = ref.watch(withdrawProvider);
-
-          // Handle different withdrawal states
-          if (withdrawState.state == WithdrawState.success) {
-            // Dismiss the dialog after a short delay
-            Future.delayed(Duration(milliseconds: 500), () {
-              if (context.mounted) {
-                context.pop();
-              }
-
-              _showSuccessDialog();
-            });
-          } else if (withdrawState.state == WithdrawState.error) {
-            // Dismiss the dialog after a short delay
-            Future.delayed(Duration(milliseconds: 500), () {
-              if (context.mounted) {
-                context.pop();
-              }
-              _showErrorDialog(
-                withdrawState.errorMessage ?? 'An unknown error occurred',
-              );
-            });
-          }
-
-          // Show loading indicator
-          return AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator().withPadding(bottom: 24),
-                Text(
-                  'Processing your withdrawal...',
-                  style: TextStyle(
-                    color: PaxColors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.normal,
+      builder:
+          (dialogContext) => PopScope(
+            canPop: false,
+            child: AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator().withPadding(bottom: 24),
+                  Text(
+                    'Please wait while we process your claim...',
+                    style: TextStyle(
+                      color: PaxColors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.normal,
+                    ),
+                    textAlign: TextAlign.center,
+                  ).withPadding(bottom: 12),
+                  Text(
+                    'Please be patient and do not close the app.',
+                    style: TextStyle(
+                      color: PaxColors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ).withPadding(bottom: 12),
-                Text(
-                  'Please be patient and do not close the app.',
-                  style: TextStyle(
-                    color: PaxColors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
-      ),
+          ),
     );
+
+    try {
+      final recipientAddress = withdrawalMethod.walletAddress;
+
+      switch (claimContext.claimKind) {
+        case ClaimKind.task:
+          await ref
+              .read(rewardServiceProvider)
+              .rewardParticipant(
+                taskCompletionId: claimContext.taskCompletionId!,
+                recipientAddress: recipientAddress,
+              );
+          ref.read(analyticsProvider).claimRewardComplete({
+            "taskCompletionId": claimContext.taskCompletionId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+          });
+          break;
+        case ClaimKind.referral:
+          await ref
+              .read(rewardServiceProvider)
+              .claimReferralReward(
+                referralId: claimContext.referralId!,
+                recipientAddress: recipientAddress,
+              );
+          ref.read(analyticsProvider).referralRewardClaimSucceeded({
+            "referralId": claimContext.referralId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+          });
+          break;
+        case ClaimKind.achievement:
+          final achievements = ref.read(achievementsProvider).achievements;
+          final achievement = achievements.firstWhere(
+            (a) => a.id == claimContext.achievementId,
+          );
+          await ref
+              .read(achievementClaimProvider.notifier)
+              .claimAchievement(
+                achievement: achievement,
+                recipientAddress: recipientAddress,
+              );
+          ref.read(analyticsProvider).claimAchievementComplete({
+            "achievementId": claimContext.achievementId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+          });
+          break;
+      }
+
+      if (!mounted) return;
+      context.pop();
+      _showSuccessDialog();
+    } catch (e) {
+      if (!mounted) return;
+      context.pop();
+      _showErrorDialog(
+        'Claim failed: ${ErrorMessageUtil.userFacing(e.toString())}',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
   }
 
-  // Success dialog
   void _showSuccessDialog() {
-    final withdrawContext = ref.read(withdrawContextProvider);
-    final amountToWithdraw = withdrawContext?.amountToWithdraw ?? 0;
-
-    final paymentMethod = withdrawContext?.selectedWithdrawalMethod;
-
-    final tokenId = withdrawContext?.tokenId;
+    final claimContext = ref.read(claimPayoutContextProvider);
+    final amount = claimContext?.amount ?? 0;
+    final tokenId = claimContext?.tokenId ?? 0;
+    final paymentMethod = claimContext?.selectedWithdrawalMethod;
 
     showDialog(
       barrierDismissible: false,
@@ -183,12 +171,11 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                 SvgPicture.asset(
                   'lib/assets/svgs/withdrawal_complete.svg',
                 ).withPadding(bottom: 8),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      'Withdrawal Complete!',
+                      'Reward Claimed!',
                       style: TextStyle(
                         color: PaxColors.deepPurple,
                         fontSize: 24,
@@ -198,16 +185,13 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                     ).withPadding(bottom: 8),
                   ],
                 ),
-
                 Column(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          TokenBalanceUtil.getLocaleFormattedAmount(
-                            amountToWithdraw,
-                          ),
+                          TokenBalanceUtil.getLocaleFormattedAmount(amount),
                           style: TextStyle(
                             color: PaxColors.black,
                             fontSize: 20,
@@ -232,7 +216,6 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                     ).withPadding(vertical: 8),
                   ],
                 ),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -241,8 +224,11 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                       child: PrimaryButton(
                         child: const Text('OK'),
                         onPressed: () {
-                          (context).pop();
-                          context.go("/home"); // Go back to previous screen
+                          ref.read(analyticsProvider).claimReviewSummarySuccessOkTapped({
+                            "claimKind": claimContext?.claimKind.name,
+                          });
+                          ref.read(claimPayoutContextProvider.notifier).clear();
+                          context.go("/home");
                         },
                       ),
                     ),
@@ -256,7 +242,6 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
     );
   }
 
-  // Error dialog
   void _showErrorDialog(String errorMessage) {
     showDialog(
       barrierDismissible: false,
@@ -272,7 +257,7 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                   height: 24,
                 ).withPadding(bottom: 16),
                 Text(
-                  'Withdrawal Failed',
+                  'Claim Failed',
                   style: TextStyle(fontSize: 16),
                 ).withAlign(Alignment.center),
               ],
@@ -284,7 +269,10 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
             ),
             actions: [
               OutlineButton(
-                onPressed: () => context.go("/home"),
+                onPressed: () {
+                  ref.read(analyticsProvider).claimReviewSummaryErrorOkTapped();
+                  context.go("/home");
+                },
                 child: Text('OK'),
               ),
             ],
@@ -296,11 +284,17 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
 
   @override
   Widget build(BuildContext context) {
-    final withdrawContext = ref.watch(withdrawContextProvider);
-    final amountToWithdraw = withdrawContext?.amountToWithdraw ?? 1;
-    final tokenId = withdrawContext?.tokenId ?? 0;
-    final paymentMethod = withdrawContext?.selectedWithdrawalMethod;
-    final featureFlags = ref.watch(featureFlagsProvider);
+    final claimContext = ref.watch(claimPayoutContextProvider);
+    final amount = claimContext?.amount ?? 0;
+    final tokenId = claimContext?.tokenId ?? 0;
+    final paymentMethod = claimContext?.selectedWithdrawalMethod;
+
+    final claimKind = claimContext?.claimKind ?? ClaimKind.task;
+    final claimLabel = switch (claimKind) {
+      ClaimKind.achievement => 'Achievement Reward',
+      ClaimKind.referral => 'Referral Reward',
+      ClaimKind.task => 'Task Reward',
+    };
 
     return Scaffold(
       backgroundColor: PaxColors.white,
@@ -312,6 +306,9 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
             children: [
               InkWell(
                 onTap: () {
+                  ref.read(analyticsProvider).claimReviewSummaryBackTapped({
+                    "claimKind": claimContext?.claimKind.name,
+                  });
                   context.pop();
                 },
                 child: FaIcon(
@@ -336,6 +333,37 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: PaxColors.lightLilac.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                FaIcon(
+                  claimKind == ClaimKind.achievement
+                      ? FontAwesomeIcons.trophy
+                      : claimKind == ClaimKind.referral
+                          ? FontAwesomeIcons.userPlus
+                          : FontAwesomeIcons.clipboardCheck,
+                  size: 14,
+                  color: PaxColors.deepPurple,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  claimLabel,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: PaxColors.deepPurple,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 12),
+          Container(
             padding: EdgeInsets.all(12),
             width: double.infinity,
             decoration: BoxDecoration(
@@ -359,7 +387,7 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Balance Amount',
+                            'Reward Amount',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -367,9 +395,7 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                           ),
                           Spacer(),
                           Text(
-                            TokenBalanceUtil.getLocaleFormattedAmount(
-                              amountToWithdraw,
-                            ),
+                            TokenBalanceUtil.getLocaleFormattedAmount(amount),
                             style: const TextStyle(
                               fontSize: 16,
                               color: PaxColors.black,
@@ -414,9 +440,7 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                           ),
                           Spacer(),
                           Text(
-                            TokenBalanceUtil.getLocaleFormattedAmount(
-                              amountToWithdraw,
-                            ),
+                            TokenBalanceUtil.getLocaleFormattedAmount(amount),
                             style: const TextStyle(
                               fontSize: 16,
                               color: PaxColors.black,
@@ -457,7 +481,8 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                             ? [
                               ChangeWithdrawalMethodCard(
                                 paymentMethod,
-                                fallbackRoute: '/wallet/withdraw/select-wallet',
+                                fallbackRoute:
+                                    '/claim-reward/claim-payout/select-wallet',
                               ),
                             ]
                             : [Text('No payment method selected')],
@@ -473,52 +498,23 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
             child: Column(
               children: [
                 Divider().withPadding(vertical: 8),
-                featureFlags.when(
-                  data: (flags) {
-                    final isWalletAvailable =
-                        (flags['is_wallet_available'] ?? false) || kDebugMode;
-                    return SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: PrimaryButton(
-                        onPressed:
-                            (_isProcessing || !isWalletAvailable)
-                                ? null
-                                : _processWithdrawal,
-                        child:
-                            _isProcessing
-                                ? CircularProgressIndicator(onSurface: true)
-                                : Text(
-                                  'Withdraw',
-                                  style: Theme.of(
-                                    context,
-                                  ).typography.base.copyWith(
-                                    fontWeight: FontWeight.normal,
-                                    fontSize: 14,
-                                    color: PaxColors.white,
-                                  ),
-                                ),
-                      ),
-                    );
-                  },
-                  loading:
-                      () => const SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: PrimaryButton(
-                          onPressed: null,
-                          child: CircularProgressIndicator(onSurface: true),
-                        ),
-                      ),
-                  error:
-                      (_, __) => const SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: PrimaryButton(
-                          onPressed: null,
-                          child: Text('Withdrawal Unavailable'),
-                        ),
-                      ),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: PrimaryButton(
+                    onPressed: _isProcessing ? null : _processClaim,
+                    child:
+                        _isProcessing
+                            ? CircularProgressIndicator(onSurface: true)
+                            : Text(
+                              'Claim reward',
+                              style: Theme.of(context).typography.base.copyWith(
+                                fontWeight: FontWeight.normal,
+                                fontSize: 14,
+                                color: PaxColors.white,
+                              ),
+                            ),
+                  ),
                 ),
               ],
             ),

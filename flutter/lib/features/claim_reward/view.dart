@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show Divider, InkWell;
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,18 +9,15 @@ import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/route/home_selected_index_provider.dart';
 import 'package:pax/providers/route/root_selected_index_provider.dart';
 import 'package:pax/theming/colors.dart';
-import 'package:pax/services/reward_service.dart';
-import 'package:pax/services/blockchain/blockchain_service.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 import 'package:pax/providers/local/claim_reward_context_provider.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:pax/utils/contract_address_constants.dart';
-import 'package:pax/utils/error_message_util.dart';
-import 'package:pax/utils/token_address_util.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/utils/currency_symbol.dart';
 import 'package:pax/constants/task_timer.dart';
 import 'package:pax/widgets/toast.dart';
+import 'package:pax/providers/local/claim_payout_context_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 
 class ClaimRewardView extends ConsumerStatefulWidget {
   const ClaimRewardView({super.key});
@@ -122,227 +120,51 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
     super.dispose();
   }
 
-  Future<void> _claimReward(BuildContext context) async {
-    setState(() {
-      isClaiming = true;
-    });
+  void _navigateToClaimPayout(BuildContext context, {bool isDonation = false}) {
     final claimContext = ref.read(claimRewardContextProvider);
     if (claimContext == null) {
       _showErrorDialog('No claim context found.');
-      setState(() {
-        isClaiming = false;
-      });
       return;
     }
-    final isValid = claimContext.isValid ?? true;
-    if (isValid == false && claimContext.taskIsCompleted == true) {
-      _showErrorDialog('Cannot claim reward for invalid submission.');
-      setState(() {
-        isClaiming = false;
-      });
-      return;
-    }
-    final taskId = claimContext.taskId;
-    final screeningId = claimContext.screeningId;
-    final taskCompletionId = claimContext.taskCompletionId;
-    final referralId = claimContext.referralId;
     final isReferral = claimContext.isReferral == true;
+    final isAchievement = claimContext.isAchievement == true;
 
-    // Show loading dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (dialogContext) => PopScope(
-            canPop: false,
-            child: AlertDialog(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator().withPadding(bottom: 24),
-                  Text(
-                    'Please wait while we process your claim...',
-                    style: TextStyle(
-                      color: PaxColors.black,
-                      fontSize: 16,
-                      fontWeight: FontWeight.normal,
-                    ),
-                    textAlign: TextAlign.center,
-                  ).withPadding(bottom: 12),
-                  Text(
-                    'Please be patient and do not close the app.',
-                    style: TextStyle(
-                      color: PaxColors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-
-    try {
-      if (isReferral) {
-        ref.read(analyticsProvider).referralRewardClaimStarted({
-          "referralId": referralId,
-        });
-      } else {
-        ref.read(analyticsProvider).claimRewardTapped({
-          "taskId": taskId,
-          "screeningId": screeningId,
-          "taskCompletionId": taskCompletionId,
-        });
-
-        if (taskCompletionId == null) {
-          _showErrorDialog('No task completion ID found.');
-          setState(() {
-            isClaiming = false;
-          });
-          return;
-        }
-      }
-
-      // Check CanvassingRewarder has sufficient balance before claiming
-      final canvassingRewarderProxyAddress =
-          ContractAddressConstants.canvassingRewarderProxyAddress;
-      if (canvassingRewarderProxyAddress.isEmpty) {
-        if (!context.mounted) return;
-        context.pop(); // Close loading dialog
-        _showErrorDialog(
-          'CanvassingRewarder address not configured. Set ContractAddressConstants.canvassingRewarderAddress.',
-        );
-        setState(() {
-          isClaiming = false;
-        });
-        return;
-      }
-      final amount = claimContext.amount;
-      final tokenId = claimContext.tokenId;
-      if (amount != null && tokenId != null && amount > 0) {
-        final hasBalance = await BlockchainService.hasSufficientBalance(
-          canvassingRewarderProxyAddress,
-          TokenAddressUtil.getAddressForCurrency(tokenId),
-          amount.toDouble(),
-          TokenAddressUtil.getDecimalsForCurrency(tokenId),
-        );
-        if (!hasBalance) {
-          if (!context.mounted) return;
-          context.pop(); // Close loading dialog
-          _showErrorDialog('Rewarder contract has insufficient balance.');
-          setState(() {
-            isClaiming = false;
-          });
-          return;
-        }
-      }
-
-      if (isReferral) {
-        if (referralId == null) {
-          _showErrorDialog('No referral ID found.');
-          setState(() {
-            isClaiming = false;
-          });
-          return;
-        }
-        await ref
-            .read(rewardServiceProvider)
-            .claimReferralReward(referralId: referralId);
-        ref.read(analyticsProvider).referralRewardClaimSucceeded({
-          "referralId": referralId,
-        });
-      } else {
-        await ref
-            .read(rewardServiceProvider)
-            .rewardParticipant(taskCompletionId: taskCompletionId!);
-        ref.read(analyticsProvider).claimRewardComplete({
-          "taskId": taskId,
-          "screeningId": screeningId,
-          "taskCompletionId": taskCompletionId,
-        });
-      }
-      if (!context.mounted) return;
-      context.pop(); // Close loading dialog
-      // Show success dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (dialogContext) => PopScope(
-              canPop: false,
-              child: AlertDialog(
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SvgPicture.asset(
-                      'lib/assets/svgs/withdrawal_complete.svg',
-                    ).withPadding(bottom: 8),
-
-                    Text(
-                      'Reward Claimed!',
-                      style: TextStyle(
-                        color: PaxColors.deepPurple,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ).withPadding(bottom: 8),
-
-                    Text(
-                      'Your reward has been added to your wallet!',
-                      style: TextStyle(
-                        color: PaxColors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                      ),
-                      textAlign: TextAlign.center,
-                    ).withPadding(bottom: 16),
-                    SizedBox(
-                      width: MediaQuery.of(dialogContext).size.width / 2.5,
-                      child: PrimaryButton(
-                        child: const Text('OK'),
-                        onPressed: () => dialogContext.go("/home"),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      context.pop(); // Close loading dialog
-      if (isReferral) {
-        ref.read(analyticsProvider).referralRewardClaimFailed({
-          "referralId": referralId,
-          "error":
-              e.toString().substring(0, e.toString().length.clamp(0, 99)),
-        });
-        _showErrorDialog(
-          'Failed to claim referral reward: ${ErrorMessageUtil.userFacing(e.toString())}',
-        );
-      } else {
-        ref.read(analyticsProvider).claimRewardFailed({
-          "taskId": taskId,
-          "screeningId": screeningId,
-          "taskCompletionId": taskCompletionId,
-          "error":
-              e.toString().substring(0, e.toString().length.clamp(0, 99)),
-        });
-        _showErrorDialog(
-          'Failed to claim reward: ${ErrorMessageUtil.userFacing(e.toString())}',
-        );
-      }
-    } finally {
-      if (context.mounted) {
-        setState(() {
-          isClaiming = false;
-        });
-      }
+    if (isAchievement) {
+      ref.read(analyticsProvider).claimAchievementTapped({
+        "achievementId": claimContext.achievementId,
+      });
+    } else if (isReferral) {
+      ref.read(analyticsProvider).referralRewardClaimStarted({
+        "referralId": claimContext.referralId,
+      });
+    } else {
+      ref.read(analyticsProvider).claimRewardTapped({
+        "taskId": claimContext.taskId,
+        "screeningId": claimContext.screeningId,
+        "taskCompletionId": claimContext.taskCompletionId,
+      });
     }
+
+    ref
+        .read(claimPayoutContextProvider.notifier)
+        .setContext(
+          ClaimPayoutContext(
+            claimKind:
+                isAchievement
+                    ? ClaimKind.achievement
+                    : isReferral
+                    ? ClaimKind.referral
+                    : ClaimKind.task,
+            tokenId: claimContext.tokenId ?? 1,
+            amount: claimContext.amount ?? 0,
+            taskCompletionId: claimContext.taskCompletionId,
+            referralId: claimContext.referralId,
+            achievementId: claimContext.achievementId,
+            isDonation: isDonation,
+          ),
+        );
+
+    context.push('/claim-reward/claim-payout/select-wallet');
   }
 
   void _showErrorDialog(String errorMessage) {
@@ -361,7 +183,10 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
             ),
             actions: [
               OutlineButton(
-                onPressed: () => dialogContext.go("/home"),
+                onPressed: () {
+                  ref.read(analyticsProvider).claimErrorDialogOkTapped();
+                  dialogContext.go("/home");
+                },
                 child: Text('OK'),
               ),
             ],
@@ -397,10 +222,12 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
     final timeCreated = claimContext?.timeCreated?.toDate();
     final isValid = claimContext?.isValid ?? true;
     final isReferral = claimContext?.isReferral == true;
+    final isAchievement = claimContext?.isAchievement == true;
     final referralId = claimContext?.referralId;
 
     final isExpired =
         !isReferral &&
+        !isAchievement &&
         taskIsCompleted == false &&
         (timeCreated == null ||
             DateTime.now().isAfter(
@@ -411,6 +238,39 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
       numberOfCooldownHours: numberOfCooldownHours,
       timeCompleted: timeCompleted,
     );
+    final disableClaimActions =
+        (txnHash != null && txnHash.isNotEmpty) ||
+        (!canClaim && taskIsCompleted == true) ||
+        (isValid == false && taskIsCompleted == true) ||
+        (taskIsCompleted == false && isExpired);
+    final goodCollectiveConfigAsync = ref.watch(goodCollectiveConfigProvider);
+    final showDonationClaimCta =
+        kDebugMode ||
+        goodCollectiveConfigAsync.maybeWhen(
+          data:
+              (config) =>
+                  config.isDonationAvailable &&
+                  config.goodcollectives.isNotEmpty,
+          orElse: () => false,
+        );
+    final claimActionLabel =
+        isReferral
+            ? (txnHash != null && txnHash.isNotEmpty)
+                ? 'Claimed'
+                : 'Claim reward'
+            : isAchievement
+            ? (txnHash != null && txnHash.isNotEmpty)
+                ? 'Claimed'
+                : 'Claim achievement reward'
+            : taskIsCompleted == false
+            ? (isExpired ? 'Task expired' : 'Complete task')
+            : (txnHash != null && txnHash.isNotEmpty)
+            ? 'Claimed'
+            : isValid == false
+            ? 'Invalid Submission'
+            : !canClaim
+            ? 'Cooldown Active'
+            : 'Claim reward';
 
     // Start countdown timer if cooldown is active
     if (numberOfCooldownHours > 0 &&
@@ -433,7 +293,7 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
           padding: EdgeInsets.all(8),
           leading: [],
           backgroundColor: PaxColors.white,
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
       ],
       footers: [
         Container(
@@ -441,53 +301,118 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
           child: Column(
             children: [
               Divider().withPadding(top: 10, bottom: 10),
+              if (showDonationClaimCta &&
+                  !disableClaimActions &&
+                  taskIsCompleted == true)
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: PrimaryButton(
+                    onPressed:
+                        isClaiming
+                            ? null
+                            : () {
+                              ref.read(analyticsProvider).claimDonationCtaTapped({
+                                "claimKind":
+                                    isAchievement
+                                        ? "achievement"
+                                        : isReferral
+                                        ? "referral"
+                                        : "task",
+                                "isDonation": true,
+                              });
+                              _navigateToClaimPayout(
+                                context,
+                                isDonation: true,
+                              );
+                            },
+                    child: Text(
+                      'Claim and make an impact',
+                      style: Theme.of(context).typography.base.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: PaxColors.white,
+                      ),
+                    ),
+                  ),
+                ),
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: Button(
-                  style: ButtonStyle.primary(),
-                  onPressed:
-                      (txnHash != null && txnHash.isNotEmpty) ||
-                              (!canClaim && taskIsCompleted == true) ||
-                              (isValid == false && taskIsCompleted == true) ||
-                              (taskIsCompleted == false && isExpired)
-                          ? null
-                          : () {
-                            if (isClaiming) return;
+                child: showDonationClaimCta
+                    ? OutlineButton(
+                      onPressed:
+                          disableClaimActions
+                              ? null
+                              : () {
+                                if (isClaiming) return;
+                                ref.read(analyticsProvider).claimPrimaryCtaTapped({
+                                  "claimKind":
+                                      isAchievement
+                                          ? "achievement"
+                                          : isReferral
+                                          ? "referral"
+                                          : "task",
+                                  "isDonation": false,
+                                  "taskIsCompleted": taskIsCompleted,
+                                });
 
-                            if (taskIsCompleted == false) {
-                              _goHome(context);
-                            } else {
-                              _claimReward(context);
-                            }
-                          },
-                  child:
-                      isClaiming
-                          ? const CircularProgressIndicator()
-                          : Text(
-                            isReferral
-                                ? (txnHash != null && txnHash.isNotEmpty)
-                                    ? 'Claimed'
-                                    : 'Claim Referral Reward'
-                                : taskIsCompleted == false
-                                    ? (isExpired
-                                        ? 'Task Expired'
-                                        : 'Complete Task')
-                                    : (txnHash != null && txnHash.isNotEmpty)
-                                        ? 'Claimed'
-                                        : isValid == false
-                                            ? 'Invalid Submission'
-                                            : !canClaim
-                                                ? 'Cooldown Active'
-                                                : 'Claim Reward',
-                            style: Theme.of(context).typography.base.copyWith(
-                              fontWeight: FontWeight.normal,
-                              fontSize: 14,
-                              color: PaxColors.white,
-                            ),
-                          ),
-                ),
-              ),
+                                if (taskIsCompleted == false) {
+                                  _goHome(context);
+                                } else {
+                                  _navigateToClaimPayout(context);
+                                }
+                              },
+                      child:
+                          isClaiming
+                              ? const CircularProgressIndicator()
+                              : Text(
+                                claimActionLabel,
+                                style: Theme.of(context).typography.base
+                                    .copyWith(
+                                      fontWeight: FontWeight.normal,
+                                      fontSize: 14,
+                                      color: PaxColors.deepPurple,
+                                    ),
+                              ),
+                    )
+                    : PrimaryButton(
+                      onPressed:
+                          disableClaimActions
+                              ? null
+                              : () {
+                                if (isClaiming) return;
+                                ref.read(analyticsProvider).claimPrimaryCtaTapped({
+                                  "claimKind":
+                                      isAchievement
+                                          ? "achievement"
+                                          : isReferral
+                                          ? "referral"
+                                          : "task",
+                                  "isDonation": false,
+                                  "taskIsCompleted": taskIsCompleted,
+                                });
+
+                                if (taskIsCompleted == false) {
+                                  _goHome(context);
+                                } else {
+                                  _navigateToClaimPayout(context);
+                                }
+                              },
+                      child:
+                          isClaiming
+                              ? const CircularProgressIndicator()
+                              : Text(
+                                claimActionLabel,
+                                style: Theme.of(context).typography.base
+                                    .copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: PaxColors.white,
+                                    ),
+                              ),
+                    ),
+              ).withPadding(top: 10),
             ],
           ),
         ).withPadding(bottom: 32),
@@ -506,16 +431,21 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ? 'lib/assets/svgs/pax_v2_referral.svg'
                         : 'lib/assets/svgs/task_complete.svg',
                   ),
-                  if (isReferral || isValid != false || taskIsCompleted == false)
+                  if (isReferral ||
+                      isAchievement ||
+                      isValid != false ||
+                      taskIsCompleted == false)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                           isReferral
                               ? "Referral Reward"
+                              : isAchievement
+                              ? "Achievement Reward"
                               : taskIsCompleted == false
-                                  ? "You will earn"
-                                  : "You earned",
+                              ? "You will earn"
+                              : "You earned",
                           textAlign: TextAlign.left,
                           style: TextStyle(
                             fontSize: 16,
@@ -560,6 +490,9 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ).withPadding(right: 8),
                         InkWell(
                           onTap: () async {
+                            ref.read(analyticsProvider).claimReferralIdCopyTapped({
+                              "referralId": referralId,
+                            });
                             await Clipboard.setData(
                               ClipboardData(text: referralId),
                             );
@@ -594,7 +527,15 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ),
                       ],
                     ).withPadding(top: 16),
+                  if (isAchievement &&
+                      claimContext?.achievementId != null &&
+                      claimContext!.achievementId!.isNotEmpty)
+                    Text(
+                      "Achievement ID: ${claimContext.achievementId!.substring(0, 8)}...",
+                      style: TextStyle(fontSize: 12, color: PaxColors.darkGrey),
+                    ).withPadding(top: 16),
                   if (!isReferral &&
+                      !isAchievement &&
                       taskCompletionId != null &&
                       (isValid != false || taskIsCompleted == false))
                     Row(
@@ -609,6 +550,11 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ).withPadding(right: 8),
                         InkWell(
                           onTap: () async {
+                            ref
+                                .read(analyticsProvider)
+                                .claimTaskCompletionIdCopyTapped({
+                                  "taskCompletionId": taskCompletionId,
+                                });
                             await Clipboard.setData(
                               ClipboardData(text: taskCompletionId),
                             );
@@ -645,6 +591,7 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                     ).withPadding(top: 16),
 
                   if (!isReferral &&
+                      !isAchievement &&
                       numberOfCooldownHours > 0 &&
                       taskIsCompleted == true &&
                       isValid != false &&
@@ -727,7 +674,10 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                       ),
                     ),
 
-                  if (!isReferral && taskIsCompleted == false && isExpired)
+                  if (!isReferral &&
+                      !isAchievement &&
+                      taskIsCompleted == false &&
+                      isExpired)
                     Container(
                       margin: EdgeInsets.only(top: 24),
                       padding: EdgeInsets.all(16),
@@ -776,7 +726,9 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                       ),
                     ),
 
-                  if (!isReferral && isValid == false && taskIsCompleted == true)
+                  if (!isReferral &&
+                      isValid == false &&
+                      taskIsCompleted == true)
                     Container(
                       margin: EdgeInsets.only(top: 24),
                       padding: EdgeInsets.all(16),
@@ -826,6 +778,11 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                                 ).withPadding(right: 8),
                                 InkWell(
                                   onTap: () async {
+                                    ref
+                                        .read(analyticsProvider)
+                                        .claimTaskCompletionIdCopyTapped({
+                                          "taskCompletionId": taskCompletionId,
+                                        });
                                     await Clipboard.setData(
                                       ClipboardData(text: taskCompletionId),
                                     );

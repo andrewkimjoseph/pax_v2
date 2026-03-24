@@ -9,6 +9,11 @@ class Routes {
   static const reportPage = "/report-page";
   static const reports = "/reports";
   static const claimReward = "/claim-reward";
+  static const claimPayoutSelectWallet = "/claim-reward/claim-payout/select-wallet";
+  static const claimPayoutSelectGoodcollective =
+      "/claim-reward/claim-payout/select-wallet/select-goodcollective";
+  static const claimPayoutImpactReviewSummary =
+      "/claim-reward/claim-payout/select-wallet/select-goodcollective/impact-review-summary";
   static const canvassingXGoodDollar = "/canvassing-x-gooddollar";
   static const taskSummary = "/tasks/task-summary";
   static const createV2Wallet = "/create-v2-wallet";

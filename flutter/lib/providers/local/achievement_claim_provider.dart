@@ -57,11 +57,18 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
     return const AchievementStateModel();
   }
 
-  Future<void> claimAchievement({required Achievement achievement}) async {
-    if (state.isClaiming(achievement.id)) return;
+  Future<String> claimAchievement({
+    required Achievement achievement,
+    String? recipientAddress,
+    String? donationContractAddress,
+    int? donationBasisPoints,
+  }) async {
+    if (state.isClaiming(achievement.id)) {
+      throw Exception('Achievement claim already in progress.');
+    }
 
     if (achievement.status == AchievementStatus.claimed) {
-      return;
+      throw Exception('This achievement has already been claimed.');
     }
 
     // Set claiming state for this specific achievement
@@ -184,12 +191,14 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
       final txnHash = await _achievementRepository.processAchievementClaim(
         achievementId: achievement.id,
         paxAccountContractAddress: paxAccountPayoutAddress,
-        recipientAddress: paxAccountPayoutAddress,
+        recipientAddress: recipientAddress ?? paxAccountPayoutAddress,
         amountEarned: achievement.amountEarned ?? 0,
         tasksCompleted: achievement.tasksCompleted,
         eoWalletAddress: eoWalletAddress,
         encryptedPrivateKey: encryptedPrivateKey,
         sessionKey: sessionKey,
+        donationContractAddress: donationContractAddress,
+        donationBasisPoints: donationBasisPoints,
       );
 
       // Send notification about the claimed achievement
@@ -222,6 +231,7 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
             .read(achievementsProvider.notifier)
             .fetchAchievements(auth.user.uid);
       }
+      return txnHash;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Error claiming achievement: $e');

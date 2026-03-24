@@ -8,6 +8,7 @@ import 'package:pax/models/local/donation_state_model.dart';
 import 'package:pax/providers/local/donation_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/currency_symbol.dart';
+import 'package:pax/utils/donation_constants.dart';
 import 'package:pax/utils/token_address_util.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
@@ -37,7 +38,7 @@ class _DonationReviewSummaryViewState
     if (donationContext == null) return;
     final collective = donationContext.selectedGoodCollective;
     final amount = donationContext.amountToDonate ?? 0;
-    if (collective == null || amount < 500) return;
+    if (collective == null || amount < kMinDonationAmountGd) return;
 
     setState(() {
       _isProcessing = true;
@@ -188,7 +189,7 @@ class _DonationReviewSummaryViewState
               const Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         const Divider(color: PaxColors.lightGrey),
       ],
       child: Column(
@@ -338,7 +339,9 @@ class _DonationReviewSummaryViewState
                   height: 48,
                   child: PrimaryButton(
                     onPressed:
-                        collective == null || amount < 500 || _isProcessing
+                        collective == null ||
+                                amount < kMinDonationAmountGd ||
+                                _isProcessing
                             ? null
                             : _processDonation,
                     child: Text(

@@ -135,7 +135,7 @@ class _WithdrawalMethodsViewState extends ConsumerState<WithdrawalMethodsView> {
                   Spacer(),
                 ],
               ),
-            ).withPadding(top: 16),
+            ).withPadding(top: 16, horizontal: 8),
             Divider(color: PaxColors.lightGrey),
           ],
           child:
@@ -166,7 +166,7 @@ class _WithdrawalMethodsViewState extends ConsumerState<WithdrawalMethodsView> {
                         'Linking a withdrawal method is not possible at this time.\nTry again later.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 16, color: PaxColors.black),
-                      ).withPadding(top: 16),
+                      ).withPadding(top: 16, horizontal: 8),
                     ],
                   ),
         );
