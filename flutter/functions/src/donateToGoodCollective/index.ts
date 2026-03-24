@@ -21,6 +21,7 @@ export const donateToGoodCollective = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
     try {
+      logger.info("donateToGoodCollective: request received");
       const { createSmartAccountClient } = await import("permissionless");
       const { toSimpleSmartAccount } = await import("permissionless/accounts");
       const { createPimlicoClient } = await import(
@@ -43,6 +44,7 @@ export const donateToGoodCollective = onCall(
       }
 
       const userId = request.auth.uid;
+      logger.info("donateToGoodCollective: auth verified", { userId });
       const userRecord = await AUTH.getUser(userId);
       if (userRecord.disabled) {
         throw new HttpsError("permission-denied", "This user is disabled.");
@@ -88,6 +90,15 @@ export const donateToGoodCollective = onCall(
           "Provide serverWalletId for V1, or encryptedPrivateKey+sessionKey+eoWalletAddress for V2."
         );
       }
+      logger.info("donateToGoodCollective: request payload validated", {
+        userId,
+        paxAccountAddress,
+        donationContract,
+        currency,
+        tokenId,
+        isV1,
+        isV2,
+      });
       if (tokenId !== 1) {
         throw new HttpsError("invalid-argument", "Donations only support G$.");
       }
@@ -101,9 +112,19 @@ export const donateToGoodCollective = onCall(
       }
       const multiplier = BigInt(10) ** BigInt(decimals);
       const amountInWei = BigInt(Math.floor(amountFloat * Number(multiplier)));
+      logger.info("donateToGoodCollective: donation amount validated", {
+        userId,
+        amountDonated,
+        amountInWei: amountInWei.toString(),
+        decimals,
+      });
 
       let smartAccount: Awaited<ReturnType<typeof toSimpleSmartAccount>>;
       if (isV1) {
+        logger.info("donateToGoodCollective: resolving V1 smart account", {
+          userId,
+          serverWalletId,
+        });
         const wallet = await PRIVY_CLIENT.walletApi.getWallet({
           id: serverWalletId!,
         });
@@ -124,6 +145,10 @@ export const donateToGoodCollective = onCall(
           },
         });
       } else {
+        logger.info("donateToGoodCollective: resolving V2 smart account", {
+          userId,
+          eoWalletAddress,
+        });
         let privateKeyHex = decryptPrivateKey(encryptedPrivateKey!, sessionKey!);
         if (!privateKeyHex.startsWith("0x")) {
           privateKeyHex = "0x" + privateKeyHex;
@@ -144,6 +169,10 @@ export const donateToGoodCollective = onCall(
           },
         });
       }
+      logger.info("donateToGoodCollective: smart account resolved", {
+        userId,
+        smartAccountAddress: smartAccount.address,
+      });
 
       const smartAccountClient = createSmartAccountClient({
         account: smartAccount,
@@ -157,23 +186,25 @@ export const donateToGoodCollective = onCall(
       });
 
       let userOpTxnHash: `0x${string}`;
+      const emptyTransferAndCallData: `0x${string}` = "0x";
       if (isV1) {
+        logger.info("donateToGoodCollective: preparing V1 calls", { userId });
         const existingPaymentMethods = (await PUBLIC_CLIENT.readContract({
           address: paxAccountAddress as Address,
           abi: paxAccountV1ABI,
           functionName: "getPaymentMethods",
         })) as Array<{ id: bigint; paymentAddress: Address }>;
 
-        const normalizedDonationContract = donationContract.toLowerCase();
+        const normalizedSmartAccountAddress = smartAccount.address.toLowerCase();
         const existingByAddress = existingPaymentMethods.find(
-          (m) => m.paymentAddress.toLowerCase() === normalizedDonationContract
+          (m) => m.paymentAddress.toLowerCase() === normalizedSmartAccountAddress
         );
 
-        let resolvedDonationMethodId: number;
+        let resolvedWithdrawalMethodId: number;
         let addPaymentMethodData: `0x${string}` | null = null;
 
         if (existingByAddress) {
-          resolvedDonationMethodId = Number(existingByAddress.id);
+          resolvedWithdrawalMethodId = Number(existingByAddress.id);
         } else {
           const usedIds = new Set(
             existingPaymentMethods.map((m) => Number(m.id))
@@ -182,19 +213,19 @@ export const donateToGoodCollective = onCall(
             ? Number(donationMethodId)
             : 0;
           if (requestedId > 0 && !usedIds.has(requestedId)) {
-            resolvedDonationMethodId = requestedId;
+            resolvedWithdrawalMethodId = requestedId;
           } else {
             let nextId = 1;
             while (usedIds.has(nextId)) {
               nextId++;
             }
-            resolvedDonationMethodId = nextId;
+            resolvedWithdrawalMethodId = nextId;
           }
 
           addPaymentMethodData = encodeFunctionData({
             abi: paxAccountV1ABI,
             functionName: "addNonPrimaryPaymentMethod",
-            args: [BigInt(resolvedDonationMethodId), donationContract as Address],
+            args: [BigInt(resolvedWithdrawalMethodId), smartAccount.address],
           });
         }
 
@@ -202,9 +233,18 @@ export const donateToGoodCollective = onCall(
           abi: paxAccountV1ABI,
           functionName: "withdrawToPaymentMethod",
           args: [
-            BigInt(resolvedDonationMethodId),
+            BigInt(resolvedWithdrawalMethodId),
             amountInWei,
             currency as Address,
+          ],
+        });
+        const transferAndCallData = encodeFunctionData({
+          abi: erc20ABI,
+          functionName: "transferAndCall",
+          args: [
+            donationContract as Address,
+            amountInWei,
+            emptyTransferAndCallData,
           ],
         });
 
@@ -222,15 +262,33 @@ export const donateToGoodCollective = onCall(
           value: BigInt(0),
           data: withdrawData,
         });
+        calls.push({
+          to: currency as Address,
+          value: BigInt(0),
+          data: transferAndCallData,
+        });
 
+        logger.info("donateToGoodCollective: sending V1 user operation", {
+          userId,
+          callCount: calls.length,
+          addedPaymentMethod: !!addPaymentMethodData,
+        });
         userOpTxnHash = await smartAccountClient.sendUserOperation({
           calls,
         });
       } else {
+        logger.info("donateToGoodCollective: sending V2 user operation", {
+          userId,
+          callCount: 1,
+        });
         const transferData = encodeFunctionData({
           abi: erc20ABI,
-          functionName: "transfer",
-          args: [donationContract as Address, amountInWei],
+          functionName: "transferAndCall",
+          args: [
+            donationContract as Address,
+            amountInWei,
+            emptyTransferAndCallData,
+          ],
         });
         userOpTxnHash = await smartAccountClient.sendUserOperation({
           calls: [
@@ -242,11 +300,23 @@ export const donateToGoodCollective = onCall(
           ],
         });
       }
+      logger.info("donateToGoodCollective: user operation submitted", {
+        userId,
+        userOpTxnHash,
+      });
 
+      logger.info("donateToGoodCollective: waiting for user operation receipt", {
+        userId,
+        userOpTxnHash,
+      });
       const userOpReceipt = await smartAccountClient.waitForUserOperationReceipt({
         hash: userOpTxnHash,
       });
       if (!userOpReceipt.success) {
+        logger.error("donateToGoodCollective: user operation failed", {
+          userId,
+          userOpTxnHash,
+        });
         throw new HttpsError("internal", "Donation user operation failed.");
       }
 
