@@ -50,7 +50,7 @@ class _FAQViewState extends ConsumerState<FAQView> {
               const Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         const Divider(color: PaxColors.lightGrey),
       ],
       child: SingleChildScrollView(

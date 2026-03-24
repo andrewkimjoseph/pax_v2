@@ -311,7 +311,7 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
               ),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         Divider(),
       ],
       child: FaceVerificationWebView(

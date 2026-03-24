@@ -293,7 +293,7 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
               ),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         Divider(color: PaxColors.lightGrey),
       ],
       footers: [
