@@ -21,7 +21,7 @@ class AchievementConstants {
   static const int doublePayoutConnectorAmount = 500;
   static const int triplePayoutConnectorAmount = 500;
   static const int verifiedHumanAmount = 500;
-  static const int goodImpactAmount = 1000;
+  static const int goodImpactAmount = 500;
 
   // Achievement Tasks Needed
   static const int taskStarterTasksNeeded = 1;
@@ -31,7 +31,7 @@ class AchievementConstants {
   static const int doublePayoutConnectorTasksNeeded = 1;
   static const int triplePayoutConnectorTasksNeeded = 1;
   static const int verifiedHumanTasksNeeded = 1;
-  static const int goodImpactTasksNeeded = 5;
+  static const int goodImpactTasksNeeded = 5000;
 
   // Helper method to get amount for achievement
   // static int getAmountForAchievement(String achievementName) {

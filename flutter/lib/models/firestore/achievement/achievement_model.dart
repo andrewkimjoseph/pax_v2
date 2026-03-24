@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:pax/utils/achievement_constants.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -9,8 +10,8 @@ class Achievement {
   final String id;
   final String? participantId;
   final String? name;
-  final int tasksCompleted;
-  final int tasksNeededForCompletion;
+  final num tasksCompleted;
+  final num tasksNeededForCompletion;
   final Timestamp? timeCreated;
   final Timestamp? timeCompleted;
   final Timestamp? timeClaimed;
@@ -61,7 +62,10 @@ class Achievement {
             ? 'Completed $tasksNeededForCompletion task${tasksNeededForCompletion == 1 ? '' : 's'}'
             : 'Complete $tasksNeededForCompletion task${tasksNeededForCompletion == 1 ? '' : 's'}';
       case AchievementConstants.taskExpert:
-        return isCompleted ? 'Completed 10 tasks' : 'Complete 10 tasks';
+        final taskExpertLabel = AchievementConstants.taskExpertTasksNeeded;
+        return isCompleted
+            ? 'Completed $taskExpertLabel tasks'
+            : 'Complete $taskExpertLabel tasks';
       case AchievementConstants.doublePayoutConnector:
         return isCompleted
             ? 'Connected two payment methods'
@@ -71,7 +75,12 @@ class Achievement {
             ? 'Connected three payment methods'
             : 'Connect three payment methods';
       case AchievementConstants.goodImpact:
-        return isCompleted ? 'Made 5 donations' : 'Make 5 donations of at least 500 G\$';
+        final targetDonationLabel = NumberFormat(
+          '#,###',
+        ).format(AchievementConstants.goodImpactTasksNeeded);
+        return isCompleted
+            ? 'Donated $targetDonationLabel G\$'
+            : 'Donate a total of $targetDonationLabel G\$';
       default:
         return '';
     }
@@ -135,6 +144,9 @@ class Achievement {
   }
 
   String get completionMessage {
+    if (name == AchievementConstants.goodImpact) {
+      return '$tasksCompleted G\$ / $tasksNeededForCompletion G\$';
+    }
     if (status == AchievementStatus.earned ||
         status == AchievementStatus.claimed) {
       return 'Earned on ${timeCompleted?.toDate().toString()}';
@@ -188,8 +200,8 @@ class Achievement {
     String? id,
     String? participantId,
     String? name,
-    int? tasksCompleted,
-    int? tasksNeededForCompletion,
+    num? tasksCompleted,
+    num? tasksNeededForCompletion,
     Timestamp? timeCreated,
     Timestamp? timeCompleted,
     Timestamp? timeClaimed,

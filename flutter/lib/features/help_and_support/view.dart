@@ -48,7 +48,11 @@ class _HelpAndSupportViewState extends ConsumerState<HelpAndSupportView> {
                 onTap: () {
                   context.pop();
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               Spacer(),
               Text(
@@ -59,7 +63,7 @@ class _HelpAndSupportViewState extends ConsumerState<HelpAndSupportView> {
               Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         Divider(color: PaxColors.lightGrey),
       ],
 

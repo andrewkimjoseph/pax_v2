@@ -48,7 +48,7 @@ class _ReferralViewState extends ConsumerState<ReferralView> {
               Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
         Divider().withPadding(top: 8),
       ],
       child: SingleChildScrollView(
@@ -110,7 +110,6 @@ class _ReferralViewState extends ConsumerState<ReferralView> {
                       contentBuilder: (context) {
                         return StepContainer(
                           actions: [
-                            const OutlineButton(child: Text('Prev')),
                             PrimaryButton(
                               child: const Text('Next'),
                               onPressed: () => controller.nextStep(),
@@ -121,14 +120,14 @@ class _ReferralViewState extends ConsumerState<ReferralView> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'This referral program is for bringing new users to Pax V2. You get a unique invite link from the Referral Program card on your Account screen. Share it with people you trust via the share icon.',
+                                'Use your unique invite link from the Referral Program card on your Account screen. Share it with people you trust to invite them to Pax V2.',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: PaxColors.darkGrey,
                                 ),
                               ),
                               Text(
-                                'V2 users are those who, during onboarding, selected "Heard of it, haven\'t used it" or "No, first time" for G\$ or UBI payouts, or "No / Not sure" for wallet access (if they already receive G\$).',
+                                'A referral counts as a Pax V2 user if, during onboarding, they indicate they are new to G\$/UBI payouts ("Heard of it, haven\'t used it" or "No, first time"), or they are unsure/do not have wallet access ("No / Not sure"). Pax V2 creates a PaxWallet backed up in their Google Drive.',
                                 style: TextStyle(
                                   fontSize: 16,
                                   color: PaxColors.darkGrey,

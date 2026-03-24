@@ -78,11 +78,22 @@ class DonationNotifier extends Notifier<DonationStateModel> {
         v2EncryptedParams: v2EncryptedParams,
         decimals: decimals,
       );
+      final txnHash = result['txnHash']?.toString();
+      if (txnHash == null || txnHash.isEmpty) {
+        throw Exception('Donation succeeded but txn hash was missing.');
+      }
+
+      await ref.read(donationRepositoryProvider).createDonation(
+        participantId: userId,
+        amountDonated: amountToDonate,
+        collectiveDonatedTo: donationContract,
+        txnHash: txnHash,
+      );
 
       state = state.copyWith(
         state: DonationState.success,
         isSubmitting: false,
-        txnHash: result['txnHash']?.toString(),
+        txnHash: txnHash,
         donationId: result['donationId']?.toString(),
       );
 
@@ -104,22 +115,41 @@ class DonationNotifier extends Notifier<DonationStateModel> {
     state = DonationStateModel();
   }
 
+  /// Reuses the client-side Good Impact progression logic for
+  /// donation-like reward claim flows (claim + make impact).
+  Future<void> recordGoodImpactDonation(double amountDonated) async {
+    final auth = ref.read(authProvider);
+    final userId = auth.user.uid;
+    await _handleGoodImpactAchievement(userId, amountDonated);
+  }
+
   Future<void> _handleGoodImpactAchievement(
     String participantId,
     double amountToDonate,
   ) async {
-    if (amountToDonate < 500) {
+    final donatedAmount = amountToDonate.floor();
+    if (donatedAmount <= 0) {
       return;
     }
 
     await ref
         .read(achievementsProvider.notifier)
         .fetchAchievements(participantId);
+    await ref
+        .read(achievementsProvider.notifier)
+        .findDuplicateAchievementsForParticipant(participantId);
+
     final achievements = ref.read(achievementsProvider).achievements;
     final matching =
         achievements
             .where((a) => a.name == AchievementConstants.goodImpact)
             .toList();
+    matching.sort((a, b) {
+      final aDone = a.timeCompleted != null ? 1 : 0;
+      final bDone = b.timeCompleted != null ? 1 : 0;
+      if (aDone != bDone) return bDone.compareTo(aDone);
+      return b.tasksCompleted.compareTo(a.tasksCompleted);
+    });
     final goodImpact = matching.isNotEmpty ? matching.first : null;
 
     if (goodImpact == null) {
@@ -131,9 +161,27 @@ class DonationNotifier extends Notifier<DonationStateModel> {
             name: AchievementConstants.goodImpact,
             tasksNeededForCompletion:
                 AchievementConstants.goodImpactTasksNeeded,
-            tasksCompleted: 1,
+            tasksCompleted: donatedAmount,
             amountEarned: AchievementConstants.goodImpactAmount,
+            timeCompleted:
+                donatedAmount >= AchievementConstants.goodImpactTasksNeeded
+                    ? Timestamp.now()
+                    : null,
           );
+      if (donatedAmount >= AchievementConstants.goodImpactTasksNeeded) {
+        final fcmToken = await ref.read(fcmTokenProvider.future);
+        if (fcmToken != null) {
+          await ref
+              .read(notificationServiceProvider)
+              .sendAchievementEarnedNotification(
+                token: fcmToken,
+                achievementData: {
+                  'achievementName': AchievementConstants.goodImpact,
+                  'amountEarned': AchievementConstants.goodImpactAmount,
+                },
+              );
+        }
+      }
       return;
     }
 
@@ -142,7 +190,7 @@ class DonationNotifier extends Notifier<DonationStateModel> {
       return;
     }
 
-    final newTasksCompleted = goodImpact.tasksCompleted + 1;
+    final newTasksCompleted = goodImpact.tasksCompleted + donatedAmount;
     final updateData = <String, dynamic>{'tasksCompleted': newTasksCompleted};
     if (newTasksCompleted >= goodImpact.tasksNeededForCompletion) {
       updateData['timeCompleted'] = Timestamp.now();

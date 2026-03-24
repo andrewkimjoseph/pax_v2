@@ -160,14 +160,14 @@ class _HomeViewState extends ConsumerState<HomeView> {
                                   final achievementState = ref.watch(
                                     achievementsProvider,
                                   );
-                                  final earnedNotClaimedCount =
+                                  final achievementBadgeCount =
                                       achievementState.achievements
                                           .where(
                                             (a) =>
-                                                achievementStatusName(
-                                                  a.status,
-                                                ) ==
-                                                AchievementStatusNames.earned,
+                                                achievementStatusName(a.status) ==
+                                                    AchievementStatusNames.earned ||
+                                                achievementStatusName(a.status) ==
+                                                    AchievementStatusNames.inProgress,
                                           )
                                           .length;
                                   return _homeTabButton(
@@ -175,8 +175,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
                                     isActive: index == 2,
                                     onPressed: _onAchievementsPressed,
                                     badgeCount:
-                                        earnedNotClaimedCount > 0
-                                            ? earnedNotClaimedCount
+                                        achievementBadgeCount > 0
+                                            ? achievementBadgeCount
                                             : null,
                                   );
                                 },

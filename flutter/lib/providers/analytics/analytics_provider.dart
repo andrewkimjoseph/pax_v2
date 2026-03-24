@@ -305,6 +305,94 @@ class AnalyticsProvider {
   Future<void> goHomeToCompleteTaskTapped(Map<String, String?> map) =>
       _logEvent('go_home_to_complete_task_tapped', properties: map);
 
+  Future<void> claimDonationCtaTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_donation_cta_tapped', properties: properties);
+
+  Future<void> claimPrimaryCtaTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_primary_cta_tapped', properties: properties);
+
+  Future<void> claimErrorDialogOkTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_error_dialog_ok_tapped', properties: properties);
+
+  Future<void> claimReferralIdCopyTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_referral_id_copy_tapped', properties: properties);
+
+  Future<void> claimTaskCompletionIdCopyTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('claim_task_completion_id_copy_tapped', properties: properties);
+
+  Future<void> claimSelectWalletBackTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_select_wallet_back_tapped', properties: properties);
+
+  Future<void> claimSelectGoodcollectiveBackTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('claim_select_goodcollective_back_tapped', properties: properties);
+
+  Future<void> claimSelectGoodcollectiveInfoTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('claim_select_goodcollective_info_tapped', properties: properties);
+
+  Future<void> claimSelectGoodcollectiveInfoCloseTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent(
+    'claim_select_goodcollective_info_close_tapped',
+    properties: properties,
+  );
+
+  Future<void> claimSelectGoodcollectiveOptionTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent(
+    'claim_select_goodcollective_option_tapped',
+    properties: properties,
+  );
+
+  Future<void> claimSelectGoodcollectiveContinueTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent(
+    'claim_select_goodcollective_continue_tapped',
+    properties: properties,
+  );
+
+  Future<void> claimReviewSummaryBackTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_review_summary_back_tapped', properties: properties);
+
+  Future<void> claimReviewSummarySubmitTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('claim_review_summary_submit_tapped', properties: properties);
+
+  Future<void> claimReviewSummarySuccessOkTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent(
+    'claim_review_summary_success_ok_tapped',
+    properties: properties,
+  );
+
+  Future<void> claimReviewSummaryErrorOkTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('claim_review_summary_error_ok_tapped', properties: properties);
+
+  Future<void> claimImpactReviewBackTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('claim_impact_review_back_tapped', properties: properties);
+
+  Future<void> claimImpactReviewChangeWalletTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent(
+    'claim_impact_review_change_wallet_tapped',
+    properties: properties,
+  );
+
+  Future<void> claimImpactReviewSubmitTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('claim_impact_review_submit_tapped', properties: properties);
+
+  Future<void> claimImpactReviewSuccessOkTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('claim_impact_review_success_ok_tapped', properties: properties);
+
+  Future<void> claimImpactReviewErrorOkTapped([
+    Map<String, dynamic>? properties,
+  ]) => _logEvent('claim_impact_review_error_ok_tapped', properties: properties);
+
   Future<void> refreshBalancesTapped([Map<String, dynamic>? properties]) =>
       _logEvent('refresh_balances_tapped', properties: properties);
 

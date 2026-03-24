@@ -114,7 +114,7 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
               const Spacer(),
             ],
           ),
-        ).withPadding(top: 16),
+        ).withPadding(top: 16, horizontal: 8),
       ],
 
       child: Form(
@@ -157,7 +157,7 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                   ).withPadding(right: 4),
                   FaIcon(FontAwesomeIcons.arrowUp19, color: PaxColors.white),
                 ],
-              ).withPadding(top: 16),
+              ).withPadding(top: 16, horizontal: 8),
 
               const Spacer(flex: 1),
 

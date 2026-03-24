@@ -1,19 +1,22 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show Divider, InkWell;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/models/remote_config/goodcollective_config.dart';
-import 'package:pax/providers/local/donation_context_provider.dart';
+import 'package:pax/providers/analytics/analytics_provider.dart';
+import 'package:pax/providers/local/claim_payout_context_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
 
-class SelectGoodCollectiveView extends ConsumerWidget {
-  const SelectGoodCollectiveView({super.key});
+class ClaimSelectGoodCollectiveView extends ConsumerWidget {
+  const ClaimSelectGoodCollectiveView({super.key});
 
-  void _showAboutGoodCollectiveDialog(BuildContext context) {
+  void _showAboutGoodCollectiveDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder:
@@ -39,7 +42,12 @@ class SelectGoodCollectiveView extends ConsumerWidget {
             ),
             actions: [
               PrimaryButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () {
+                  ref
+                      .read(analyticsProvider)
+                      .claimSelectGoodcollectiveInfoCloseTapped();
+                  Navigator.of(context).pop();
+                },
                 child: const Text('Close'),
               ),
             ],
@@ -49,8 +57,8 @@ class SelectGoodCollectiveView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final donationContext = ref.watch(donationContextProvider);
-    final selected = donationContext?.selectedGoodCollective;
+    final claimContext = ref.watch(claimPayoutContextProvider);
+    final selected = claimContext?.selectedGoodCollective;
 
     return Scaffold(
       headers: [
@@ -60,7 +68,14 @@ class SelectGoodCollectiveView extends ConsumerWidget {
           child: Row(
             children: [
               InkWell(
-                onTap: context.pop,
+                onTap: () {
+                  ref
+                      .read(analyticsProvider)
+                      .claimSelectGoodcollectiveBackTapped({
+                        "claimKind": claimContext?.claimKind.name,
+                      });
+                  context.pop();
+                },
                 child: const FaIcon(
                   FontAwesomeIcons.arrowLeftLong,
                   size: 20,
@@ -74,7 +89,14 @@ class SelectGoodCollectiveView extends ConsumerWidget {
               ),
               const Spacer(),
               InkWell(
-                onTap: () => _showAboutGoodCollectiveDialog(context),
+                onTap: () {
+                  ref
+                      .read(analyticsProvider)
+                      .claimSelectGoodcollectiveInfoTapped({
+                        "claimKind": claimContext?.claimKind.name,
+                      });
+                  _showAboutGoodCollectiveDialog(context, ref);
+                },
                 child: const FaIcon(
                   FontAwesomeIcons.circleQuestion,
                   size: 20,
@@ -92,7 +114,20 @@ class SelectGoodCollectiveView extends ConsumerWidget {
               .watch(goodCollectiveConfigProvider)
               .when(
                 data: (config) {
-                  if (config.goodcollectives.isEmpty) {
+                  final collectives =
+                      kDebugMode && config.goodcollectives.isEmpty
+                          ? const [
+                            GoodCollective(
+                              id: -1,
+                              name: 'Debug Collective',
+                              isGoodcollectiveAvailable: true,
+                              donationContract:
+                                  '0x0000000000000000000000000000000000000000',
+                            ),
+                          ]
+                          : config.goodcollectives;
+
+                  if (!kDebugMode && collectives.isEmpty) {
                     return const Center(
                       child: Text('No GoodCollectives available'),
                     ).withPadding(top: 24);
@@ -108,9 +143,10 @@ class SelectGoodCollectiveView extends ConsumerWidget {
                     ),
                     child: Column(
                       children: [
-                        ...config.goodcollectives.map(
+                        ...collectives.map(
                           (collective) => _GoodCollectiveTile(
                             collective: collective,
+                            claimKind: claimContext?.claimKind.name,
                           ).withPadding(bottom: 8),
                         ),
                         if (selected != null)
@@ -165,9 +201,19 @@ class SelectGoodCollectiveView extends ConsumerWidget {
                     onPressed:
                         selected == null
                             ? null
-                            : () => context.push(
-                              '/wallet/donate/select-goodcollective/review-summary',
-                            ),
+                            : () {
+                              ref
+                                  .read(analyticsProvider)
+                                  .claimSelectGoodcollectiveContinueTapped({
+                                    "claimKind": claimContext?.claimKind.name,
+                                    "selectedDonationContract":
+                                        selected.donationContract,
+                                    "selectedCollectiveName": selected.name,
+                                  });
+                              context.push(
+                                '/claim-reward/claim-payout/select-wallet/select-goodcollective/impact-review-summary',
+                              );
+                            },
                     child: Text(
                       'Continue',
                       style: Theme.of(context).typography.base.copyWith(
@@ -188,18 +234,28 @@ class SelectGoodCollectiveView extends ConsumerWidget {
 }
 
 class _GoodCollectiveTile extends StatelessWidget {
-  const _GoodCollectiveTile({required this.collective});
+  const _GoodCollectiveTile({
+    required this.collective,
+    required this.claimKind,
+  });
 
   final GoodCollective collective;
+  final String? claimKind;
 
   void _toggleSelection(WidgetRef ref, bool isSelected) {
+    ref.read(analyticsProvider).claimSelectGoodcollectiveOptionTapped({
+      "claimKind": claimKind,
+      "collectiveName": collective.name,
+      "collectiveDonationContract": collective.donationContract,
+      "selected": !isSelected,
+    });
     if (isSelected) {
       ref
-          .read(donationContextProvider.notifier)
+          .read(claimPayoutContextProvider.notifier)
           .setSelectedGoodCollective(null);
     } else {
       ref
-          .read(donationContextProvider.notifier)
+          .read(claimPayoutContextProvider.notifier)
           .setSelectedGoodCollective(collective);
     }
   }
@@ -208,9 +264,9 @@ class _GoodCollectiveTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        final donationContext = ref.watch(donationContextProvider);
+        final claimContext = ref.watch(claimPayoutContextProvider);
         final isSelected =
-            donationContext?.selectedGoodCollective?.donationContract ==
+            claimContext?.selectedGoodCollective?.donationContract ==
             collective.donationContract;
 
         return InkWell(
@@ -229,12 +285,19 @@ class _GoodCollectiveTile extends StatelessWidget {
                 if ((collective.coverURI ?? '').isNotEmpty)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      collective.coverURI!,
+                    child: CachedNetworkImage(
+                      imageUrl: collective.coverURI!,
                       width: 48,
                       height: 48,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
+                      errorWidget: (context, url, error) {
+                        return SvgPicture.asset(
+                          'lib/assets/svgs/goodcollective.svg',
+                          width: 48,
+                          height: 48,
+                        );
+                      },
+                      placeholder: (context, url) {
                         return SvgPicture.asset(
                           'lib/assets/svgs/goodcollective.svg',
                           width: 48,

@@ -10,9 +10,16 @@ import 'package:intl/intl.dart';
 
 // Create a state provider to track the selected payment method I
 class ChangeWithdrawalMethodCard extends ConsumerStatefulWidget {
-  const ChangeWithdrawalMethodCard(this.paymentMethod, {super.key});
+  const ChangeWithdrawalMethodCard(
+    this.paymentMethod, {
+    super.key,
+    this.onChangeTap,
+    this.fallbackRoute,
+  });
 
   final WithdrawalMethod paymentMethod;
+  final VoidCallback? onChangeTap;
+  final String? fallbackRoute;
 
   @override
   ConsumerState<ChangeWithdrawalMethodCard> createState() =>
@@ -77,7 +84,16 @@ class _ChangeWithdrawalMethodCardState
               "paymentMethodName": widget.paymentMethod.name,
               "paymentMethodId": widget.paymentMethod.id,
             });
-            context.pop();
+            if (widget.onChangeTap != null) {
+              widget.onChangeTap!();
+            } else {
+              if (context.canPop()) {
+                context.pop();
+              } else if (widget.fallbackRoute != null &&
+                  widget.fallbackRoute!.isNotEmpty) {
+                context.push(widget.fallbackRoute!);
+              }
+            }
           },
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

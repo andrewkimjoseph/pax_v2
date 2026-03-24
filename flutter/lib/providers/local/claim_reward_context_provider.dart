@@ -15,6 +15,8 @@ class ClaimRewardContext {
   final Timestamp? timeCreated;
   final bool? isValid;
   final bool? isReferral;
+  final bool? isAchievement;
+  final String? achievementId;
 
   ClaimRewardContext({
     this.screeningId,
@@ -30,6 +32,8 @@ class ClaimRewardContext {
     this.timeCreated,
     this.isValid,
     this.isReferral,
+    this.isAchievement,
+    this.achievementId,
   });
 
   ClaimRewardContext copyWith({
@@ -46,6 +50,8 @@ class ClaimRewardContext {
     Timestamp? timeCreated,
     bool? isValid,
     bool? isReferral,
+    bool? isAchievement,
+    String? achievementId,
   }) {
     return ClaimRewardContext(
       screeningId: screeningId ?? this.screeningId,
@@ -62,6 +68,8 @@ class ClaimRewardContext {
       timeCreated: timeCreated ?? this.timeCreated,
       isValid: isValid ?? this.isValid,
       isReferral: isReferral ?? this.isReferral,
+      isAchievement: isAchievement ?? this.isAchievement,
+      achievementId: achievementId ?? this.achievementId,
     );
   }
 }
@@ -86,6 +94,8 @@ class ClaimRewardContextNotifier extends Notifier<ClaimRewardContext?> {
     Timestamp? timeCreated,
     bool? isValid,
     bool? isReferral,
+    bool? isAchievement,
+    String? achievementId,
   }) {
     state = ClaimRewardContext(
       screeningId: screeningId,
@@ -101,6 +111,8 @@ class ClaimRewardContextNotifier extends Notifier<ClaimRewardContext?> {
       timeCreated: timeCreated,
       isValid: isValid,
       isReferral: isReferral,
+      isAchievement: isAchievement,
+      achievementId: achievementId,
     );
   }
 

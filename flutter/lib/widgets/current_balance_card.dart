@@ -13,6 +13,7 @@ import 'package:pax/providers/local/withdraw_context_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/currency_symbol.dart';
+import 'package:pax/utils/donation_constants.dart';
 import 'package:pax/utils/gradient_border.dart';
 import 'package:pax/utils/remote_config_constants.dart';
 import 'package:pax/utils/token_balance_util.dart';
@@ -68,7 +69,9 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
         ],
       ),
     ).withToolTip(
-      canDonate ? 'Donate to GoodCollective' : 'Minimum donation is 500 G\$',
+      canDonate
+          ? 'Donate to GoodCollective'
+          : 'Minimum donation is ${kMinDonationAmountGd.toInt()} G\$',
     );
   }
 
@@ -366,15 +369,18 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                           .when(
                             data: (goodCollectiveConfig) {
                               final canShowDonateButton =
-                                  isWithdrawEntry &&
-                                  isGoodDollarSelected &&
-                                  goodCollectiveConfig.isDonationAvailable &&
-                                  goodCollectiveConfig
-                                      .goodcollectives
-                                      .isNotEmpty;
+                                  widget.nextLocation == "/wallet/withdraw" &&
+                                  (kDebugMode ||
+                                      (isWithdrawEntry &&
+                                          isGoodDollarSelected &&
+                                          goodCollectiveConfig
+                                              .isDonationAvailable &&
+                                          goodCollectiveConfig
+                                              .goodcollectives
+                                              .isNotEmpty));
                               final canDonate =
                                   currentBalance != null &&
-                                  currentBalance >= 500;
+                                  currentBalance >= kMinDonationAmountGd;
 
                               if (!canShowDonateButton) {
                                 return withdrawButton;

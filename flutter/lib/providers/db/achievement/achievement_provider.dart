@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pax/models/firestore/achievement/achievement_model.dart';
 import 'package:pax/repositories/firestore/achievement/achievement_repository.dart';
@@ -50,8 +51,8 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
   Future<void> createAchievement({
     required String participantId,
     required String name,
-    required int tasksNeededForCompletion,
-    required int tasksCompleted,
+    required num tasksNeededForCompletion,
+    required num tasksCompleted,
     Timestamp? timeCreated,
     Timestamp? timeCompleted,
     num? amountEarned,
@@ -61,7 +62,7 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
       state = state.copyWith(state: AchievementState.loading);
 
       // Create achievement in repository
-      await _repository.createAchievement(
+      final createdAchievement = await _repository.createAchievement(
         participantId: participantId,
         name: name,
         tasksNeededForCompletion: tasksNeededForCompletion,
@@ -69,6 +70,21 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
         timeCreated: timeCreated,
         timeCompleted: timeCompleted,
         amountEarned: amountEarned,
+      );
+
+      final existingIndex = state.achievements.indexWhere(
+        (a) => a.id == createdAchievement.id,
+      );
+      final updatedAchievements = [...state.achievements];
+      if (existingIndex >= 0) {
+        updatedAchievements[existingIndex] = createdAchievement;
+      } else {
+        updatedAchievements.add(createdAchievement);
+      }
+
+      state = state.copyWith(
+        achievements: updatedAchievements,
+        state: AchievementState.loaded,
       );
     } catch (e) {
       state = state.copyWith(
@@ -123,6 +139,26 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
         state: AchievementState.error,
         errorMessage: e.toString(),
       );
+    }
+  }
+
+  Future<Map<String, List<String>>> findDuplicateAchievementsForParticipant(
+    String participantId,
+  ) async {
+    try {
+      final duplicates = await _repository
+          .findDuplicateAchievementIdsForParticipant(participantId);
+      if (kDebugMode && duplicates.isNotEmpty) {
+        debugPrint(
+          'Duplicate achievements detected for participant $participantId: $duplicates',
+        );
+      }
+      return duplicates;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error checking duplicate achievements: $e');
+      }
+      return {};
     }
   }
 }

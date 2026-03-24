@@ -22,8 +22,8 @@ class AchievementRepository {
   Future<Achievement> createAchievement({
     required String participantId,
     required String name,
-    required int tasksCompleted,
-    required int tasksNeededForCompletion,
+    required num tasksCompleted,
+    required num tasksNeededForCompletion,
   }) async {
     final docRef = _achievementsCollection.doc();
     final achievement = Achievement(

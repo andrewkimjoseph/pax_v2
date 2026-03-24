@@ -9,6 +9,47 @@ class DonationRepository {
   DonationRepository({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
+  Future<Donation> createDonation({
+    required String participantId,
+    required double amountDonated,
+    required String collectiveDonatedTo,
+    required String txnHash,
+  }) async {
+    try {
+      final existing =
+          await _firestore
+              .collection(collectionName)
+              .where('participantId', isEqualTo: participantId)
+              .where('txnHash', isEqualTo: txnHash)
+              .limit(1)
+              .get();
+      if (existing.docs.isNotEmpty) {
+        return Donation.fromFirestore(existing.docs.first);
+      }
+
+      final now = FieldValue.serverTimestamp();
+      final docRef = _firestore.collection(collectionName).doc();
+      await docRef.set({
+        'id': docRef.id,
+        'participantId': participantId,
+        'amountDonated': amountDonated,
+        'collectiveDonatedTo': collectiveDonatedTo,
+        'txnHash': txnHash,
+        'timeDonated': now,
+        'timeCreated': now,
+        'timeUpdated': now,
+      });
+
+      final created = await docRef.get();
+      return Donation.fromFirestore(created);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error creating donation: $e');
+      }
+      rethrow;
+    }
+  }
+
   Future<List<Donation>> getDonationsForParticipant(String participantId) async {
     try {
       final snapshot = await _firestore

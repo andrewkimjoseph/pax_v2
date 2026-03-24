@@ -22,6 +22,9 @@ class RewardService {
 
   Future<RewardResult> rewardParticipant({
     required String taskCompletionId,
+    String? recipientAddress,
+    String? donationContractAddress,
+    int? donationBasisPoints,
   }) async {
     try {
       ref.read(rewardStateProvider.notifier).startRewarding();
@@ -32,6 +35,16 @@ class RewardService {
       final Map<String, dynamic> payload = {
         'taskCompletionId': taskCompletionId,
       };
+
+      if (recipientAddress != null && recipientAddress.isNotEmpty) {
+        payload['recipientAddress'] = recipientAddress;
+      }
+      if (donationContractAddress != null && donationContractAddress.isNotEmpty) {
+        payload['donationContractAddress'] = donationContractAddress;
+      }
+      if (donationBasisPoints != null && donationBasisPoints > 0) {
+        payload['donationBasisPoints'] = donationBasisPoints;
+      }
 
       if (isV2) {
         final credState = ref.read(walletCredentialsProvider);
@@ -127,8 +140,11 @@ class RewardService {
     }
   }
 
-  Future<void> claimReferralReward({
+  Future<String> claimReferralReward({
     required String referralId,
+    String? recipientAddress,
+    String? donationContractAddress,
+    int? donationBasisPoints,
   }) async {
     try {
       final paxAccount = ref.read(paxAccountProvider).account;
@@ -137,6 +153,16 @@ class RewardService {
       final Map<String, dynamic> payload = {
         'referralId': referralId,
       };
+
+      if (recipientAddress != null && recipientAddress.isNotEmpty) {
+        payload['recipientAddress'] = recipientAddress;
+      }
+      if (donationContractAddress != null && donationContractAddress.isNotEmpty) {
+        payload['donationContractAddress'] = donationContractAddress;
+      }
+      if (donationBasisPoints != null && donationBasisPoints > 0) {
+        payload['donationBasisPoints'] = donationBasisPoints;
+      }
 
       if (isV2) {
         final credState = ref.read(walletCredentialsProvider);
@@ -173,10 +199,16 @@ class RewardService {
       final httpsCallable = FirebaseFunctions.instance.httpsCallable(
         'processReferralClaim',
       );
-      await httpsCallable.call(payload);
+      final result = await httpsCallable.call(payload);
+      final data = result.data as Map<String, dynamic>;
+      final txnHash = (data['txnHash'] ?? '').toString();
+      if (txnHash.isEmpty) {
+        throw Exception('Referral claim succeeded but txn hash was missing.');
+      }
 
       ref.invalidate(activityRepositoryProvider);
       await ref.read(paxAccountProvider.notifier).syncBalancesFromBlockchain();
+      return txnHash;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Referral reward process error: $e');
