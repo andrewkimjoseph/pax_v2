@@ -42,10 +42,19 @@ class SocialLinksRow extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          FaIcon(
-            FontAwesomeIcons.users,
-            color: PaxColors.deepPurple,
-            size: 16,
+          ShaderMask(
+            shaderCallback:
+                (bounds) => const LinearGradient(
+                  colors: PaxColors.orangeToPinkGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+            blendMode: BlendMode.srcIn,
+            child: const FaIcon(
+              FontAwesomeIcons.users,
+              color: PaxColors.white,
+              size: 16,
+            ),
           ).withPadding(right: 8),
           Text(
             'Join the tribe!',

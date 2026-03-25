@@ -294,7 +294,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
         children: [
           FaIcon(
             icon,
-            color: PaxColors.deepPurple,
+            color: PaxColors.mediumPurple,
             size: 18,
           ).withPadding(bottom: 8),
           Row(

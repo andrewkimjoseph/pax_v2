@@ -37,34 +37,64 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
     required int? tokenId,
     required num? currentBalance,
   }) {
-    return Button(
-      style:
-          const ButtonStyle.primary(
-            density: ButtonDensity.normal,
-          ).withBackgroundColor(color: PaxColors.deepPurple).withBorder(),
-      onPressed:
-          canDonate
-              ? () {
-                ref
-                    .read(donationContextProvider.notifier)
-                    .setDonationContext(tokenId ?? 1, currentBalance ?? 0);
-                context.push('/wallet/donate');
-              }
-              : null,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    final donateGradientColors =
+        canDonate
+            ? PaxColors.orangeToPinkGradient
+            : [
+              PaxColors.orange.withValues(alpha: 0.45),
+              PaxColors.pink.withValues(alpha: 0.45),
+            ];
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: Stack(
         children: [
-          FaIcon(
-            FontAwesomeIcons.handHoldingHeart,
-            color: PaxColors.white,
-            size: 14,
-          ).withPadding(right: 6),
-          Text(
-            'Donate',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
-              color: PaxColors.white,
+          Positioned.fill(
+            child: ShaderMask(
+              shaderCallback:
+                  (bounds) => LinearGradient(
+                    colors: donateGradientColors,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+              blendMode: BlendMode.srcIn,
+              child: Container(color: Colors.white),
+            ),
+          ),
+          Button(
+            style:
+                const ButtonStyle.primary(density: ButtonDensity.normal)
+                    .withBackgroundColor(color: PaxColors.transparent)
+                    .withBorder(),
+            onPressed:
+                canDonate
+                    ? () {
+                      ref
+                          .read(donationContextProvider.notifier)
+                          .setDonationContext(
+                            tokenId ?? 1,
+                            currentBalance ?? 0,
+                          );
+                      context.push('/wallet/donate');
+                    }
+                    : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FaIcon(
+                  FontAwesomeIcons.handHoldingHeart,
+                  color: PaxColors.white,
+                  size: 14,
+                ).withPadding(right: 6),
+                Text(
+                  'Donate',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    color: PaxColors.white,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -88,7 +118,6 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
         ref.watch(rewardCurrencyContextProvider).selectedCurrency;
     final tokenId = TokenBalanceUtil.getTokenIdForCurrency(selectedCurrency);
     final currentBalance = paxAccount.balances[tokenId];
-    final isWithdrawEntry = widget.nextLocation == "/wallet/withdraw";
     final isGoodDollarSelected = selectedCurrency == "good_dollar";
 
     final isFetching =
@@ -401,10 +430,9 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                     final canShowDonateButton =
                                         widget.nextLocation ==
                                             "/wallet/withdraw" &&
+                                        isGoodDollarSelected &&
                                         (kDebugMode ||
-                                            (isWithdrawEntry &&
-                                                isGoodDollarSelected &&
-                                                goodCollectiveConfig
+                                            (goodCollectiveConfig
                                                     .isDonationAvailable &&
                                                 goodCollectiveConfig
                                                     .goodcollectives
@@ -439,18 +467,19 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                             ? Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                withdrawButton.withPadding(
-                                                  right: 8,
-                                                ),
                                                 _buildDonateButton(
                                                   canDonate: canDonate,
                                                   tokenId: tokenId,
                                                   currentBalance:
                                                       currentBalance,
-                                                ),
+                                                ).withPadding(right: 8),
+                                                withdrawButton,
                                               ],
                                             )
-                                            : withdrawButton;
+                                            : Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [withdrawButton],
+                                            );
 
                                     if (copyWalletAddressButton == null) {
                                       return primaryActions;
