@@ -8,6 +8,7 @@ import 'package:pax/providers/local/donation_context_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/url_handler.dart';
+import 'package:pax/widgets/about_goodcollective_dialog.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
 
 class SelectGoodCollectiveView extends ConsumerWidget {
@@ -16,34 +17,7 @@ class SelectGoodCollectiveView extends ConsumerWidget {
   void _showAboutGoodCollectiveDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('About GoodCollective'),
-            content: const SingleChildScrollView(
-              child: Text(
-                'GoodCollective is an open platform for transparent aid and direct climate-impact payments.\n\n'
-                'How it works:\n'
-                '- Donors fund specific collectives through the GoodCollective app.\n'
-                '- Local stewards complete climate-positive work with partner organizations.\n'
-                '- Partner verification (for example, digital MRV flows) confirms completed actions.\n'
-                '- Once verified, payments are released directly to steward wallets.\n\n'
-                'Who can receive funds:\n'
-                '- People included in a community fund by an organizer, or\n'
-                '- People who complete verified climate activities in a partner program.\n\n'
-                'How donations work:\n'
-                '- Donations can be one-time or recurring.\n'
-                '- Donations can be made with GoodDollar and other supported Celo assets.\n\n'
-                'Why it matters:\n'
-                'GoodCollective helps climate funding reach people doing measurable local stewardship through transparent onchain payment flows.',
-              ),
-            ),
-            actions: [
-              PrimaryButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
-              ),
-            ],
-          ),
+      builder: (context) => AboutGoodCollectiveDialog(),
     );
   }
 

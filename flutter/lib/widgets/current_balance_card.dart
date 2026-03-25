@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -78,6 +79,11 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
   @override
   Widget build(BuildContext context) {
     final paxAccount = ref.watch(paxAccountProvider);
+    final payoutAddress = paxAccount.account?.payoutWalletAddress;
+    final showPaxAccountCopy =
+        widget.nextLocation == "/wallet" &&
+        payoutAddress != null &&
+        payoutAddress.isNotEmpty;
     final selectedCurrency =
         ref.watch(rewardCurrencyContextProvider).selectedCurrency;
     final tokenId = TokenBalanceUtil.getTokenIdForCurrency(selectedCurrency);
@@ -103,338 +109,400 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
         ),
         color: Colors.white,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'PaxAccount Balance',
-                style: TextStyle(
-                  fontWeight: FontWeight.normal,
-                  fontSize: 20,
-                  color: PaxColors.black,
-                ),
-              ).withPadding(bottom: 8),
-              Spacer(),
-
-              if (widget.nextLocation == "/wallet")
-                IconButton.outline(
-                  onPressed:
-                      paxAccount.state == PaxAccountState.syncing
-                          ? null
-                          : () {
-                            ref.read(analyticsProvider).refreshBalancesTapped({
-                              "tokenId": tokenId,
-                              "currentBalance": currentBalance,
-                              "selectedCurrency": selectedCurrency,
-                            });
-
-                            ref
-                                .read(paxAccountProvider.notifier)
-                                .syncBalancesFromBlockchain();
-                          },
-                  density: ButtonDensity.icon,
-                  icon:
-                      isFetching
-                          ? const CircularProgressIndicator(size: 25)
-                          : const FaIcon(
-                            FontAwesomeIcons.arrowsRotate,
-                            color: PaxColors.deepPurple,
-                          ),
-                ).withToolTip("Refresh on-chain balances", showTooltip: false),
-            ],
-          ),
-
-          Builder(
-            builder: (context) {
-              final isLoading =
-                  paxAccount.state == PaxAccountState.initial ||
-                  paxAccount.state == PaxAccountState.loading;
-              final isSyncing = paxAccount.state == PaxAccountState.syncing;
-
-              String currentBalance =
-                  TokenBalanceUtil.getFormattedBalanceByCurrency(
-                    paxAccount.balances,
-                    selectedCurrency,
-                  );
-
-              return SizedBox(
-                width: MediaQuery.of(context).size.width,
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                            currentBalance,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 26,
-                              color: PaxColors.black,
-                            ),
-                          )
-                          .asSkeleton(enabled: isSyncing || isLoading)
-                          .withPadding(right: 8),
+              Row(
+                children: [
+                  Text(
+                    'PaxAccount Balance',
+                    style: TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 20,
+                      color: PaxColors.black,
                     ),
-                    SvgPicture.asset(
-                      'lib/assets/svgs/currencies/$selectedCurrency.svg',
-                      height: tokenId == 2 ? 30 : (tokenId == 1 ? 25 : 20),
-                    ),
-                  ],
-                ).withPadding(bottom: 16),
-              );
-            },
-          ),
+                  ).withPadding(bottom: 8),
+                  Spacer(),
 
-          Row(
-            children: [
-              FaIcon(
-                FontAwesomeIcons.circleInfo,
-                size: 12,
-                color: PaxColors.darkGrey,
-              ).withPadding(right: 6),
-              Text(
-                'Switch currency to view other balances',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: PaxColors.darkGrey,
-                  fontWeight: FontWeight.normal,
-                ),
-              ),
-            ],
-          ).withPadding(bottom: 12),
+                  if (widget.nextLocation == "/wallet")
+                    IconButton.outline(
+                      onPressed:
+                          paxAccount.state == PaxAccountState.syncing
+                              ? null
+                              : () {
+                                ref
+                                    .read(analyticsProvider)
+                                    .refreshBalancesTapped({
+                                      "tokenId": tokenId,
+                                      "currentBalance": currentBalance,
+                                      "selectedCurrency": selectedCurrency,
+                                    });
 
-          Row(
-            children: [
-              SizedBox(
-                    height: 40,
-                    width: 150,
-                    child: Select<String>(
-                      itemBuilder: (context, item) {
-                        final height =
-                            item == 'usdm'
-                                ? 28.5
-                                : (item == 'good_dollar' ? 25.0 : 20.0);
-                        return Row(
-                          children: [
-                            SvgPicture.asset(
-                              'lib/assets/svgs/currencies/$item.svg',
-                              height: height,
-                            ).withPadding(right: 8),
-                            Text(CurrencySymbolUtil.getSymbolForCurrency(item)),
-                          ],
-                        );
-                      },
-                      onChanged: (value) {
-                        if (value != null) {
-                          ref
-                              .read(rewardCurrencyContextProvider.notifier)
-                              .setSelectedCurrency(value);
-
-                          ref
-                              .read(withdrawContextProvider.notifier)
-                              .setWithdrawContext(
-                                tokenId ?? 1,
-                                currentBalance ?? 0,
-                              );
-                        }
-                      },
-                      value: selectedCurrency,
-                      placeholder: const Text('Change currency'),
-                      popup:
-                          (context) => SelectPopup(
-                            items: SelectItemList(
-                              children: [
-                                SelectCurrencyButton(
-                                  'good_dollar',
-                                  selectedCurrency == 'good_dollar',
-                                ),
-                                SelectCurrencyButton(
-                                  'usdm',
-                                  selectedCurrency == 'usdm',
-                                ),
-                                SelectCurrencyButton(
-                                  'tether_usd',
-                                  selectedCurrency == 'tether_usd',
-                                ),
-                                SelectCurrencyButton(
-                                  'usd_coin',
-                                  selectedCurrency == 'usd_coin',
-                                ).withPadding(bottom: kIsWeb ? 0 : 30),
-                              ],
-                            ),
-                          ),
-                    ),
-                  )
-                  .withToolTip(
-                    'View your balance in other currencies',
-                    showTooltip: widget.nextLocation == "/wallet",
-                  )
-                  .withPadding(right: 8),
-
-              ref
-                  .watch(featureFlagsProvider)
-                  .when(
-                    data: (flags) {
-                      final isWalletAvailable =
-                          kDebugMode ||
-                          flags[RemoteConfigKeys.isWalletAvailable] == true;
-                      if (!isWalletAvailable) return const SizedBox.shrink();
-
-                      final actionEnabled =
-                          currentBalance != null && currentBalance > 0;
-
-                      final withdrawButton = Button(
-                        style:
-                            const ButtonStyle.primary(
-                                  density: ButtonDensity.normal,
-                                )
-                                .withBackgroundColor(
-                                  color: PaxColors.deepPurple,
-                                )
-                                .withBorder(),
-                        onPressed:
-                            actionEnabled
-                                ? () async {
-                                  ref
-                                      .read(
-                                        rewardCurrencyContextProvider.notifier,
-                                      )
-                                      .setSelectedCurrency(selectedCurrency);
-
-                                  ref
-                                      .read(withdrawContextProvider.notifier)
-                                      .setWithdrawContext(
-                                        tokenId ?? 1,
-                                        currentBalance,
-                                      );
-
-                                  if (widget.nextLocation == "/wallet") {
-                                    ref
-                                        .read(analyticsProvider)
-                                        .homeWalletTapped({
-                                          "selectedCurrency": selectedCurrency,
-                                          "currentBalance": currentBalance,
-                                          "tokenId": tokenId,
-                                          "toLocation": widget.nextLocation,
-                                        });
-                                  } else {
-                                    ref
-                                        .read(analyticsProvider)
-                                        .walletWithdrawTapped({
-                                          "selectedCurrency": selectedCurrency,
-                                          "currentBalance": currentBalance,
-                                          "tokenId": tokenId,
-                                          "toLocation": widget.nextLocation,
-                                        });
-                                  }
-                                  context.push(widget.nextLocation);
-                                }
-                                : null,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            widget.nextLocation == "/wallet"
-                                ? SvgPicture.asset(
-                                  actionEnabled
-                                      ? 'lib/assets/svgs/canvassing.svg'
-                                      : 'lib/assets/svgs/canvassing_lilac.svg',
-                                  width: 14,
-                                  height: 14,
-                                ).withPadding(right: 6)
-                                : FaIcon(
-                                  FontAwesomeIcons.arrowUpFromBracket,
-                                  color: PaxColors.white,
-                                  size: 14,
-                                ).withPadding(right: 6),
-                            Text(
-                              widget.nextLocation == "/wallet"
-                                  ? "Account"
-                                  : "Withdraw",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 14,
-                                color: PaxColors.white,
+                                ref
+                                    .read(paxAccountProvider.notifier)
+                                    .syncBalancesFromBlockchain();
+                              },
+                      density: ButtonDensity.icon,
+                      icon:
+                          isFetching
+                              ? const CircularProgressIndicator(size: 25)
+                              : const FaIcon(
+                                FontAwesomeIcons.arrowsRotate,
+                                color: PaxColors.deepPurple,
                               ),
-                            ),
-                          ],
-                        ),
-                      ).withToolTip(
-                        widget.nextLocation == "/wallet"
-                            ? 'Account & wallet'
-                            : 'Withdraw',
+                    ).withToolTip(
+                      "Refresh on-chain balances",
+                      showTooltip: false,
+                    ),
+                ],
+              ),
+
+              Builder(
+                builder: (context) {
+                  final isLoading =
+                      paxAccount.state == PaxAccountState.initial ||
+                      paxAccount.state == PaxAccountState.loading;
+                  final isSyncing = paxAccount.state == PaxAccountState.syncing;
+
+                  String currentBalance =
+                      TokenBalanceUtil.getFormattedBalanceByCurrency(
+                        paxAccount.balances,
+                        selectedCurrency,
                       );
 
-                      return ref
-                          .watch(goodCollectiveConfigProvider)
-                          .when(
-                            data: (goodCollectiveConfig) {
-                              final canShowDonateButton =
-                                  widget.nextLocation == "/wallet/withdraw" &&
-                                  (kDebugMode ||
-                                      (isWithdrawEntry &&
-                                          isGoodDollarSelected &&
-                                          goodCollectiveConfig
-                                              .isDonationAvailable &&
-                                          goodCollectiveConfig
-                                              .goodcollectives
-                                              .isNotEmpty));
-                              final canDonate =
-                                  currentBalance != null &&
-                                  currentBalance >= kMinDonationAmountGd;
+                  return SizedBox(
+                    width: MediaQuery.of(context).size.width,
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                                currentBalance,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 26,
+                                  color: PaxColors.black,
+                                ),
+                              )
+                              .asSkeleton(enabled: isSyncing || isLoading)
+                              .withPadding(right: 8),
+                        ),
+                        SvgPicture.asset(
+                          'lib/assets/svgs/currencies/$selectedCurrency.svg',
+                          height: tokenId == 2 ? 30 : (tokenId == 1 ? 25 : 20),
+                        ),
+                      ],
+                    ).withPadding(bottom: 16),
+                  );
+                },
+              ),
 
-                              if (!canShowDonateButton) {
-                                return withdrawButton;
-                              }
+              Row(
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.circleInfo,
+                    size: 12,
+                    color: PaxColors.darkGrey,
+                  ).withPadding(right: 6),
+                  Text(
+                    'Switch currency to view other balances',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: PaxColors.darkGrey,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ).withPadding(bottom: 12),
 
-                              return Row(
+              Row(
+                children: [
+                  SizedBox(
+                        height: 40,
+                        width: 150,
+                        child: Select<String>(
+                          itemBuilder: (context, item) {
+                            final height =
+                                item == 'usdm'
+                                    ? 28.5
+                                    : (item == 'good_dollar' ? 25.0 : 20.0);
+                            return Row(
+                              children: [
+                                SvgPicture.asset(
+                                  'lib/assets/svgs/currencies/$item.svg',
+                                  height: height,
+                                ).withPadding(right: 8),
+                                Text(
+                                  CurrencySymbolUtil.getSymbolForCurrency(item),
+                                ),
+                              ],
+                            );
+                          },
+                          onChanged: (value) {
+                            if (value != null) {
+                              ref
+                                  .read(rewardCurrencyContextProvider.notifier)
+                                  .setSelectedCurrency(value);
+
+                              ref
+                                  .read(withdrawContextProvider.notifier)
+                                  .setWithdrawContext(
+                                    tokenId ?? 1,
+                                    currentBalance ?? 0,
+                                  );
+                            }
+                          },
+                          value: selectedCurrency,
+                          placeholder: const Text('Change currency'),
+                          popup:
+                              (context) => SelectPopup(
+                                items: SelectItemList(
+                                  children: [
+                                    SelectCurrencyButton(
+                                      'good_dollar',
+                                      selectedCurrency == 'good_dollar',
+                                    ),
+                                    SelectCurrencyButton(
+                                      'usdm',
+                                      selectedCurrency == 'usdm',
+                                    ),
+                                    SelectCurrencyButton(
+                                      'tether_usd',
+                                      selectedCurrency == 'tether_usd',
+                                    ),
+                                    SelectCurrencyButton(
+                                      'usd_coin',
+                                      selectedCurrency == 'usd_coin',
+                                    ).withPadding(bottom: kIsWeb ? 0 : 30),
+                                  ],
+                                ),
+                              ),
+                        ),
+                      )
+                      .withToolTip(
+                        'View your balance in other currencies',
+                        showTooltip: widget.nextLocation == "/wallet",
+                      )
+                      .withPadding(right: 8),
+
+                  Expanded(
+                    child: ref
+                        .watch(featureFlagsProvider)
+                        .when(
+                          data: (flags) {
+                            final isWalletAvailable =
+                                kDebugMode ||
+                                flags[RemoteConfigKeys.isWalletAvailable] ==
+                                    true;
+                            if (!isWalletAvailable) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final actionEnabled =
+                                currentBalance != null && currentBalance > 0;
+
+                            final withdrawButton = Button(
+                              style:
+                                  const ButtonStyle.primary(
+                                        density: ButtonDensity.normal,
+                                      )
+                                      .withBackgroundColor(
+                                        color: PaxColors.deepPurple,
+                                      )
+                                      .withBorder(),
+                              onPressed:
+                                  actionEnabled
+                                      ? () async {
+                                        ref
+                                            .read(
+                                              rewardCurrencyContextProvider
+                                                  .notifier,
+                                            )
+                                            .setSelectedCurrency(
+                                              selectedCurrency,
+                                            );
+
+                                        ref
+                                            .read(
+                                              withdrawContextProvider.notifier,
+                                            )
+                                            .setWithdrawContext(
+                                              tokenId ?? 1,
+                                              currentBalance,
+                                            );
+
+                                        if (widget.nextLocation == "/wallet") {
+                                          ref
+                                              .read(analyticsProvider)
+                                              .homeWalletTapped({
+                                                "selectedCurrency":
+                                                    selectedCurrency,
+                                                "currentBalance":
+                                                    currentBalance,
+                                                "tokenId": tokenId,
+                                                "toLocation":
+                                                    widget.nextLocation,
+                                              });
+                                        } else {
+                                          ref
+                                              .read(analyticsProvider)
+                                              .walletWithdrawTapped({
+                                                "selectedCurrency":
+                                                    selectedCurrency,
+                                                "currentBalance":
+                                                    currentBalance,
+                                                "tokenId": tokenId,
+                                                "toLocation":
+                                                    widget.nextLocation,
+                                              });
+                                        }
+                                        context.push(widget.nextLocation);
+                                      }
+                                      : null,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  withdrawButton.withPadding(right: 8),
-                                  _buildDonateButton(
-                                    canDonate: canDonate,
-                                    tokenId: tokenId,
-                                    currentBalance: currentBalance,
+                                  widget.nextLocation == "/wallet"
+                                      ? SvgPicture.asset(
+                                        actionEnabled
+                                            ? 'lib/assets/svgs/canvassing.svg'
+                                            : 'lib/assets/svgs/canvassing_lilac.svg',
+                                        width: 14,
+                                        height: 14,
+                                      ).withPadding(right: 6)
+                                      : FaIcon(
+                                        FontAwesomeIcons.arrowUpFromBracket,
+                                        color: PaxColors.white,
+                                        size: 14,
+                                      ).withPadding(right: 6),
+                                  Text(
+                                    widget.nextLocation == "/wallet"
+                                        ? "Account"
+                                        : "Withdraw",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 14,
+                                      color: PaxColors.white,
+                                    ),
                                   ),
                                 ],
-                              );
-                            },
-                            loading: () => withdrawButton,
-                            error: (_, __) => withdrawButton,
-                          );
-                    },
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
+                              ),
+                            ).withToolTip(
+                              widget.nextLocation == "/wallet"
+                                  ? 'Account & wallet'
+                                  : 'Withdraw',
+                            );
+
+                            return ref
+                                .watch(goodCollectiveConfigProvider)
+                                .when(
+                                  data: (goodCollectiveConfig) {
+                                    final canShowDonateButton =
+                                        widget.nextLocation ==
+                                            "/wallet/withdraw" &&
+                                        (kDebugMode ||
+                                            (isWithdrawEntry &&
+                                                isGoodDollarSelected &&
+                                                goodCollectiveConfig
+                                                    .isDonationAvailable &&
+                                                goodCollectiveConfig
+                                                    .goodcollectives
+                                                    .isNotEmpty));
+                                    final canDonate =
+                                        currentBalance != null &&
+                                        currentBalance >= kMinDonationAmountGd;
+
+                                    final copyWalletAddressButton =
+                                        showPaxAccountCopy
+                                            ? IconButton.outline(
+                                              onPressed:
+                                                  () => Clipboard.setData(
+                                                    ClipboardData(
+                                                      text: payoutAddress,
+                                                    ),
+                                                  ),
+                                              density: ButtonDensity.icon,
+                                              icon: const FaIcon(
+                                                FontAwesomeIcons.copy,
+                                                size: 14,
+                                                color: PaxColors.deepPurple,
+                                              ),
+                                            ).withToolTip(
+                                              "Copy PaxAccount address",
+                                              showTooltip: false,
+                                            )
+                                            : null;
+
+                                    final primaryActions =
+                                        canShowDonateButton
+                                            ? Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                withdrawButton.withPadding(
+                                                  right: 8,
+                                                ),
+                                                _buildDonateButton(
+                                                  canDonate: canDonate,
+                                                  tokenId: tokenId,
+                                                  currentBalance:
+                                                      currentBalance,
+                                                ),
+                                              ],
+                                            )
+                                            : withdrawButton;
+
+                                    if (copyWalletAddressButton == null) {
+                                      return primaryActions;
+                                    }
+
+                                    return Row(
+                                      children: [
+                                        primaryActions,
+                                        const Spacer(),
+                                        copyWalletAddressButton,
+                                      ],
+                                    );
+                                  },
+                                  loading: () => withdrawButton,
+                                  error: (_, __) => withdrawButton,
+                                );
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
                   ),
 
-              // const Spacer(),
-
-              // InkWell(
-              //   onTap: () {
-              //     UrlHandler.launchInExternalBrowser(drpcReferralLink);
-              //     ref.read(analyticsProvider).drpcTapped();
-              //   },
-              //   child: SvgPicture.asset(
-              //     'lib/assets/svgs/drpc.svg',
-              //     height: 35,
-              //     width: 30,
-              //   ),
-              // ),
-
-              // http://goodwallet.xyz?inviteCode=2TWZbDwPWN
-              // if (widget.nextLocation == "/wallet")
-              //   IconButton.outline(
-              //     onPressed: () async {
-              //       _launchUrl(context);
-              //     },
-              //     density: ButtonDensity.icon,
-              //     icon: SvgPicture.asset(
-              //       'lib/assets/logos/good_wallet.svg',
-              //       height: 25,
-              //     ),
-              //   ),
+                  // const Spacer(),
+                  // InkWell(
+                  //   onTap: () {
+                  //     UrlHandler.launchInExternalBrowser(drpcReferralLink);
+                  //     ref.read(analyticsProvider).drpcTapped();
+                  //   },
+                  //   child: SvgPicture.asset(
+                  //     'lib/assets/svgs/drpc.svg',
+                  //     height: 35,
+                  //     width: 30,
+                  //   ),
+                  // ),
+                  // http://goodwallet.xyz?inviteCode=2TWZbDwPWN
+                  // if (widget.nextLocation == "/wallet")
+                  //   IconButton.outline(
+                  //     onPressed: () async {
+                  //       _launchUrl(context);
+                  //     },
+                  //     density: ButtonDensity.icon,
+                  //     icon: SvgPicture.asset(
+                  //       'lib/assets/logos/good_wallet.svg',
+                  //       height: 25,
+                  //     ),
+                  //   ),
+                ],
+              ),
             ],
-          ),
+          ).withPadding(all: 12),
         ],
-      ).withPadding(all: 12),
+      ),
     );
   }
 }

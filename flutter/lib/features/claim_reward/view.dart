@@ -444,7 +444,7 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                               : isAchievement
                               ? "Achievement Reward"
                               : taskIsCompleted == false
-                              ? "You will earn"
+                              ? (isExpired ? "You almost earned" : "You will earn")
                               : "You earned",
                           textAlign: TextAlign.left,
                           style: TextStyle(

@@ -323,7 +323,7 @@ class _ClaimImpactReviewSummaryViewState
               ),
               Spacer(),
               Text(
-                'Impact Review',
+                'Impact Review Summary',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 20, color: PaxColors.black),
               ),
@@ -458,7 +458,6 @@ class _ClaimImpactReviewSummaryViewState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
@@ -525,8 +524,7 @@ class _ClaimImpactReviewSummaryViewState
                                         decoration: TextDecoration.underline,
                                         decorationColor: PaxColors.lilac,
                                       ),
-                                    ),
-                                    const SizedBox(width: 4),
+                                    ).withPadding(right: 4),
                                     const FaIcon(
                                       FontAwesomeIcons.arrowUpRightFromSquare,
                                       size: 10,

@@ -51,30 +51,30 @@ class Drawer extends ConsumerStatefulWidget {
                 ),
               ).withPadding(top: 8),
 
-              InkWell(
-                onTap: () {
-                  ref.read(analyticsProvider).goodPaxAppTapped({
-                    "link": goodPaxAppLink,
-                  });
-                  UrlHandler.launchCustomTab(drawerContext, goodPaxAppLink);
-                  // closeDrawer(drawerContext);
-                },
-                child: OptionCard(
-                  'The Good Pax App',
-                  'lib/assets/svgs/thegoodpaxapp.svg',
-                ),
-              ),
+              // InkWell(
+              //   onTap: () {
+              //     ref.read(analyticsProvider).goodPaxAppTapped({
+              //       "link": goodPaxAppLink,
+              //     });
+              //     UrlHandler.launchCustomTab(drawerContext, goodPaxAppLink);
+              //     // closeDrawer(drawerContext);
+              //   },
+              //   child: OptionCard(
+              //     'The Good Pax App',
+              //     'lib/assets/svgs/thegoodpaxapp.svg',
+              //   ),
+              // ),
 
-              InkWell(
-                onTap: () {
-                  ref.read(analyticsProvider).esiTapped();
-                  UrlHandler.launchCustomTab(
-                    drawerContext,
-                    esiRegistrationLink,
-                  );
-                },
-                child: OptionCard('ESI Level 1', 'lib/assets/svgs/esi.svg'),
-              ),
+              // InkWell(
+              //   onTap: () {
+              //     ref.read(analyticsProvider).esiTapped();
+              //     UrlHandler.launchCustomTab(
+              //       drawerContext,
+              //       esiRegistrationLink,
+              //     );
+              //   },
+              //   child: OptionCard('ESI Level 1', 'lib/assets/svgs/esi.svg'),
+              // ),
             ],
           ),
         );

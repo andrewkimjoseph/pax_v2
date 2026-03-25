@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -73,19 +74,10 @@ class OptionCard extends ConsumerWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    SvgPicture.asset(
-                      'lib/assets/svgs/arrow_right.svg',
-
-                      // height: 24,
-                    ),
-                  ],
-                ).withPadding(bottom: 8),
-              ),
+              FaIcon(
+                FontAwesomeIcons.chevronRight,
+                size: 12,
+              ).withPadding(right: 8),
             ],
           ),
         ],
