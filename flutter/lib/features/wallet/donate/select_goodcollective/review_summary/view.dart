@@ -186,7 +186,10 @@ class _DonationReviewSummaryViewState
                 ),
               ),
               const Spacer(),
-              const Text('Review Donation', style: TextStyle(fontSize: 20)),
+              const Text(
+                'Donation Review Summary',
+                style: TextStyle(fontSize: 20),
+              ),
               const Spacer(),
             ],
           ),
@@ -339,8 +342,7 @@ class _DonationReviewSummaryViewState
                                     decoration: TextDecoration.underline,
                                     decorationColor: PaxColors.lilac,
                                   ),
-                                ),
-                                const SizedBox(width: 4),
+                                ).withPadding(right: 4),
                                 const FaIcon(
                                   FontAwesomeIcons.arrowUpRightFromSquare,
                                   size: 10,
