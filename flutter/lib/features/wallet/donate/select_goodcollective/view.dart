@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' show Divider, InkWell;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -207,12 +208,19 @@ class _GoodCollectiveTile extends StatelessWidget {
                     if ((collective.coverURI ?? '').isNotEmpty)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          collective.coverURI!,
+                        child: CachedNetworkImage(
+                          imageUrl: collective.coverURI!,
                           width: 48,
                           height: 48,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
+                          errorWidget: (context, url, error) {
+                            return SvgPicture.asset(
+                              'lib/assets/svgs/goodcollective.svg',
+                              width: 48,
+                              height: 48,
+                            );
+                          },
+                          placeholder: (context, url) {
                             return SvgPicture.asset(
                               'lib/assets/svgs/goodcollective.svg',
                               width: 48,

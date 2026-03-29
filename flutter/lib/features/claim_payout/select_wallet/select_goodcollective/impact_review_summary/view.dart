@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' show Divider, InkWell;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
@@ -463,17 +464,25 @@ class _ClaimImpactReviewSummaryViewState
                       borderRadius: BorderRadius.circular(8),
                       child:
                           (collective?.coverURI ?? '').isNotEmpty
-                              ? Image.network(
-                                collective!.coverURI!,
+                              ? CachedNetworkImage(
+                                imageUrl: collective!.coverURI!,
                                 width: 52,
                                 height: 52,
                                 fit: BoxFit.cover,
-                                errorBuilder:
-                                    (_, __, ___) => SvgPicture.asset(
-                                      'lib/assets/svgs/goodcollective.svg',
-                                      width: 52,
-                                      height: 52,
-                                    ),
+                                errorWidget: (context, url, error) {
+                                  return SvgPicture.asset(
+                                    'lib/assets/svgs/goodcollective.svg',
+                                    width: 52,
+                                    height: 52,
+                                  );
+                                },
+                                placeholder: (context, url) {
+                                  return SvgPicture.asset(
+                                    'lib/assets/svgs/goodcollective.svg',
+                                    width: 52,
+                                    height: 52,
+                                  );
+                                },
                               )
                               : SvgPicture.asset(
                                 'lib/assets/svgs/goodcollective.svg',
