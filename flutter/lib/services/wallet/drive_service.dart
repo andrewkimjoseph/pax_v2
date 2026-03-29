@@ -27,7 +27,9 @@ class DriveService {
     final response = await _client.get(uri, headers: _authHeaders());
     if (response.statusCode != 200) {
       if (kDebugMode) {
-        debugPrint('Drive: list failed ${response.statusCode} ${response.body}');
+        debugPrint(
+          'Drive: list failed ${response.statusCode} ${response.body}',
+        );
       }
       throw DriveException(
         _messageForStatus(response.statusCode, response.body, 'List'),
@@ -174,30 +176,83 @@ class DriveService {
     String operation,
   ) {
     if (statusCode == 403) {
-      String hint =
-          'Enable the Drive API in Google Cloud Console (APIs & Services → Library → Google Drive API), '
-          'then sign out and sign in again so the app can access Drive.';
-      try {
-        final json = jsonDecode(body) as Map<String, dynamic>?;
-        final error = json?['error'] as Map<String, dynamic>?;
-        final message = error?['message'] as String?;
-        if (message != null && message.isNotEmpty) {
-          if (message.toLowerCase().contains('not been used') ||
-              message.toLowerCase().contains('access not configured')) {
-            hint =
-                'Drive API is not enabled. In Google Cloud Console go to APIs & Services → Library, '
-                'search for "Google Drive API", enable it, then sign out and sign in again.';
-          } else if (message.toLowerCase().contains('insufficient') ||
-              message.toLowerCase().contains('permission') ||
-              message.toLowerCase().contains('scope')) {
-            hint =
-                'Drive access was not granted. Sign out, then sign in again and accept the requested permissions.';
-          }
-        }
-      } catch (_) {}
+      final hint = _hintForDrive403(body);
       return '$operation failed: 403 Forbidden. $hint';
     }
     return '$operation failed: $statusCode';
+  }
+
+  /// Maps Google Drive API error payloads to user-facing hints. Avoids implying
+  /// the Drive API is disabled when the real cause is quota, policy, or scopes.
+  static String _hintForDrive403(String body) {
+    String? topMessage;
+    final reasons = <String>{};
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is! Map<String, dynamic>) {
+        return _hintForDrive403Unknown();
+      }
+      final error = decoded['error'];
+      if (error is Map<String, dynamic>) {
+        final m = error['message'];
+        if (m is String) topMessage = m;
+        final errors = error['errors'];
+        if (errors is List<dynamic>) {
+          for (final e in errors) {
+            if (e is Map<String, dynamic>) {
+              final r = e['reason'];
+              if (r is String) reasons.add(r);
+            }
+          }
+        }
+      }
+    } catch (_) {
+      return _hintForDrive403Unknown();
+    }
+
+    bool reasonEquals(String name) =>
+        reasons.any((r) => r.toLowerCase() == name.toLowerCase());
+
+    if (reasonEquals('storageQuotaExceeded')) {
+      return 'Your Google storage may be full. Free space in Drive, Gmail, or Google Photos, then try again.';
+    }
+    if (reasonEquals('teamDriveStorageQuotaExceeded')) {
+      return 'Shared drive storage limit reached. Free space or ask an administrator, then try again.';
+    }
+    if (reasonEquals('domainPolicy')) {
+      return 'Your organization may block this app from using Google Drive. Contact your administrator.';
+    }
+    if (reasonEquals('dailyLimitExceeded') ||
+        reasonEquals('userRateLimitExceeded') ||
+        reasonEquals('rateLimitExceeded')) {
+      return 'Google Drive rate limit reached. Wait a few minutes and try again.';
+    }
+    if (reasonEquals('accessNotConfigured')) {
+      return 'Google Drive is not available for this app build. If this keeps happening, contact support.';
+    }
+
+    final msg = (topMessage ?? '').toLowerCase();
+    if (msg.contains('not been used') ||
+        msg.contains('access not configured') ||
+        msg.contains('has not been enabled')) {
+      return 'Google Drive is not available for this app build. If this keeps happening, contact support.';
+    }
+    if (msg.contains('insufficient') ||
+        msg.contains('permission') ||
+        msg.contains('scope') ||
+        reasonEquals('insufficientPermissions')) {
+      return 'Drive access was not granted. Sign out, sign in again, and accept Google permissions when prompted.';
+    }
+    if (msg.contains('quota') || msg.contains('storage')) {
+      return 'Your Google storage or quota may be exceeded. Free up space or try again later.';
+    }
+
+    return _hintForDrive403Unknown();
+  }
+
+  static String _hintForDrive403Unknown() {
+    return 'Try signing out and signing in again. If your Google storage is full, free some space. '
+        'Work or school accounts may restrict Drive access.';
   }
 
   void close() => _client.close();
