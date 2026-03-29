@@ -5,13 +5,16 @@ import { Address } from "viem";
 import * as dotenv from "dotenv";
 dotenv.config();
 
-const rawPk = process.env.SEND_TOKEN_PK ?? process.env.PK_ONE;
+const rawPk =
+  process.env.PAX_MASTER_PK ?? process.env.SEND_TOKEN_PK ?? process.env.PK_ONE;
 const INFURA_API_KEY = process.env.INFURA_API_KEY;
 const ETHERSCAN_API_KEY =
   process.env.ETHERSCAN_API_KEY ?? process.env.CELOSCAN_API_KEY;
 
 if (!rawPk) {
-  throw new Error("SEND_TOKEN_PK or PK_ONE not found in environment variables");
+  throw new Error(
+    "PAX_MASTER_PK (or fallback SEND_TOKEN_PK / PK_ONE) not found in environment variables"
+  );
 }
 if (!INFURA_API_KEY)
   throw new Error("INFURA_API_KEY not found in environment variables");
