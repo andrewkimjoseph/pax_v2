@@ -183,6 +183,7 @@ class Achievement {
   // Convert Achievement to a Map
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'participantId': participantId,
       'name': name,
       'tasksCompleted': tasksCompleted,
