@@ -36,6 +36,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     final totalGoodDollars = ref.watch(totalGoodDollarTokensEarnedProvider);
     final unclaimedCount = ref.watch(unclaimedTaskCompletionsCountProvider);
     final totalReferralsCount = ref.watch(totalReferralsCountProvider);
+    final totalReferralAmountGd = ref.watch(totalReferralAmountGdProvider);
     final unclaimedReferralRewardsCount = ref.watch(
       unclaimedReferralsCountProvider,
     );
@@ -72,7 +73,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
               children: [
                 Expanded(
                   child: _statCard(
-                    icon: FontAwesomeIcons.flagCheckered,
+                    icon: FontAwesomeIcons.circleCheck,
                     value: tasksCount.when(
                       data: (c) => c.toString(),
                       loading: () => '--',
@@ -84,7 +85,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                 ),
                 Expanded(
                   child: _statCard(
-                    icon: FontAwesomeIcons.gift,
+                    icon: FontAwesomeIcons.sackDollar,
                     value: totalGoodDollars.when(
                       data: (a) => TokenBalanceUtil.getLocaleFormattedAmount(a),
                       loading: () => '--',
@@ -100,13 +101,8 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                           ).withPadding(left: 4),
                       orElse: () => null,
                     ),
-                  ),
+                  ).withPadding(right: 8),
                 ),
-              ],
-            ).withPadding(bottom: 8),
-
-            Row(
-              children: [
                 Expanded(
                   child: _statCard(
                     icon: FontAwesomeIcons.handHoldingHeart,
@@ -117,19 +113,56 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     ),
                     label: 'Donations Made',
                     isLoading: donationsMadeCount is AsyncLoading,
-                  ).withPadding(right: 8),
+                  ),
                 ),
+              ],
+            ).withPadding(bottom: 8),
+
+            Row(
+              children: [
                 Expanded(
                   child: _statCard(
-                    icon: FontAwesomeIcons.seedling,
+                    icon: FontAwesomeIcons.handHoldingDollar,
                     value: totalGoodDollarDonated.when(
                       data: (a) => TokenBalanceUtil.getLocaleFormattedAmount(a),
                       loading: () => '--',
                       error: (_, __) => '0',
                     ),
-                    label: 'Total G\$ Donated',
+                    label: 'G\$ Donated',
                     isLoading: totalGoodDollarDonated is AsyncLoading,
                     suffix: totalGoodDollarDonated.maybeWhen(
+                      data:
+                          (_) => SvgPicture.asset(
+                            'lib/assets/svgs/currencies/good_dollar.svg',
+                            height: 18,
+                          ).withPadding(left: 4),
+                      orElse: () => null,
+                    ),
+                  ).withPadding(right: 8),
+                ),
+                Expanded(
+                  child: _statCard(
+                    icon: FontAwesomeIcons.userGroup,
+                    value: totalReferralsCount.when(
+                      data: (c) => c.toString(),
+                      loading: () => '--',
+                      error: (_, __) => '0',
+                    ),
+                    label: 'Referrals Made',
+                    isLoading: totalReferralsCount is AsyncLoading,
+                  ).withPadding(right: 8),
+                ),
+                Expanded(
+                  child: _statCard(
+                    icon: FontAwesomeIcons.moneyBillTrendUp,
+                    value: totalReferralAmountGd.when(
+                      data: (a) => TokenBalanceUtil.getLocaleFormattedAmount(a),
+                      loading: () => '--',
+                      error: (_, __) => '0',
+                    ),
+                    label: 'Referral G\$ Made',
+                    isLoading: totalReferralAmountGd is AsyncLoading,
+                    suffix: totalReferralAmountGd.maybeWhen(
                       data:
                           (_) => SvgPicture.asset(
                             'lib/assets/svgs/currencies/good_dollar.svg',
@@ -146,53 +179,36 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
               children: [
                 Expanded(
                   child: _statCard(
-                    icon: FontAwesomeIcons.bullhorn,
-                    value: totalReferralsCount.when(
-                      data: (c) => c.toString(),
-                      loading: () => '--',
-                      error: (_, __) => '0',
-                    ),
-                    label: 'Total Referrals Made',
-                    isLoading: totalReferralsCount is AsyncLoading,
-                  ).withPadding(right: 8),
-                ),
-                Expanded(
-                  child: _statCard(
-                    icon: FontAwesomeIcons.solidStar,
+                    icon: FontAwesomeIcons.userClock,
                     value: unclaimedReferralRewardsCount.when(
                       data: (c) => c.toString(),
                       loading: () => '--',
                       error: (_, __) => '0',
                     ),
-                    label: 'Unclaimed Referral Rewards',
+                    label: 'Pending Referrals',
                     isLoading: unclaimedReferralRewardsCount is AsyncLoading,
-                  ),
+                  ).withPadding(right: 8),
                 ),
-              ],
-            ).withPadding(bottom: 8),
-
-            Row(
-              children: [
                 Expanded(
                   child: _statCard(
-                    icon: FontAwesomeIcons.solidStar,
+                    icon: FontAwesomeIcons.hourglassHalf,
                     value: unclaimedCount.when(
                       data: (c) => c.toString(),
                       loading: () => '--',
                       error: (_, __) => '0',
                     ),
-                    label: 'Unclaimed Completions',
+                    label: 'Pending Tasks',
                     isLoading: unclaimedCount is AsyncLoading,
                   ).withPadding(right: 8),
                 ),
                 Expanded(
                   child: _statCard(
-                    icon: FontAwesomeIcons.medal,
+                    icon: FontAwesomeIcons.trophy,
                     value:
                         achievementState.state == AchievementState.loading
                             ? '--'
                             : unclaimedAchievements.toString(),
-                    label: 'Unclaimed Achievements',
+                    label: 'Pending Badges',
                     isLoading:
                         achievementState.state == AchievementState.loading,
                   ),
