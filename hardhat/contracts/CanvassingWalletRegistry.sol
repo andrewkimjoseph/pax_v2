@@ -17,9 +17,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
  *        - Pax (by Canvassing): uid == participantId (Firebase Auth UID)
  *        - Another app: uid == database primary key, username, DID, etc.
  *
- *      UIDs are never stored or emitted in plain text. They are always hashed
- *      via keccak256 before touching the chain, so a UID leak off-chain cannot
- *      be used to deanonymise a wallet address on-chain.
+ *      Raw UIDs are never stored or emitted on-chain. Callers must hash UIDs
+ *      off-chain and provide only uidHash values to this contract.
  *
  *      Callers verify membership off-chain by hashing the known UID and checking
  *      isUidHashLogged or uidHashByWallet themselves.
@@ -126,28 +125,20 @@ contract CanvassingWalletRegistry is
     // -------------------------------------------------------------------------
 
     /**
-     * @notice Log a newly created EO wallet address against a user UID.
+     * @notice Log a newly created EO wallet address against a hashed user UID.
      * @dev Only callable by the contract owner.
-     *      Reverts if the wallet or UID has already been logged.
-     *
-     *      The UID is hashed with keccak256 before any state is written or
-     *      events are emitted. The raw UID never touches the chain.
+     *      Reverts if the wallet or UID hash has already been logged.
      *
      * @param eoAddress The EO wallet address to register.
-     * @param uid       The raw opaque identifier for the user who owns this wallet.
-     *                  For Pax this is the Firebase UID (participantId); other
-     *                  projects may pass any unique user identifier they choose.
-     *                  It is hashed on-chain and never stored in plain text.
+     * @param uidHash   The pre-hashed opaque user identifier (keccak256 hash).
      */
     function logWallet(
         address eoAddress,
-        string calldata uid
+        bytes32 uidHash
     ) external onlyOwner {
         require(eoAddress != address(0), "CanvassingWalletRegistry: eoAddress cannot be zero address");
-        require(bytes(uid).length > 0, "CanvassingWalletRegistry: uid cannot be empty");
+        require(uidHash != bytes32(0), "CanvassingWalletRegistry: uidHash cannot be zero hash");
         require(!isWalletLogged[eoAddress], "CanvassingWalletRegistry: wallet already logged");
-
-        bytes32 uidHash = keccak256(abi.encodePacked(uid));
 
         require(!isUidHashLogged[uidHash], "CanvassingWalletRegistry: uid already logged");
 
@@ -177,19 +168,16 @@ contract CanvassingWalletRegistry is
     }
 
     /**
-     * @notice Verify whether a raw UID is associated with a given EO wallet address.
-     * @dev Hashes the supplied UID and compares it against the stored hash.
-     *      Useful for off-chain callers that already know the UID and want a
-     *      single on-chain confirmation call.
+     * @notice Verify whether a UID hash is associated with a given EO wallet address.
      * @param eoAddress The wallet address to check.
-     * @param uid       The raw UID to verify against.
-     * @return True if the hash of `uid` matches the stored hash for `eoAddress`.
+     * @param uidHash   The pre-hashed UID to verify against.
+     * @return True if `uidHash` matches the stored hash for `eoAddress`.
      */
-    function verifyWalletOwner(
+    function verifyWalletOwnerByHash(
         address eoAddress,
-        string calldata uid
+        bytes32 uidHash
     ) external view returns (bool) {
-        return uidHashByWallet[eoAddress] == keccak256(abi.encodePacked(uid));
+        return uidHashByWallet[eoAddress] == uidHash;
     }
 
     /**
