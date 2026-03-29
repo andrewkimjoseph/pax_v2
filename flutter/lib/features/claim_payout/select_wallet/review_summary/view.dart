@@ -224,9 +224,11 @@ class _ClaimReviewSummaryViewState
                       child: PrimaryButton(
                         child: const Text('OK'),
                         onPressed: () {
-                          ref.read(analyticsProvider).claimReviewSummarySuccessOkTapped({
-                            "claimKind": claimContext?.claimKind.name,
-                          });
+                          ref
+                              .read(analyticsProvider)
+                              .claimReviewSummarySuccessOkTapped({
+                                "claimKind": claimContext?.claimKind.name,
+                              });
                           ref.read(claimPayoutContextProvider.notifier).clear();
                           context.go("/home");
                         },
@@ -345,8 +347,8 @@ class _ClaimReviewSummaryViewState
                   claimKind == ClaimKind.achievement
                       ? FontAwesomeIcons.trophy
                       : claimKind == ClaimKind.referral
-                          ? FontAwesomeIcons.userPlus
-                          : FontAwesomeIcons.clipboardCheck,
+                      ? FontAwesomeIcons.userPlus
+                      : FontAwesomeIcons.clipboardCheck,
                   size: 14,
                   color: PaxColors.deepPurple,
                 ),
