@@ -294,9 +294,9 @@ export const canvassingWalletRegistryABI = [
 				"type": "address"
 			},
 			{
-				"internalType": "string",
-				"name": "uid",
-				"type": "string"
+				"internalType": "bytes32",
+				"name": "uidHash",
+				"type": "bytes32"
 			}
 		],
 		"name": "logWallet",
@@ -426,12 +426,12 @@ export const canvassingWalletRegistryABI = [
 				"type": "address"
 			},
 			{
-				"internalType": "string",
-				"name": "uid",
-				"type": "string"
+				"internalType": "bytes32",
+				"name": "uidHash",
+				"type": "bytes32"
 			}
 		],
-		"name": "verifyWalletOwner",
+		"name": "verifyWalletOwnerByHash",
 		"outputs": [
 			{
 				"internalType": "bool",

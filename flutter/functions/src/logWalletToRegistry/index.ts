@@ -1,6 +1,13 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { Address, createWalletClient, http, encodeFunctionData } from "viem";
+import {
+  Address,
+  createWalletClient,
+  http,
+  encodeFunctionData,
+  keccak256,
+  stringToHex,
+} from "viem";
 import { celo } from "viem/chains";
 import {
   PAX_MASTER_PRIVATE_KEY_ACCOUNT,
@@ -68,11 +75,12 @@ export const logWalletToRegistry = onCall(
         chain: celo,
         transport: http(DRPC_URL),
       });
+      const uidHash = keccak256(stringToHex(userId));
 
       const data = encodeFunctionData({
         abi: canvassingWalletRegistryABI,
         functionName: "logWallet",
-        args: [eoAddress, userId],
+        args: [eoAddress, uidHash],
       });
 
       const txHash = await walletClient.sendTransaction({
