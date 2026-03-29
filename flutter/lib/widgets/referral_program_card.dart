@@ -20,10 +20,24 @@ class ReferralProgramCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final featureFlags = ref.watch(featureFlagsProvider);
     final accountType = ref.watch(accountTypeProvider);
-    final hasVerifiedWithdrawal = ref.watch(
-      hasVerifiedWithdrawalMethodProvider,
-    );
-    final v2NeedsVerification = ref.watch(paxWalletNeedsVerificationProvider);
+
+    // Only subscribe to the verification future that affects eligibility for this account type.
+    final AsyncValue<bool> hasVerifiedWithdrawal;
+    final AsyncValue<bool> v2NeedsVerification;
+    switch (accountType) {
+      case AccountType.v1:
+        hasVerifiedWithdrawal = ref.watch(hasVerifiedWithdrawalMethodProvider);
+        v2NeedsVerification = const AsyncValue.data(true);
+        break;
+      case AccountType.v2:
+        hasVerifiedWithdrawal = const AsyncValue.data(false);
+        v2NeedsVerification = ref.watch(paxWalletNeedsVerificationProvider);
+        break;
+      case AccountType.unknown:
+        hasVerifiedWithdrawal = const AsyncValue.data(false);
+        v2NeedsVerification = const AsyncValue.data(true);
+        break;
+    }
 
     final referralFeatureOn =
         kDebugMode ||
@@ -90,17 +104,7 @@ class ReferralProgramCard extends ConsumerWidget {
                             color: PaxColors.white,
                           ),
                           children: [
-                            const TextSpan(text: 'Earn between 500 '),
-                            WidgetSpan(
-                              alignment: PlaceholderAlignment.middle,
-                              child: Image.asset(
-                                'lib/assets/images/good_dollar.png',
-                                height: 16,
-                                width: 16,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                            const TextSpan(text: ' and 1000 '),
+                            const TextSpan(text: 'Earn up to 1000 '),
                             WidgetSpan(
                               alignment: PlaceholderAlignment.middle,
                               child: Image.asset(
