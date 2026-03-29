@@ -288,6 +288,31 @@ final unclaimedReferralsCountProvider = Provider<AsyncValue<int>>((ref) {
   );
 });
 
+/// Sum of G$ from claimed referral rewards (`amountReceived`).
+final totalReferralAmountGdProvider = Provider<AsyncValue<double>>((ref) {
+  final userId = ref.watch(authProvider).user.uid;
+  final allActivitiesAsync = ref.watch(allActivitiesProvider(userId));
+
+  return allActivitiesAsync.when(
+    data: (allActivities) {
+      double total = 0.0;
+      for (final activity in allActivities) {
+        if (activity.type != ActivityType.referral) continue;
+        final referral = activity.referral;
+        if (referral == null || referral.amountReceived == null) continue;
+        final isClaimed = referral.timeRewarded != null ||
+            (referral.txnHash != null && referral.txnHash!.isNotEmpty);
+        if (isClaimed) {
+          total += referral.amountReceived!.toDouble();
+        }
+      }
+      return AsyncValue.data(total);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+  );
+});
+
 // Provider for total G$ tokens earned
 final totalGoodDollarTokensEarnedProvider = Provider<AsyncValue<double>>((ref) {
   final userId = ref.watch(authProvider).user.uid;
