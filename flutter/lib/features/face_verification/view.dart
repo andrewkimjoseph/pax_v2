@@ -33,8 +33,9 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
   bool _restoreAttempted = false;
   bool _hasLoggedVerificationStarted = false;
 
-  /// Guards so we only trigger gas sponsorship and registration once per session.
-  bool _hasTriggeredGasSponsorship = false;
+  /// Guards so post-verification side effects (participant update, wallet registration)
+  /// run only once if the webview fires the success callback multiple times.
+  bool _postVerificationSideEffectsStarted = false;
   final GlobalKey _webViewKey = GlobalKey();
 
   Future<void> _restoreWallet() async {
@@ -54,10 +55,10 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
     }
     final viewModel = ref.read(faceVerificationProvider.notifier);
     if (verified) {
-      if (_hasTriggeredGasSponsorship) {
+      if (_postVerificationSideEffectsStarted) {
         if (kDebugMode) {
           debugPrint(
-            'FaceVerificationView: skipping duplicate verification flow (already triggered gas sponsorship)',
+            'FaceVerificationView: skipping duplicate post-verification flow',
           );
         }
         viewModel.setSuccess(chain);
@@ -65,7 +66,7 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
         _showResultDialog(verified: true, chain: chain);
         return;
       }
-      _hasTriggeredGasSponsorship = true;
+      _postVerificationSideEffectsStarted = true;
       viewModel.setSuccess(chain);
       ref.read(analyticsProvider).v2FaceVerificationSuccess({'chain': chain});
       ref.read(analyticsProvider).identifyUser({
@@ -76,18 +77,18 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
         await ref
             .read(participantProvider.notifier)
             .updateGoodDollarLastAuthTime(Timestamp.now());
-        await ref
-            .read(paxWalletProvider.notifier)
-            .registerPaxWalletAfterFaceVerification();
-        if (!mounted) return;
-        _showResultDialog(verified: true, chain: chain);
       } catch (e) {
-        if (!mounted) return;
-        _hasTriggeredGasSponsorship = false;
-        viewModel.setFailed();
-        ref.read(analyticsProvider).v2FaceVerificationFailed();
-        _showResultDialog(verified: false, chain: chain);
+        if (kDebugMode) {
+          debugPrint(
+            'FaceVerificationView: updateGoodDollarLastAuthTime failed (non-blocking): $e',
+          );
+        }
       }
+      await ref
+          .read(paxWalletProvider.notifier)
+          .registerPaxWalletAfterFaceVerification();
+      if (!mounted) return;
+      _showResultDialog(verified: true, chain: chain);
     } else {
       viewModel.setFailed();
       ref.read(analyticsProvider).v2FaceVerificationFailed();
