@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pax/models/firestore/achievement/achievement_model.dart';
 import 'package:pax/repositories/firestore/achievement/achievement_repository.dart';
@@ -139,26 +138,6 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
         state: AchievementState.error,
         errorMessage: e.toString(),
       );
-    }
-  }
-
-  Future<Map<String, List<String>>> findDuplicateAchievementsForParticipant(
-    String participantId,
-  ) async {
-    try {
-      final duplicates = await _repository
-          .findDuplicateAchievementIdsForParticipant(participantId);
-      if (kDebugMode && duplicates.isNotEmpty) {
-        debugPrint(
-          'Duplicate achievements detected for participant $participantId: $duplicates',
-        );
-      }
-      return duplicates;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Error checking duplicate achievements: $e');
-      }
-      return {};
     }
   }
 }

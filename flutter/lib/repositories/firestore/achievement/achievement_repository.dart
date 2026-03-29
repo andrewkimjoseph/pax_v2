@@ -8,14 +8,6 @@ class AchievementRepository {
   final FirebaseFunctions _functions = FirebaseFunctions.instance;
   final String collectionName = 'achievements';
 
-  String _stableAchievementId(String participantId, String name) {
-    final normalizedName = name.trim().toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9]+'),
-      '_',
-    );
-    return '${participantId}_$normalizedName';
-  }
-
   // Create a new achievement
   Future<Achievement> createAchievement({
     required String participantId,
@@ -27,32 +19,19 @@ class AchievementRepository {
     num? amountEarned,
   }) async {
     try {
-      final stableId = _stableAchievementId(participantId, name);
-
-      // Backward-compatible guard: if legacy docs already exist for this
-      // participant+achievement, reuse one rather than creating another.
-      final existingAchievements =
+      final existing =
           await _firestore
               .collection(collectionName)
               .where('participantId', isEqualTo: participantId)
               .where('name', isEqualTo: name)
               .get();
-      if (existingAchievements.docs.isNotEmpty) {
-        existingAchievements.docs.sort((a, b) {
-          final aIsStable = a.id == stableId ? 1 : 0;
-          final bIsStable = b.id == stableId ? 1 : 0;
-          if (aIsStable != bIsStable) return bIsStable.compareTo(aIsStable);
-          final aCreated = a.data()['timeCreated'] as Timestamp?;
-          final bCreated = b.data()['timeCreated'] as Timestamp?;
-          final aMicros = aCreated?.microsecondsSinceEpoch ?? 0;
-          final bMicros = bCreated?.microsecondsSinceEpoch ?? 0;
-          return aMicros.compareTo(bMicros);
-        });
-        return Achievement.fromFirestore(existingAchievements.docs.first);
+      if (existing.docs.isNotEmpty) {
+        return Achievement.fromFirestore(existing.docs.first);
       }
 
+      final docRef = _firestore.collection(collectionName).doc();
       final achievement = Achievement(
-        id: stableId,
+        id: docRef.id,
         participantId: participantId,
         name: name,
         tasksNeededForCompletion: tasksNeededForCompletion,
@@ -62,20 +41,7 @@ class AchievementRepository {
         amountEarned: amountEarned,
       );
 
-      await _firestore.runTransaction((transaction) async {
-        final stableRef = _firestore.collection(collectionName).doc(stableId);
-        final snapshot = await transaction.get(stableRef);
-        if (!snapshot.exists) {
-          transaction.set(stableRef, achievement.toMap());
-        }
-      });
-
-      final savedDoc =
-          await _firestore.collection(collectionName).doc(stableId).get();
-      if (savedDoc.exists) {
-        return Achievement.fromFirestore(savedDoc);
-      }
-
+      await docRef.set(achievement.toMap());
       return achievement;
     } catch (e) {
       if (kDebugMode) {
@@ -83,28 +49,6 @@ class AchievementRepository {
       }
       rethrow;
     }
-  }
-
-  /// Returns duplicate achievement doc IDs keyed by achievement name.
-  Future<Map<String, List<String>>> findDuplicateAchievementIdsForParticipant(
-    String participantId,
-  ) async {
-    final querySnapshot =
-        await _firestore
-            .collection(collectionName)
-            .where('participantId', isEqualTo: participantId)
-            .get();
-
-    final grouped = <String, List<String>>{};
-    for (final doc in querySnapshot.docs) {
-      final data = doc.data();
-      final name = (data['name'] as String?) ?? '';
-      if (name.isEmpty) continue;
-      grouped.putIfAbsent(name, () => <String>[]).add(doc.id);
-    }
-
-    grouped.removeWhere((_, ids) => ids.length <= 1);
-    return grouped;
   }
 
   // Get achievements for a participant
@@ -160,9 +104,10 @@ class AchievementRepository {
   ///
   /// For V2 users, pass [eoWalletAddress], [encryptedPrivateKey], and [sessionKey]
   /// so the claim is sent from the participant's EOA.
+  ///
+  /// Pax account addresses are resolved server-side from `pax_accounts`.
   Future<String> processAchievementClaim({
     required String achievementId,
-    required String paxAccountContractAddress,
     required num amountEarned,
     required num tasksCompleted,
     String? recipientAddress,
@@ -175,7 +120,6 @@ class AchievementRepository {
     try {
       final payload = <String, dynamic>{
         'achievementId': achievementId,
-        'paxAccountContractAddress': paxAccountContractAddress,
         'amountEarned': amountEarned,
         'tasksCompleted': tasksCompleted,
         if (recipientAddress != null && recipientAddress.isNotEmpty)

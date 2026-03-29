@@ -143,9 +143,6 @@ class DonationNotifier extends Notifier<DonationStateModel> {
     await ref
         .read(achievementsProvider.notifier)
         .fetchAchievements(participantId);
-    await ref
-        .read(achievementsProvider.notifier)
-        .findDuplicateAchievementsForParticipant(participantId);
 
     final achievements = ref.read(achievementsProvider).achievements;
     final matching =
