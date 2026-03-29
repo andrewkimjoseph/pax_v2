@@ -187,11 +187,10 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
         sessionKey = v2Params['sessionKey'];
       }
 
-      // Call the cloud function
+      // Call the cloud function (pax account addresses resolved server-side).
       final txnHash = await _achievementRepository.processAchievementClaim(
         achievementId: achievement.id,
-        paxAccountContractAddress: paxAccountPayoutAddress,
-        recipientAddress: recipientAddress ?? paxAccountPayoutAddress,
+        recipientAddress: recipientAddress,
         amountEarned: achievement.amountEarned ?? 0,
         tasksCompleted: achievement.tasksCompleted,
         eoWalletAddress: eoWalletAddress,
