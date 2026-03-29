@@ -48,6 +48,7 @@ class PaxWalletStateModel {
 
 class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   PaxWalletRepository get _repository => ref.read(paxWalletRepositoryProvider);
+
   /// EOA we have already requested gas sponsorship for this session; avoids duplicate sponsorWalletGas calls.
   String? _gasSponsorshipRequestedForEoAddress;
 
@@ -75,12 +76,8 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   Future<void> fetchWallet(String participantId) async {
     try {
       state = state.copyWith(state: PaxWalletState.loading);
-      final wallet =
-          await _repository.getWalletByParticipantId(participantId);
-      state = state.copyWith(
-        wallet: wallet,
-        state: PaxWalletState.loaded,
-      );
+      final wallet = await _repository.getWalletByParticipantId(participantId);
+      state = state.copyWith(wallet: wallet, state: PaxWalletState.loaded);
     } catch (e) {
       if (kDebugMode) debugPrint('Error fetching pax wallet: $e');
       state = state.copyWith(
@@ -103,10 +100,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       );
 
       if (wallet != null) {
-        state = state.copyWith(
-          wallet: wallet,
-          state: PaxWalletState.loaded,
-        );
+        state = state.copyWith(wallet: wallet, state: PaxWalletState.loaded);
       }
 
       return wallet;
@@ -181,8 +175,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       final predefinedId = currentCount + 1;
 
       final wmRepo = ref.read(withdrawalMethodRepositoryProvider);
-      final existing =
-          await wmRepo.getPaymentMethodByWalletAddress(wallet.eoAddress!);
+      final existing = await wmRepo.getPaymentMethodByWalletAddress(
+        wallet.eoAddress!,
+      );
       if (existing == null) {
         await wmRepo.createWithdrawalMethod(
           participantId: participantId,
@@ -212,7 +207,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
     }
   }
 
-  /// Called when face verification succeeds: ensure payment_methods doc exists (idempotent) and refresh.
+  /// Called when face verification succeeds: withdrawal method (idempotent),
+  /// Verified Human achievement, referral record, and gas sponsorship.
+  /// Individual steps swallow errors so this method does not throw.
   Future<void> registerPaxWalletAfterFaceVerification() async {
     final wallet = state.wallet;
     final participantId = ref.read(authProvider).user.uid;
@@ -223,115 +220,113 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       return;
     }
 
-    try {
-      await ref
-          .read(withdrawalMethodsProvider.notifier)
-          .fetchPaymentMethods(participantId);
-      final currentCount =
-          ref.read(withdrawalMethodsProvider).withdrawalMethods.length;
-      final predefinedId = currentCount + 1;
+    await registerPaxWalletAsWithdrawalMethod();
 
-      final wmRepo = ref.read(withdrawalMethodRepositoryProvider);
-      final existing =
-          await wmRepo.getPaymentMethodByWalletAddress(wallet.eoAddress!);
-      if (existing == null) {
-        await wmRepo.createWithdrawalMethod(
-          participantId: participantId,
-          paxAccountId: participantId,
-          walletAddress: wallet.eoAddress!,
-          name: 'PaxWallet',
-          predefinedId: predefinedId,
-        );
-      }
+    await _safeCreateVerifiedHumanAfterV2FaceVerification(participantId);
 
-      await ref
-          .read(withdrawalMethodsProvider.notifier)
-          .fetchPaymentMethods(participantId);
+    await Future.wait([
+      _safeCreateReferralRecord(participantId),
+      _safeSponsorGas(wallet.eoAddress!),
+    ]);
+  }
 
-      if (existing == null) {
-        await ref
-            .read(withdrawalConnectionProvider.notifier)
-            .createPayoutConnectorAchievementForNthMethod(
-              participantId,
-              predefinedId,
-            );
-      }
-
-      // V2 face-verification route only: Verified Human before gas sponsorship
-      await _createVerifiedHumanAfterV2FaceVerification(participantId);
-
-      // Non-blocking referral record creation based on Branch params
+  Future<void> _safeCreateVerifiedHumanAfterV2FaceVerification(
+    String participantId,
+  ) async {
+    const maxAttempts = 3;
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        final mergedParams =
-            await BranchParamCleaner.mergeWithBranchFirstReferringParams({});
-        final referringParticipantId =
-            mergedParams['referringParticipantId'] as String?;
-
-        if (referringParticipantId != null &&
-            referringParticipantId.isNotEmpty &&
-            referringParticipantId != participantId) {
-          if (kDebugMode) {
-            debugPrint(
-              'PaxWalletNotifier: creating referral record for '
-              'referringParticipantId=$referringParticipantId, '
-              'referredParticipantId=$participantId',
-            );
-          }
-
-          try {
-            await FirebaseFunctions.instance
-                .httpsCallable('createReferral')
-                .call(<String, dynamic>{
-              'referringParticipantId': referringParticipantId,
-              'referredParticipantId': participantId,
-            });
-            ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
-              'referringParticipantId_present': true,
-              'referredParticipantId': participantId,
-              'status': 'success',
-            });
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint(
-                'PaxWalletNotifier: createReferral failed (non-blocking): $e',
-              );
-            }
-            ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
-              'referringParticipantId_present': true,
-              'referredParticipantId': participantId,
-              'status': 'error',
-              'error': e.toString(),
-            });
-          }
-        } else {
-          if (kDebugMode) {
-            debugPrint(
-              'PaxWalletNotifier: skipping referral record creation '
-              '(no valid referringParticipantId in Branch params)',
-            );
-          }
-          ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
-            'referringParticipantId_present': false,
-            'referredParticipantId': participantId,
-            'status': 'skipped',
-          });
-        }
+        await _createVerifiedHumanAfterV2FaceVerification(participantId);
+        return;
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
-            'PaxWalletNotifier: error while preparing referral record params (non-blocking): $e',
+            'PaxWalletNotifier: Verified Human creation attempt '
+            '$attempt/$maxAttempts failed (non-blocking): $e',
+          );
+        }
+        if (attempt < maxAttempts) {
+          await Future<void>.delayed(Duration(milliseconds: 400 * attempt));
+        }
+      }
+    }
+  }
+
+  /// Non-blocking referral record creation based on Branch params.
+  Future<void> _safeCreateReferralRecord(String participantId) async {
+    try {
+      final mergedParams =
+          await BranchParamCleaner.mergeWithBranchFirstReferringParams({});
+      final referringParticipantId =
+          mergedParams['referringParticipantId'] as String?;
+
+      if (referringParticipantId != null &&
+          referringParticipantId.isNotEmpty &&
+          referringParticipantId != participantId) {
+        if (kDebugMode) {
+          debugPrint(
+            'PaxWalletNotifier: creating referral record for '
+            'referringParticipantId=$referringParticipantId, '
+            'referredParticipantId=$participantId',
+          );
+        }
+
+        try {
+          await FirebaseFunctions.instance
+              .httpsCallable('createReferral')
+              .call(<String, dynamic>{
+                'referringParticipantId': referringParticipantId,
+                'referredParticipantId': participantId,
+              });
+          ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
+            'referringParticipantId_present': true,
+            'referredParticipantId': participantId,
+            'status': 'success',
+          });
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint(
+              'PaxWalletNotifier: createReferral failed (non-blocking): $e',
+            );
+          }
+          ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
+            'referringParticipantId_present': true,
+            'referredParticipantId': participantId,
+            'status': 'error',
+            'error': e.toString(),
+          });
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint(
+            'PaxWalletNotifier: skipping referral record creation '
+            '(no valid referringParticipantId in Branch params)',
           );
         }
         ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
           'referringParticipantId_present': false,
           'referredParticipantId': participantId,
-          'status': 'error_preparing_params',
-          'error': e.toString(),
+          'status': 'skipped',
         });
       }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'PaxWalletNotifier: error while preparing referral record params (non-blocking): $e',
+        );
+      }
+      ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
+        'referringParticipantId_present': false,
+        'referredParticipantId': participantId,
+        'status': 'error_preparing_params',
+        'error': e.toString(),
+      });
+    }
+  }
 
-      // Sponsor gas at most once per wallet per app session
-      final eoAddress = wallet.eoAddress!;
+  /// Sponsor gas at most once per wallet per app session; errors are swallowed.
+  Future<void> _safeSponsorGas(String eoAddress) async {
+    try {
       if (_gasSponsorshipRequestedForEoAddress == eoAddress) {
         if (kDebugMode) {
           debugPrint(
@@ -342,16 +337,15 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       }
       _gasSponsorshipRequestedForEoAddress = eoAddress;
 
-      // Sponsor gas for the wallet (only when face verification completes)
       if (kDebugMode) {
         debugPrint(
           'PaxWalletNotifier: calling sponsorWalletGas for eoAddress=$eoAddress',
         );
       }
       try {
-        await FirebaseFunctions.instance
-            .httpsCallable('sponsorWalletGas')
-            .call({'eoWalletAddress': eoAddress});
+        await FirebaseFunctions.instance.httpsCallable('sponsorWalletGas').call(
+          {'eoWalletAddress': eoAddress},
+        );
       } catch (e) {
         if (kDebugMode) {
           debugPrint('Gas sponsorship failed (non-blocking): $e');
@@ -360,52 +354,68 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error registering PaxWallet after face verification: $e');
+        debugPrint('PaxWalletNotifier: _safeSponsorGas unexpected error: $e');
       }
     }
   }
 
   /// Idempotent; only invoked after successful V2 face verification.
+  ///
+  /// Uses [AchievementRepository.createAchievement] directly so Firestore
+  /// failures propagate. The achievement notifier swallows errors from
+  /// [AchievementNotifier.createAchievement], which previously made this
+  /// path appear to succeed when the document was never written.
   Future<void> _createVerifiedHumanAfterV2FaceVerification(
     String participantId,
   ) async {
     final repo = ref.read(achievementsRepositoryProvider);
     final already = await repo.getAchievementsForParticipant(participantId);
     if (already.any((a) => a.name == AchievementConstants.verifiedHuman)) {
-      await ref.read(achievementsProvider.notifier).fetchAchievements(
-            participantId,
-          );
+      await ref
+          .read(achievementsProvider.notifier)
+          .fetchAchievements(participantId);
       return;
     }
-    await ref.read(achievementsProvider.notifier).createAchievement(
-          timeCreated: Timestamp.now(),
-          participantId: participantId,
-          name: AchievementConstants.verifiedHuman,
-          tasksNeededForCompletion:
-              AchievementConstants.verifiedHumanTasksNeeded,
-          tasksCompleted: 1,
-          timeCompleted: Timestamp.now(),
-          amountEarned: AchievementConstants.verifiedHumanAmount,
-        );
+
+    await repo.createAchievement(
+      participantId: participantId,
+      name: AchievementConstants.verifiedHuman,
+      tasksNeededForCompletion: AchievementConstants.verifiedHumanTasksNeeded,
+      tasksCompleted: 1,
+      timeCreated: Timestamp.now(),
+      timeCompleted: Timestamp.now(),
+      amountEarned: AchievementConstants.verifiedHumanAmount,
+    );
+
     ref.read(analyticsProvider).achievementCreated({
       'achievementName': AchievementConstants.verifiedHuman,
       'amountEarned': AchievementConstants.verifiedHumanAmount,
     });
-    final fcmToken = await ref.read(fcmTokenProvider.future);
-    if (fcmToken != null) {
-      await ref
-          .read(notificationServiceProvider)
-          .sendAchievementEarnedNotification(
-            token: fcmToken,
-            achievementData: {
-              'achievementName': AchievementConstants.verifiedHuman,
-              'amountEarned': AchievementConstants.verifiedHumanAmount,
-            },
-          );
-    }
-    await ref.read(achievementsProvider.notifier).fetchAchievements(
-          participantId,
+
+    try {
+      final fcmToken = await ref.read(fcmTokenProvider.future);
+      if (fcmToken != null) {
+        await ref
+            .read(notificationServiceProvider)
+            .sendAchievementEarnedNotification(
+              token: fcmToken,
+              achievementData: {
+                'achievementName': AchievementConstants.verifiedHuman,
+                'amountEarned': AchievementConstants.verifiedHumanAmount,
+              },
+            );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'PaxWalletNotifier: Verified Human notification failed (non-blocking): $e',
         );
+      }
+    }
+
+    await ref
+        .read(achievementsProvider.notifier)
+        .fetchAchievements(participantId);
   }
 
   void clearWallet() {
