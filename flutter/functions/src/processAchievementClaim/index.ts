@@ -1,19 +1,17 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { Address, encodeFunctionData, http, parseUnits } from "viem";
+import { Address, encodeFunctionData, parseUnits } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
-import { celo } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
+import { createViemAccount } from "@privy-io/server-auth/viem";
 import {
   FUNCTION_RUNTIME_OPTS,
   PUBLIC_CLIENT,
   DB,
   AUTH,
   CANVASSING_REWARDER_PROXY_ADDRESS,
-  PIMLICO_URL,
-  PAX_MASTER_PRIVATE_KEY_ACCOUNT,
+  PRIVY_CLIENT,
 } from "../../utils/config";
-import { erc20ABI } from "../../utils/abis/erc20";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
 import {
   createAchievementRewardClaimSignaturePackageCanvassing,
@@ -51,7 +49,6 @@ export const processAchievementClaim = onCall(
 
       const {
         achievementId,
-        paxAccountContractAddress,
         recipientAddress: recipientAddressRaw,
         amountEarned,
         tasksCompleted,
@@ -62,7 +59,6 @@ export const processAchievementClaim = onCall(
         donationBasisPoints,
       } = request.data as {
         achievementId: string;
-        paxAccountContractAddress: string;
         recipientAddress?: string;
         amountEarned: number;
         tasksCompleted: number;
@@ -75,19 +71,17 @@ export const processAchievementClaim = onCall(
 
       if (
         !achievementId ||
-        !paxAccountContractAddress ||
         amountEarned === undefined ||
         tasksCompleted === undefined
       ) {
         logger.error("Missing required parameters in processAchievementClaim", {
           achievementId,
-          paxAccountContractAddress,
           amountEarned,
           tasksCompleted,
         });
         throw new HttpsError(
           "invalid-argument",
-          "Missing required parameters: achievementId, paxAccountContractAddress, amountEarned, tasksCompleted."
+          "Missing required parameters: achievementId, amountEarned, tasksCompleted."
         );
       }
 
@@ -117,7 +111,6 @@ export const processAchievementClaim = onCall(
         );
       }
 
-      const smartAccountContractAddress = paxAccountContractAddress as Address;
       // Achievements are paid in the primary reward currency (token id 1).
       const { tokenAddress, decimals } = getTokenConfigForCurrencyId(1);
       const hasDonationSplit =
@@ -129,17 +122,33 @@ export const processAchievementClaim = onCall(
 
       const isV2 = !!eoWalletAddress && !!encryptedPrivateKey && !!sessionKey;
 
+      const paxAccountDoc = await firestore
+        .collection("pax_accounts")
+        .doc(userId)
+        .get();
+      if (!paxAccountDoc.exists) {
+        throw new HttpsError("not-found", "PaxAccount record not found.");
+      }
+      const paxData = paxAccountDoc.data();
+      const contractAddressFromPax = paxData?.contractAddress as
+        | string
+        | undefined;
+      const smartAccountWalletAddressFromPax = paxData?.smartAccountWalletAddress as
+        | string
+        | undefined;
+
       if (isV2) {
         if (
-          !CANVASSING_REWARDER_PROXY_ADDRESS ||
-          CANVASSING_REWARDER_PROXY_ADDRESS === "0x"
+          !smartAccountWalletAddressFromPax ||
+          smartAccountWalletAddressFromPax.trim() === ""
         ) {
-          logger.error("[V2] CANVASSING_REWARDER_PROXY_ADDRESS not configured");
           throw new HttpsError(
             "failed-precondition",
-            "Achievement claim service not configured. Missing CANVASSING_REWARDER_PROXY_ADDRESS."
+            "V2 PaxAccount missing smartAccountWalletAddress."
           );
         }
+        const smartAccountContractAddress =
+          smartAccountWalletAddressFromPax as Address;
 
         let privateKeyHex: string;
         try {
@@ -187,11 +196,11 @@ export const processAchievementClaim = onCall(
         ) {
           logger.error("[V2] Smart account mismatch (achievement claim)", {
             derived: smartAccount.address,
-            paxAccountContractAddress: smartAccountContractAddress,
+            smartAccountWalletAddress: smartAccountContractAddress,
           });
           throw new HttpsError(
             "failed-precondition",
-            "Wallet smart account does not match paxAccountContractAddress."
+            "Wallet smart account does not match PaxAccount.smartAccountWalletAddress."
           );
         }
 
@@ -213,7 +222,7 @@ export const processAchievementClaim = onCall(
           );
           recipientAddress = recipientAddressRaw as Address;
         } else {
-          recipientAddress = paxAccountContractAddress as Address;
+          recipientAddress = smartAccountContractAddress;
         }
 
         const signaturePackage = hasDonationSplit
@@ -297,27 +306,57 @@ export const processAchievementClaim = onCall(
 
         return { success: true, txnHash: bundleTxnHash };
       } else {
-        logger.info("[V1] Using V1 Pimlico achievement claim flow", {
+        logger.info("[V1] Sponsored CanvassingRewarder achievement claim (Privy)", {
           userId,
           achievementId,
-          paxAccountContractAddress,
         });
 
-        const { createSmartAccountClient } = await import("permissionless");
+        const serverWalletId = paxData?.serverWalletId as string | undefined;
+        const contractAddress = contractAddressFromPax;
+
+        if (!contractAddress || contractAddress.trim() === "") {
+          throw new HttpsError(
+            "failed-precondition",
+            "V1 PaxAccount missing contractAddress (PaxAccountV1 proxy)."
+          );
+        }
+
+        if (!serverWalletId || serverWalletId.trim() === "") {
+          throw new HttpsError(
+            "invalid-argument",
+            "V1 achievement claim requires PaxAccount.serverWalletId."
+          );
+        }
+
+        const serverWallet = await PRIVY_CLIENT.walletApi.getWallet({
+          id: serverWalletId,
+        });
+        if (!serverWallet) {
+          throw new HttpsError("not-found", "Server wallet not found");
+        }
+
         const { toSimpleSmartAccount } = await import(
           "permissionless/accounts"
         );
-        const { createPimlicoClient } = await import(
-          "permissionless/clients/pimlico"
-        );
-
-        const PIMLICO_CLIENT = createPimlicoClient({
-          transport: http(PIMLICO_URL),
+        const serverWalletAccount = await createViemAccount({
+          walletId: serverWallet.id,
+          address: serverWallet.address as Address,
+          privy: PRIVY_CLIENT,
+        });
+        const smartAccount = await toSimpleSmartAccount({
+          client: PUBLIC_CLIENT,
+          owner: serverWalletAccount,
           entryPoint: {
             address: entryPoint07Address,
             version: "0.7",
           },
         });
+
+        const smartAaAddress = smartAccount.address as Address;
+        // V1: PaxAccountV1 proxy (contractAddress) != Privy-derived AA; do not compare them.
+        const achievementCallerSmartAccount = smartAaAddress;
+
+        const eoAddress = serverWallet.address as Address;
 
         let recipientAddress: Address;
         if (recipientAddressRaw && recipientAddressRaw.trim() !== "") {
@@ -327,104 +366,89 @@ export const processAchievementClaim = onCall(
           );
           recipientAddress = recipientAddressRaw as Address;
         } else {
-          recipientAddress = smartAccountContractAddress;
+          recipientAddress = contractAddress as Address;
         }
 
-        logger.info("[V1] Preparing V1 achievement claim transaction", {
-          recipientAddress,
-          amountEarned: amountEarned.toString(),
-          rewardTokenAddress: tokenAddress,
-        });
+        const amountWei = parseUnits(String(amountEarned), decimals);
+        const nonce = generateRandomNonce();
 
-        const paxMasterSmartAccount = await toSimpleSmartAccount({
-          client: PUBLIC_CLIENT,
-          owner: PAX_MASTER_PRIVATE_KEY_ACCOUNT,
-          entryPoint: {
-            address: entryPoint07Address,
-            version: "0.7",
-          },
-        });
+        const signaturePackage = hasDonationSplit
+          ? await createAchievementRewardWithDonationSignaturePackageCanvassing(
+              CANVASSING_REWARDER_PROXY_ADDRESS,
+              eoAddress,
+              achievementCallerSmartAccount,
+              recipientAddress,
+              donationContractAddress as Address,
+              achievementId,
+              tokenAddress,
+              amountWei,
+              BigInt(Number(donationBasisPoints)),
+              nonce
+            )
+          : await createAchievementRewardClaimSignaturePackageCanvassing(
+              CANVASSING_REWARDER_PROXY_ADDRESS,
+              eoAddress,
+              achievementCallerSmartAccount,
+              recipientAddress,
+              achievementId,
+              tokenAddress,
+              amountWei,
+              nonce
+            );
 
-        logger.info("[V1] V1 Smart Account Address:", {
-          address: paxMasterSmartAccount.address,
-        });
-
-        const balanceBefore = (await PUBLIC_CLIENT.readContract({
-          address: tokenAddress,
-          abi: erc20ABI,
-          functionName: "balanceOf",
-          args: [recipientAddress],
-        })) as bigint;
-
-        logger.info("[V1] G$ Balance before transfer:", {
-          address: recipientAddress,
-          balance: balanceBefore.toString(),
-        });
-
-        const data = encodeFunctionData({
-          abi: erc20ABI,
-          functionName: "transfer",
-          args: [recipientAddress, parseUnits(amountEarned.toString(), decimals)],
-        });
-
-        logger.info("[V1] Encoded V1 achievement claim transaction data");
-
-        const smartAccountClient = createSmartAccountClient({
-          account: paxMasterSmartAccount,
-          chain: celo,
-          bundlerTransport: http(PIMLICO_URL),
-          paymaster: PIMLICO_CLIENT,
-          userOperation: {
-            estimateFeesPerGas: async () => {
-              return (await PIMLICO_CLIENT.getUserOperationGasPrice()).fast;
-            },
-          },
-        });
-
-        const userOpTxnHash = await smartAccountClient.sendUserOperation({
-          calls: [
-            {
-              to: tokenAddress,
-              data,
-            },
-          ],
-        });
-
-        logger.info("[V1] V1 user operation submitted", { userOpTxnHash });
-
-        const userOpReceipt =
-          await smartAccountClient.waitForUserOperationReceipt({
-            hash: userOpTxnHash,
+        if (!signaturePackage.isValid) {
+          logger.error("[V1] Achievement claim signature validation failed", {
+            signaturePackage,
           });
-
-        if (!userOpReceipt.success) {
-          logger.error("[V1] User operation failed in processAchievementClaim", {
-            userOpReceipt,
-          });
-          throw new HttpsError(
-            "internal",
-            `User operation failed: ${JSON.stringify(userOpReceipt)}`
-          );
+          throw new HttpsError("internal", "Signature validation failed");
         }
 
-        const bundleTxnHash = userOpReceipt.receipt.transactionHash;
-        logger.info("[V1] V1 bundle transaction confirmed", { bundleTxnHash });
+        const data = hasDonationSplit
+          ? encodeFunctionData({
+              abi: canvassingRewarderABI,
+              functionName: "claimAchievementRewardWithDonation",
+              args: [
+                eoAddress,
+                achievementCallerSmartAccount,
+                recipientAddress,
+                donationContractAddress as Address,
+                achievementId,
+                tokenAddress,
+                amountWei,
+                BigInt(Number(donationBasisPoints)),
+                nonce,
+                signaturePackage.signature,
+              ],
+            })
+          : encodeFunctionData({
+              abi: canvassingRewarderABI,
+              functionName: "claimAchievementReward",
+              args: [
+                eoAddress,
+                achievementCallerSmartAccount,
+                recipientAddress,
+                achievementId,
+                tokenAddress,
+                amountWei,
+                nonce,
+                signaturePackage.signature,
+              ],
+            });
+
+        const { bundleTxnHash } = await submitSponsoredRewarderCall({
+          smartAccount,
+          data,
+          logPrefix: "[V1]",
+        });
+
+        logger.info("[V1] Achievement claim userOp confirmed", {
+          bundleTxnHash,
+          achievementId,
+        });
 
         await firestore.collection("achievements").doc(achievementId).update({
           txnHash: bundleTxnHash,
           timeClaimed: new Date(),
-        });
-
-        const balanceAfter = (await PUBLIC_CLIENT.readContract({
-          address: tokenAddress,
-          abi: erc20ABI,
-          functionName: "balanceOf",
-          args: [recipientAddress],
-        })) as bigint;
-
-        logger.info("[V1] G$ Balance after transfer:", {
-          address: recipientAddress,
-          balance: balanceAfter.toString(),
         });
 
         return { success: true, txnHash: bundleTxnHash };
