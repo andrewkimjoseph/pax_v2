@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -7,10 +9,13 @@ import 'package:pax/features/home/pax_wallet/view.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/db/tasks/task_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
+import 'package:pax/providers/referral_link_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/providers/route/root_selected_index_provider.dart';
+import 'package:pax/providers/withdrawal_method_connection/withdrawal_method_connection_provider.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 import 'package:pax/utils/remote_config_constants.dart';
 import 'package:pax/widgets/common/gradient_badge.dart';
@@ -30,13 +35,41 @@ class _RootViewState extends ConsumerState<RootView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final isV2 = ref.read(accountTypeProvider) == AccountType.v2;
       if (isV2) restoreWalletIfNeeded(ref, silentOnly: true);
+      _prefetchReferralCardDeps();
     });
+  }
+
+  /// Warms referral card [FutureProvider]s so Account tab is ready without extra wait.
+  void _prefetchReferralCardDeps() {
+    final participantId = ref.read(participantProvider).participant?.id;
+    if (participantId == null || participantId.isEmpty) return;
+
+    unawaited(ref.read(featureFlagsProvider.future));
+
+    final type = ref.read(accountTypeProvider);
+    if (type == AccountType.v1) {
+      unawaited(ref.read(hasVerifiedWithdrawalMethodProvider.future));
+    } else if (type == AccountType.v2) {
+      unawaited(ref.read(paxWalletNeedsVerificationProvider.future));
+    }
+
+    unawaited(ref.read(referralLinkProvider.future));
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AccountType>(accountTypeProvider, (previous, next) {
+      if (next != AccountType.v1 && next != AccountType.v2) return;
+      if (previous == next) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _prefetchReferralCardDeps();
+      });
+    });
+
     final selected = ref.watch(rootSelectedIndexProvider);
     final accountType = ref.watch(accountTypeProvider);
     final isV2 = accountType == AccountType.v2;
