@@ -312,19 +312,18 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         isClaiming
                             ? null
                             : () {
-                              ref.read(analyticsProvider).claimDonationCtaTapped({
-                                "claimKind":
-                                    isAchievement
-                                        ? "achievement"
-                                        : isReferral
-                                        ? "referral"
-                                        : "task",
-                                "isDonation": true,
-                              });
-                              _navigateToClaimPayout(
-                                context,
-                                isDonation: true,
-                              );
+                              ref
+                                  .read(analyticsProvider)
+                                  .claimDonationCtaTapped({
+                                    "claimKind":
+                                        isAchievement
+                                            ? "achievement"
+                                            : isReferral
+                                            ? "referral"
+                                            : "task",
+                                    "isDonation": true,
+                                  });
+                              _navigateToClaimPayout(context, isDonation: true);
                             },
                     child: Text(
                       'Claim and make an impact',
@@ -339,79 +338,86 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
               SizedBox(
                 width: double.infinity,
                 height: 48,
-                child: showDonationClaimCta
-                    ? OutlineButton(
-                      onPressed:
-                          disableClaimActions
-                              ? null
-                              : () {
-                                if (isClaiming) return;
-                                ref.read(analyticsProvider).claimPrimaryCtaTapped({
-                                  "claimKind":
-                                      isAchievement
-                                          ? "achievement"
-                                          : isReferral
-                                          ? "referral"
-                                          : "task",
-                                  "isDonation": false,
-                                  "taskIsCompleted": taskIsCompleted,
-                                });
+                child:
+                    showDonationClaimCta
+                        ? OutlineButton(
+                          onPressed:
+                              disableClaimActions
+                                  ? null
+                                  : () {
+                                    if (isClaiming) return;
+                                    ref
+                                        .read(analyticsProvider)
+                                        .claimPrimaryCtaTapped({
+                                          "claimKind":
+                                              isAchievement
+                                                  ? "achievement"
+                                                  : isReferral
+                                                  ? "referral"
+                                                  : "task",
+                                          "isDonation": false,
+                                          "taskIsCompleted": taskIsCompleted,
+                                        });
 
-                                if (taskIsCompleted == false) {
-                                  _goHome(context);
-                                } else {
-                                  _navigateToClaimPayout(context);
-                                }
-                              },
-                      child:
-                          isClaiming
-                              ? const CircularProgressIndicator()
-                              : Text(
-                                claimActionLabel,
-                                style: Theme.of(context).typography.base
-                                    .copyWith(
+                                    if (taskIsCompleted == false) {
+                                      _goHome(context);
+                                    } else {
+                                      _navigateToClaimPayout(context);
+                                    }
+                                  },
+                          child:
+                              isClaiming
+                                  ? const CircularProgressIndicator()
+                                  : Text(
+                                    claimActionLabel,
+                                    style: Theme.of(
+                                      context,
+                                    ).typography.base.copyWith(
                                       fontWeight: FontWeight.normal,
                                       fontSize: 14,
                                       color: PaxColors.deepPurple,
                                     ),
-                              ),
-                    )
-                    : PrimaryButton(
-                      onPressed:
-                          disableClaimActions
-                              ? null
-                              : () {
-                                if (isClaiming) return;
-                                ref.read(analyticsProvider).claimPrimaryCtaTapped({
-                                  "claimKind":
-                                      isAchievement
-                                          ? "achievement"
-                                          : isReferral
-                                          ? "referral"
-                                          : "task",
-                                  "isDonation": false,
-                                  "taskIsCompleted": taskIsCompleted,
-                                });
+                                  ),
+                        )
+                        : PrimaryButton(
+                          onPressed:
+                              disableClaimActions
+                                  ? null
+                                  : () {
+                                    if (isClaiming) return;
+                                    ref
+                                        .read(analyticsProvider)
+                                        .claimPrimaryCtaTapped({
+                                          "claimKind":
+                                              isAchievement
+                                                  ? "achievement"
+                                                  : isReferral
+                                                  ? "referral"
+                                                  : "task",
+                                          "isDonation": false,
+                                          "taskIsCompleted": taskIsCompleted,
+                                        });
 
-                                if (taskIsCompleted == false) {
-                                  _goHome(context);
-                                } else {
-                                  _navigateToClaimPayout(context);
-                                }
-                              },
-                      child:
-                          isClaiming
-                              ? const CircularProgressIndicator()
-                              : Text(
-                                claimActionLabel,
-                                style: Theme.of(context).typography.base
-                                    .copyWith(
+                                    if (taskIsCompleted == false) {
+                                      _goHome(context);
+                                    } else {
+                                      _navigateToClaimPayout(context);
+                                    }
+                                  },
+                          child:
+                              isClaiming
+                                  ? const CircularProgressIndicator()
+                                  : Text(
+                                    claimActionLabel,
+                                    style: Theme.of(
+                                      context,
+                                    ).typography.base.copyWith(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                       color: PaxColors.white,
                                     ),
-                              ),
-                    ),
+                                  ),
+                        ),
               ).withPadding(top: 10),
             ],
           ),
@@ -444,7 +450,9 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                               : isAchievement
                               ? "Achievement Reward"
                               : taskIsCompleted == false
-                              ? (isExpired ? "You almost earned" : "You will earn")
+                              ? (isExpired
+                                  ? "You almost earned"
+                                  : "You will earn")
                               : "You earned",
                           textAlign: TextAlign.left,
                           style: TextStyle(
@@ -490,9 +498,11 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ).withPadding(right: 8),
                         InkWell(
                           onTap: () async {
-                            ref.read(analyticsProvider).claimReferralIdCopyTapped({
-                              "referralId": referralId,
-                            });
+                            ref
+                                .read(analyticsProvider)
+                                .claimReferralIdCopyTapped({
+                                  "referralId": referralId,
+                                });
                             await Clipboard.setData(
                               ClipboardData(text: referralId),
                             );
