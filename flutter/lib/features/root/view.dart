@@ -1,6 +1,6 @@
 import 'dart:async' show unawaited;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
@@ -37,7 +37,17 @@ class _RootViewState extends ConsumerState<RootView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final isV2 = ref.read(accountTypeProvider) == AccountType.v2;
-      if (isV2) restoreWalletIfNeeded(ref, silentOnly: true);
+      if (isV2) {
+        restoreWalletIfNeeded(ref, silentOnly: true);
+        if (kDebugMode) {
+          debugPrint('[RootView] triggering backfillPostVerificationSideEffects for V2 user');
+        }
+        unawaited(
+          ref
+              .read(paxWalletProvider.notifier)
+              .backfillPostVerificationSideEffects(),
+        );
+      }
       _prefetchReferralCardDeps();
     });
   }
