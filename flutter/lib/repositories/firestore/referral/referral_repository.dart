@@ -23,7 +23,7 @@ class ReferralRepository {
       return snapshot.docs.map(Referral.fromFirestore).toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting referrals: $e');
+        debugPrint('[Error] Error getting referrals: $e');
       }
       return [];
     }
