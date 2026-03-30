@@ -79,7 +79,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       final wallet = await _repository.getWalletByParticipantId(participantId);
       state = state.copyWith(wallet: wallet, state: PaxWalletState.loaded);
     } catch (e) {
-      if (kDebugMode) debugPrint('Error fetching pax wallet: $e');
+      if (kDebugMode) {
+        debugPrint('[PaxWalletNotifier] Error fetching pax wallet: $e');
+      }
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
@@ -105,7 +107,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
       return wallet;
     } catch (e) {
-      if (kDebugMode) debugPrint('Error creating pax wallet doc: $e');
+      if (kDebugMode) {
+        debugPrint('[PaxWalletNotifier] Error creating pax wallet doc: $e');
+      }
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
@@ -125,7 +129,11 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       );
       state = state.copyWith(wallet: updated, state: PaxWalletState.loaded);
     } catch (e) {
-      if (kDebugMode) debugPrint('Error updating smart account address: $e');
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] Error updating smart account address: $e',
+        );
+      }
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
@@ -146,7 +154,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       );
       state = state.copyWith(wallet: updated, state: PaxWalletState.loaded);
     } catch (e) {
-      if (kDebugMode) debugPrint('Error updating wallet log data: $e');
+      if (kDebugMode) {
+        debugPrint('[PaxWalletNotifier] Error updating wallet log data: $e');
+      }
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
@@ -202,7 +212,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error registering PaxWallet as withdrawal method: $e');
+        debugPrint(
+          '[PaxWalletNotifier] Error registering PaxWallet as withdrawal method: $e',
+        );
       }
     }
   }
@@ -230,6 +242,59 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
     ]);
   }
 
+  /// Backfill pass for users who already completed face verification earlier.
+  /// Runs idempotent/non-blocking post-verification side effects again.
+  Future<void> backfillPostVerificationSideEffects() async {
+    final wallet = state.wallet;
+    final participantId = ref.read(authProvider).user.uid;
+    if (wallet == null ||
+        wallet.eoAddress == null ||
+        wallet.id == null ||
+        participantId.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] backfillPostVerificationSideEffects skipped (preconditions). '
+          'walletNull=${wallet == null}, eoAddressNull=${wallet?.eoAddress == null}, '
+          'walletIdNull=${wallet?.id == null}, participantIdEmpty=${participantId.isEmpty}',
+        );
+      }
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        '[PaxWalletNotifier] backfillPostVerificationSideEffects start '
+        '(participantId=$participantId, eoAddress=${wallet.eoAddress})',
+      );
+    }
+
+    final isWhitelisted = await GoodDollarIdentityService.isWhitelisted(
+      wallet.eoAddress!,
+    );
+    if (!isWhitelisted) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] backfillPostVerificationSideEffects skipped (not whitelisted) '
+          '(participantId=$participantId, eoAddress=${wallet.eoAddress})',
+        );
+      }
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        '[PaxWalletNotifier] backfillPostVerificationSideEffects running side effects in parallel '
+        '(participantId=$participantId)',
+      );
+    }
+
+    await Future.wait([
+      _safeCreateVerifiedHumanAfterV2FaceVerification(participantId),
+      _safeCreateReferralRecord(participantId),
+      _safeSponsorGas(wallet.eoAddress!),
+    ]);
+  }
+
   Future<void> _safeCreateVerifiedHumanAfterV2FaceVerification(
     String participantId,
   ) async {
@@ -241,7 +306,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
-            'PaxWalletNotifier: Verified Human creation attempt '
+            '[PaxWalletNotifier] Verified Human creation attempt '
             '$attempt/$maxAttempts failed (non-blocking): $e',
           );
         }
@@ -265,7 +330,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
           referringParticipantId != participantId) {
         if (kDebugMode) {
           debugPrint(
-            'PaxWalletNotifier: creating referral record for '
+            '[PaxWalletNotifier] creating referral record for '
             'referringParticipantId=$referringParticipantId, '
             'referredParticipantId=$participantId',
           );
@@ -286,7 +351,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         } catch (e) {
           if (kDebugMode) {
             debugPrint(
-              'PaxWalletNotifier: createReferral failed (non-blocking): $e',
+              '[PaxWalletNotifier] createReferral failed (non-blocking): $e',
             );
           }
           ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
@@ -299,7 +364,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       } else {
         if (kDebugMode) {
           debugPrint(
-            'PaxWalletNotifier: skipping referral record creation '
+            '[PaxWalletNotifier] skipping referral record creation '
             '(no valid referringParticipantId in Branch params)',
           );
         }
@@ -312,7 +377,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-          'PaxWalletNotifier: error while preparing referral record params (non-blocking): $e',
+          '[PaxWalletNotifier] error while preparing referral record params (non-blocking): $e',
         );
       }
       ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
@@ -330,7 +395,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       if (_gasSponsorshipRequestedForEoAddress == eoAddress) {
         if (kDebugMode) {
           debugPrint(
-            'PaxWalletNotifier: skipping sponsorWalletGas (already requested for eoAddress)',
+            '[PaxWalletNotifier] skipping sponsorWalletGas (already requested for eoAddress)',
           );
         }
         return;
@@ -339,22 +404,28 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
       if (kDebugMode) {
         debugPrint(
-          'PaxWalletNotifier: calling sponsorWalletGas for eoAddress=$eoAddress',
+            '[PaxWalletNotifier] calling sponsorWalletGas for eoAddress=$eoAddress',
         );
       }
       try {
-        await FirebaseFunctions.instance.httpsCallable('sponsorWalletGas').call(
-          {'eoWalletAddress': eoAddress},
-        );
+        final result = await FirebaseFunctions.instance
+            .httpsCallable('sponsorWalletGas')
+            .call({'eoWalletAddress': eoAddress});
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] sponsorWalletGas result (eoAddress=$eoAddress): '
+            '${result.data}',
+          );
+        }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('Gas sponsorship failed (non-blocking): $e');
+          debugPrint('[PaxWalletNotifier] Gas sponsorship failed (non-blocking): $e');
         }
         _gasSponsorshipRequestedForEoAddress = null;
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('PaxWalletNotifier: _safeSponsorGas unexpected error: $e');
+          debugPrint('[PaxWalletNotifier] _safeSponsorGas unexpected error: $e');
       }
     }
   }
@@ -368,13 +439,30 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   Future<void> _createVerifiedHumanAfterV2FaceVerification(
     String participantId,
   ) async {
+    if (kDebugMode) {
+      debugPrint(
+        '[PaxWalletNotifier] _createVerifiedHumanAfterV2FaceVerification start '
+        '(participantId=$participantId)',
+      );
+    }
     final repo = ref.read(achievementsRepositoryProvider);
     final already = await repo.getAchievementsForParticipant(participantId);
     if (already.any((a) => a.name == AchievementConstants.verifiedHuman)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] Verified Human already exists for participantId=$participantId; skipping create',
+        );
+      }
       await ref
           .read(achievementsProvider.notifier)
           .fetchAchievements(participantId);
       return;
+    }
+
+    if (kDebugMode) {
+      debugPrint(
+        '[PaxWalletNotifier] creating Verified Human achievement for participantId=$participantId',
+      );
     }
 
     await repo.createAchievement(
@@ -408,7 +496,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
-          'PaxWalletNotifier: Verified Human notification failed (non-blocking): $e',
+          '[PaxWalletNotifier] Verified Human notification failed (non-blocking): $e',
         );
       }
     }
