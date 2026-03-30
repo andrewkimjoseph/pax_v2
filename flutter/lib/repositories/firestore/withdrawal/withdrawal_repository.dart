@@ -18,7 +18,7 @@ class WithdrawalRepository {
       return withdrawal;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error creating withdrawal: $e');
+        debugPrint('[Error] Error creating withdrawal: $e');
       }
       throw Exception('Failed to create withdrawal: $e');
     }
@@ -39,7 +39,7 @@ class WithdrawalRepository {
       return snapshot.docs.map((doc) => Withdrawal.fromFirestore(doc)).toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting withdrawals: $e');
+        debugPrint('[Error] Error getting withdrawals: $e');
       }
       // Return empty list on error
       return [];
@@ -58,7 +58,7 @@ class WithdrawalRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting withdrawal: $e');
+        debugPrint('[Error] Error getting withdrawal: $e');
       }
       rethrow;
     }
@@ -79,7 +79,7 @@ class WithdrawalRepository {
       return snapshot.docs.map((doc) => Withdrawal.fromFirestore(doc)).toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting withdrawals for payment method: $e');
+        debugPrint('[Error] Error getting withdrawals for payment method: $e');
       }
       // Return empty list on error
       return [];
@@ -107,7 +107,7 @@ class WithdrawalRepository {
           });
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error streaming withdrawals: $e');
+        debugPrint('[Error] Error streaming withdrawals: $e');
       }
       // Return empty stream on error
       return Stream.value([]);

@@ -19,7 +19,7 @@ class PaxAccountRepository {
       return docSnapshot.exists;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error checking if account exists: $e');
+        debugPrint('[Error] Error checking if account exists: $e');
       }
       rethrow;
     }
@@ -38,7 +38,7 @@ class PaxAccountRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting account: $e');
+        debugPrint('[Error] Error getting account: $e');
       }
       rethrow;
     }
@@ -72,7 +72,7 @@ class PaxAccountRepository {
       return newAccount;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error creating account: $e');
+        debugPrint('[Error] Error creating account: $e');
       }
       rethrow;
     }
@@ -100,7 +100,7 @@ class PaxAccountRepository {
       return PaxAccount.fromMap(updatedDoc.data()!, id: updatedDoc.id);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error updating account: $e');
+        debugPrint('[Error] Error updating account: $e');
       }
       rethrow;
     }
@@ -121,7 +121,7 @@ class PaxAccountRepository {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error handling user signup: $e');
+        debugPrint('[Error] Error handling user signup: $e');
       }
       rethrow;
     }
@@ -142,7 +142,7 @@ class PaxAccountRepository {
       await LocalDBHelper().setWalletBalances(userId, balances);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error updating balance: $e');
+        debugPrint('[Error] Error updating balance: $e');
       }
       rethrow;
     }
@@ -160,7 +160,7 @@ class PaxAccountRepository {
       if (account.payoutWalletAddress == null ||
           account.payoutWalletAddress!.isEmpty) {
         if (kDebugMode) {
-          debugPrint('No payout wallet address found, using balances from database');
+          debugPrint('[No] No payout wallet address found, using balances from database');
         }
         return;
       }
@@ -182,7 +182,7 @@ class PaxAccountRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error syncing balances from blockchain: $e');
+        debugPrint('[Error] Error syncing balances from blockchain: $e');
       }
       rethrow;
     }
@@ -200,7 +200,7 @@ class PaxAccountRepository {
       if (account.payoutWalletAddress == null ||
           account.payoutWalletAddress!.isEmpty) {
         if (kDebugMode) {
-          debugPrint('No payout wallet address found, using balance from local DB');
+          debugPrint('[No] No payout wallet address found, using balance from local DB');
         }
         final balances = await LocalDBHelper().getBalances(userId);
         return balances[tokenId]?.toDouble() ?? 0.0;
@@ -209,7 +209,7 @@ class PaxAccountRepository {
       return await BlockchainService.fetchTokenBalance(walletAddress, tokenId);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error fetching token balance: $e');
+        debugPrint('[Error] Error fetching token balance: $e');
       }
       return 0.0;
     }

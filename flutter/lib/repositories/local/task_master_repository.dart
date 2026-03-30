@@ -53,7 +53,7 @@ class TaskMasterRepository {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error retrieving task master account data: $e');
+        debugPrint('[Error] Error retrieving task master account data: $e');
       }
       return null;
     }

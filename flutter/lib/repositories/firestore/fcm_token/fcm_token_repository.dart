@@ -19,7 +19,7 @@ class FcmTokenRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting FCM token by id: $e');
+        debugPrint('[Error] Error getting FCM token by id: $e');
       }
       rethrow;
     }
@@ -41,7 +41,7 @@ class FcmTokenRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting all FCM tokens by participant id: $e');
+        debugPrint('[Error] Error getting all FCM tokens by participant id: $e');
       }
       rethrow;
     }
@@ -74,7 +74,7 @@ class FcmTokenRepository {
       return tokens.first;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting FCM token by participant id: $e');
+        debugPrint('[Error] Error getting FCM token by participant id: $e');
       }
       rethrow;
     }
@@ -94,7 +94,7 @@ class FcmTokenRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting all FCM tokens by value: $e');
+        debugPrint('[Error] Error getting all FCM tokens by value: $e');
       }
       rethrow;
     }
@@ -127,7 +127,7 @@ class FcmTokenRepository {
       return tokens.first;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting FCM token by value: $e');
+        debugPrint('[Error] Error getting FCM token by value: $e');
       }
       rethrow;
     }
@@ -257,7 +257,7 @@ class FcmTokenRepository {
       return newToken;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error saving FCM token: $e');
+        debugPrint('[Error] Error saving FCM token: $e');
       }
       rethrow;
     }

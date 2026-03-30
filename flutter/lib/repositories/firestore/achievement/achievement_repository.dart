@@ -45,7 +45,7 @@ class AchievementRepository {
       return achievement;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error creating achievement: $e');
+        debugPrint('[Error] Error creating achievement: $e');
       }
       rethrow;
     }
@@ -71,7 +71,7 @@ class AchievementRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting achievements: $e');
+        debugPrint('[Error] Error getting achievements: $e');
       }
       rethrow;
     }
@@ -94,7 +94,7 @@ class AchievementRepository {
       return Achievement.fromFirestore(doc);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error updating achievement: $e');
+        debugPrint('[Error] Error updating achievement: $e');
       }
       rethrow;
     }

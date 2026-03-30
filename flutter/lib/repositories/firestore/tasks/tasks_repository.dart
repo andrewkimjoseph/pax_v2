@@ -249,7 +249,7 @@ class TasksRepository {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error retrieving task by id: $e');
+        debugPrint('[Error] Error retrieving task by id: $e');
       }
       return null;
     }
@@ -280,7 +280,7 @@ class TasksRepository {
       return data?['serverWalletId'] as String?;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error retrieving task master server wallet ID: $e');
+        debugPrint('[Error] Error retrieving task master server wallet ID: $e');
       }
       return null;
     }

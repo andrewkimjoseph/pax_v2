@@ -81,7 +81,7 @@ class ActivityRepository {
       return allActivities;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting all activities: $e');
+        debugPrint('[Error] Error getting all activities: $e');
       }
       // Return empty list on error
       return [];
@@ -100,7 +100,7 @@ class ActivityRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting task completion activities: $e');
+        debugPrint('[Error] Error getting task completion activities: $e');
       }
       // Return empty list on error
       return [];
@@ -118,7 +118,7 @@ class ActivityRepository {
       return rewards.map((r) => Activity.fromReward(r)).toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting reward activities: $e');
+        debugPrint('[Error] Error getting reward activities: $e');
       }
       // Return empty list on error
       return [];
@@ -135,7 +135,7 @@ class ActivityRepository {
       return withdrawals.map((w) => Activity.fromWithdrawal(w)).toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting withdrawal activities: $e');
+        debugPrint('[Error] Error getting withdrawal activities: $e');
       }
       // Return empty list on error
       return [];
@@ -152,7 +152,7 @@ class ActivityRepository {
       return donations.map((d) => Activity.fromDonation(d)).toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting donation activities: $e');
+        debugPrint('[Error] Error getting donation activities: $e');
       }
       return [];
     }

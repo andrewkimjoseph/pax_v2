@@ -16,7 +16,7 @@ class ParticipantsRepository {
       return docSnapshot.exists;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error checking if participant exists: $e');
+        debugPrint('[Error] Error checking if participant exists: $e');
       }
       rethrow;
     }
@@ -35,7 +35,7 @@ class ParticipantsRepository {
       return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting participant: $e');
+        debugPrint('[Error] Error getting participant: $e');
       }
       rethrow;
     }
@@ -65,7 +65,7 @@ class ParticipantsRepository {
       return newParticipant;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error creating participant: $e');
+        debugPrint('[Error] Error creating participant: $e');
       }
       rethrow;
     }
@@ -93,7 +93,7 @@ class ParticipantsRepository {
       return Participant.fromMap(updatedDoc.data()!, id: updatedDoc.id);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error updating participant: $e');
+        debugPrint('[Error] Error updating participant: $e');
       }
       rethrow;
     }
@@ -126,7 +126,7 @@ class ParticipantsRepository {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error handling user sign in: $e');
+        debugPrint('[Error] Error handling user sign in: $e');
       }
       rethrow;
     }

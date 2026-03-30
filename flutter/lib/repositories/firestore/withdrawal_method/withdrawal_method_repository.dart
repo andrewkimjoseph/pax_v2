@@ -21,7 +21,7 @@ class WithdrawalMethodRepository {
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error checking if wallet address is used: $e');
+        debugPrint('[Error] Error checking if wallet address is used: $e');
       }
       rethrow;
     }
@@ -58,7 +58,7 @@ class WithdrawalMethodRepository {
       return newWithdrawalMethod;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error creating payment method: $e');
+        debugPrint('[Error] Error creating payment method: $e');
       }
       rethrow;
     }
@@ -109,7 +109,7 @@ class WithdrawalMethodRepository {
       return WithdrawalMethod.fromMap(updatedDoc.data()!, id: updatedDoc.id);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error updating payment method: $e');
+        debugPrint('[Error] Error updating payment method: $e');
       }
       rethrow;
     }
@@ -121,7 +121,7 @@ class WithdrawalMethodRepository {
       await _firestore.collection(collectionName).doc(paymentMethodId).delete();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error deleting payment method: $e');
+        debugPrint('[Error] Error deleting payment method: $e');
       }
       rethrow;
     }
@@ -143,7 +143,7 @@ class WithdrawalMethodRepository {
           .toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting payment methods: $e');
+        debugPrint('[Error] Error getting payment methods: $e');
       }
       rethrow;
     }
@@ -171,7 +171,7 @@ class WithdrawalMethodRepository {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting payment method by wallet address: $e');
+        debugPrint('[Error] Error getting payment method by wallet address: $e');
       }
       rethrow;
     }
@@ -208,7 +208,7 @@ class WithdrawalMethodRepository {
       await batch.commit();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error removing default status: $e');
+        debugPrint('[Error] Error removing default status: $e');
       }
       rethrow;
     }

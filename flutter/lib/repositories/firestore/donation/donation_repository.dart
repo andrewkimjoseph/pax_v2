@@ -44,7 +44,7 @@ class DonationRepository {
       return Donation.fromFirestore(created);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error creating donation: $e');
+        debugPrint('[Error] Error creating donation: $e');
       }
       rethrow;
     }
@@ -61,7 +61,7 @@ class DonationRepository {
       return snapshot.docs.map((doc) => Donation.fromFirestore(doc)).toList();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error getting donations: $e');
+        debugPrint('[Error] Error getting donations: $e');
       }
       return [];
     }
@@ -84,7 +84,7 @@ class DonationRepository {
           );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error streaming donations: $e');
+        debugPrint('[Error] Error streaming donations: $e');
       }
       return Stream.value([]);
     }
