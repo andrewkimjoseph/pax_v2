@@ -18,7 +18,7 @@ class WalletEncryption {
   }
 
   String encrypt(String plaintext, String participantId) {
-    if (kDebugMode) debugPrint('WalletEncryption: encrypting backup');
+    if (kDebugMode) debugPrint('[WalletEncryption] WalletEncryption: encrypting backup');
     const iterations = _fastIterations;
     final salt = _secureBytes(_saltLength);
     final nonce = _secureBytes(_nonceLength);
@@ -40,7 +40,7 @@ class WalletEncryption {
 
   String decrypt(String encryptedJson, String participantId) {
     if (kDebugMode) {
-      debugPrint('WalletEncryption: decrypting backup');
+      debugPrint('[WalletEncryption] WalletEncryption: decrypting backup');
     }
     final map = jsonDecode(encryptedJson) as Map<String, dynamic>;
     if ((map['version'] as int?) != version) {
@@ -60,7 +60,7 @@ class WalletEncryption {
       return utf8.decode(plainBytes);
     } on InvalidCipherTextException catch (e) {
       if (kDebugMode) {
-        debugPrint('WalletEncryption: decrypt failed (GCM auth): ${e.message}');
+        debugPrint('[WalletEncryption] WalletEncryption: decrypt failed (GCM auth): ${e.message}');
       }
       throw ArgumentError(
         'Decryption failed. The backup may be from a different Google account or the file may be corrupted.',

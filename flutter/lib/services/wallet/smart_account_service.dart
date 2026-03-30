@@ -19,7 +19,7 @@ class SmartAccountService {
     required String sessionKey,
   }) async {
     try {
-      if (kDebugMode) debugPrint('SmartAccountService: Creating smart account');
+      if (kDebugMode) debugPrint('[SmartAccountService] SmartAccountService: Creating smart account');
 
       final privateKeyHex = _extractPrivateKeyHex(credentials);
 
@@ -81,7 +81,7 @@ class SmartAccountService {
       return smartAccountAddress;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('SmartAccountService: Error creating smart account: $e');
+        debugPrint('[SmartAccountService] SmartAccountService: Error creating smart account: $e');
       }
       rethrow;
     }

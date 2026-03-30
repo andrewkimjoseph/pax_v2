@@ -47,7 +47,7 @@ class WalletRegistryService {
       final dt = DateTime.parse(timestampStr);
 
       if (kDebugMode) {
-        debugPrint('WalletRegistryService: wallet logged, txHash=$txnHash');
+        debugPrint('[WalletRegistryService] WalletRegistryService: wallet logged, txHash=$txnHash');
       }
 
       return WalletRegistryResult(
@@ -56,7 +56,7 @@ class WalletRegistryService {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('WalletRegistryService: error logging wallet: $e');
+        debugPrint('[WalletRegistryService] WalletRegistryService: error logging wallet: $e');
       }
       rethrow;
     }

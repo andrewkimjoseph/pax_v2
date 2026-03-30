@@ -47,7 +47,7 @@ class AnalyticsService {
   Future<void> initialize(String apiKey) async {
     if (_isInitialized) {
       if (kDebugMode) {
-        debugPrint('Analytics Service: Already initialized');
+        debugPrint('[Analytics] Analytics Service: Already initialized');
       }
       return;
     }
@@ -63,11 +63,11 @@ class AnalyticsService {
       _firebaseAnalytics = FirebaseAnalytics.instance;
       _isInitialized = await _amplitude.isBuilt;
       if (kDebugMode) {
-        debugPrint('Analytics Service: Successfully initialized');
+        debugPrint('[Analytics] Analytics Service: Successfully initialized');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Analytics Service: Error initializing: $e');
+        debugPrint('[Analytics] Analytics Service: Error initializing: $e');
       }
     }
   }

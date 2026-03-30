@@ -62,17 +62,17 @@ class LocalWalletCache {
 
   Future<void> cacheWallet(String mnemonic, String accountId) async {
     if (kDebugMode) {
-      debugPrint('LocalWalletCache: cacheWallet start');
+      debugPrint('[LocalWalletCache] LocalWalletCache: cacheWallet start');
     }
     try {
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: getting derivation key...');
+        debugPrint('[LocalWalletCache] LocalWalletCache: getting derivation key...');
       }
       final derivationKey = await _getDerivationKey(accountId);
       final salt = _secureBytes(_saltLength);
       final nonce = _secureBytes(_nonceLength);
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: deriving key ($_iterationsFast iterations)...');
+        debugPrint('[LocalWalletCache] LocalWalletCache: deriving key ($_iterationsFast iterations)...');
       }
       final key = _deriveKey(derivationKey, salt, _iterationsFast);
 
@@ -101,11 +101,11 @@ class LocalWalletCache {
       });
       await _storage.write(key: _metadataKey, value: metadata);
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: wallet cached successfully');
+        debugPrint('[LocalWalletCache] LocalWalletCache: wallet cached successfully');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: failed to cache wallet: $e');
+        debugPrint('[LocalWalletCache] LocalWalletCache: failed to cache wallet: $e');
       }
       rethrow;
     }
@@ -113,18 +113,18 @@ class LocalWalletCache {
 
   Future<String?> getCachedWallet(String accountId) async {
     if (kDebugMode) {
-      debugPrint('LocalWalletCache: getCachedWallet start (accountId: ${accountId.length} chars)');
+      debugPrint('[LocalWalletCache] LocalWalletCache: getCachedWallet start (accountId: ${accountId.length} chars)');
     }
     try {
       final encryptedData = await _storage.read(key: _cacheKey);
       if (encryptedData == null) {
         if (kDebugMode) {
-          debugPrint('LocalWalletCache: cache miss (no data)');
+          debugPrint('[LocalWalletCache] LocalWalletCache: cache miss (no data)');
         }
         return null;
       }
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: cache data found, checking metadata');
+        debugPrint('[LocalWalletCache] LocalWalletCache: cache data found, checking metadata');
       }
 
       final metadataJson = await _storage.read(key: _metadataKey);
@@ -134,7 +134,7 @@ class LocalWalletCache {
         if (cachedAccountHash != null &&
             cachedAccountHash != _hashAccountId(accountId)) {
           if (kDebugMode) {
-            debugPrint('LocalWalletCache: account mismatch, invalidating');
+            debugPrint('[LocalWalletCache] LocalWalletCache: account mismatch, invalidating');
           }
           await clearCache();
           return null;
@@ -142,14 +142,14 @@ class LocalWalletCache {
       }
 
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: deriving key...');
+        debugPrint('[LocalWalletCache] LocalWalletCache: deriving key...');
       }
       final derivationKey = await _getDerivationKey(accountId);
       final map = jsonDecode(encryptedData) as Map<String, dynamic>;
 
       if ((map['version'] as int?) != version) {
         if (kDebugMode) {
-          debugPrint('LocalWalletCache: version mismatch');
+          debugPrint('[LocalWalletCache] LocalWalletCache: version mismatch');
         }
         await clearCache();
         return null;
@@ -162,7 +162,7 @@ class LocalWalletCache {
       );
       final iterations = map['iterations'] as int? ?? _iterations;
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: decrypting (iterations: $iterations)...');
+        debugPrint('[LocalWalletCache] LocalWalletCache: decrypting (iterations: $iterations)...');
       }
 
       final key = _deriveKey(derivationKey, salt, iterations);
@@ -177,14 +177,14 @@ class LocalWalletCache {
         mnemonic = utf8.decode(plainBytes);
       } on InvalidCipherTextException {
         if (kDebugMode) {
-          debugPrint('LocalWalletCache: decryption failed, invalidating');
+          debugPrint('[LocalWalletCache] LocalWalletCache: decryption failed, invalidating');
         }
         await clearCache();
         return null;
       }
 
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: cache hit, mnemonic restored');
+        debugPrint('[LocalWalletCache] LocalWalletCache: cache hit, mnemonic restored');
       }
       // Migrate old high-iteration cache to fast iterations so next restore is quicker (non-blocking).
       if (iterations > _iterationsFast) {
@@ -195,7 +195,7 @@ class LocalWalletCache {
         }
         cacheWallet(mnemonic, accountId).then((_) {
           if (kDebugMode) {
-            debugPrint('LocalWalletCache: migration completed successfully');
+            debugPrint('[LocalWalletCache] LocalWalletCache: migration completed successfully');
           }
         }).catchError((e) {
           if (kDebugMode) {
@@ -206,13 +206,13 @@ class LocalWalletCache {
         });
       } else {
         if (kDebugMode) {
-          debugPrint('LocalWalletCache: no migration needed (already fast iterations)');
+          debugPrint('[LocalWalletCache] LocalWalletCache: no migration needed (already fast iterations)');
         }
       }
       return mnemonic;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('LocalWalletCache: error retrieving cached wallet: $e');
+        debugPrint('[LocalWalletCache] LocalWalletCache: error retrieving cached wallet: $e');
       }
       await clearCache();
       return null;
@@ -224,7 +224,7 @@ class LocalWalletCache {
     await _storage.delete(key: _saltKey);
     await _storage.delete(key: _metadataKey);
     if (kDebugMode) {
-      debugPrint('LocalWalletCache: cache cleared');
+      debugPrint('[LocalWalletCache] LocalWalletCache: cache cleared');
     }
   }
 

@@ -109,10 +109,10 @@ class WithdrawalService {
       };
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error withdrawing tokens: $e');
+        debugPrint('[Error] Error withdrawing tokens: $e');
         if (e is FirebaseFunctionsException) {
-          debugPrint('Firebase Functions error code: ${e.code}');
-          debugPrint('Firebase Functions error details: ${e.details}');
+          debugPrint('[Firebase] Firebase Functions error code: ${e.code}');
+          debugPrint('[Firebase] Firebase Functions error details: ${e.details}');
         }
       }
       throw Exception('Failed to withdraw tokens: ${e.toString()}');

@@ -133,7 +133,7 @@ class RewardService {
           );
 
       if (kDebugMode) {
-        debugPrint('Reward process error: $e');
+        debugPrint('[Reward] Reward process error: $e');
       }
 
       rethrow;
@@ -211,7 +211,7 @@ class RewardService {
       return txnHash;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Referral reward process error: $e');
+        debugPrint('[Referral] Referral reward process error: $e');
       }
       throw Exception(
         ErrorMessageUtil.userFacing(

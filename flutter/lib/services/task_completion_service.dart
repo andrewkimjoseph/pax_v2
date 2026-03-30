@@ -182,7 +182,7 @@ class TaskCompletionService {
 
       // Log the error
       if (kDebugMode) {
-        debugPrint('Task completion error: $e');
+        debugPrint('[Task] Task completion error: $e');
       }
 
       rethrow;

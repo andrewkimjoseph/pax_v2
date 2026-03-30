@@ -12,7 +12,7 @@ class WalletService {
   static const String _ethPath = "m/44'/60'/0'/0/0";
 
   Future<WalletResult> createWallet() async {
-    if (kDebugMode) debugPrint('WalletService: creating new wallet');
+    if (kDebugMode) debugPrint('[WalletService] WalletService: creating new wallet');
     final mnemonic = generateMnemonic(strength: 128);
     final seed = mnemonicToSeed(mnemonic);
     final root = ExtendedPrivateKey.master(seed, xprv);
@@ -22,7 +22,7 @@ class WalletService {
     final phrase = mnemonic.join(' ');
     await _storage.write(key: _mnemonicKey, value: phrase);
     if (kDebugMode) {
-      debugPrint('WalletService: wallet created');
+      debugPrint('[WalletService] WalletService: wallet created');
     }
     return WalletResult(credentials: credentials, mnemonic: phrase);
   }
@@ -32,7 +32,7 @@ class WalletService {
     bool saveToStorage = false,
   }) async {
     if (kDebugMode) {
-      debugPrint('WalletService: restoring from mnemonic');
+      debugPrint('[WalletService] WalletService: restoring from mnemonic');
     }
     final words = mnemonicPhrase.trim().split(RegExp(r'\s+'));
     if (!validateMnemonic(words)) {
@@ -47,7 +47,7 @@ class WalletService {
       await _storage.write(key: _mnemonicKey, value: mnemonicPhrase.trim());
     }
     if (kDebugMode) {
-      debugPrint('WalletService: wallet restored');
+      debugPrint('[WalletService] WalletService: wallet restored');
     }
     return credentials;
   }

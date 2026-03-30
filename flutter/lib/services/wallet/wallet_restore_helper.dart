@@ -49,7 +49,7 @@ Future<void> restoreWalletIfNeeded(
   if (credState.status == WalletCredentialsStatus.loading) return;
 
   if (kDebugMode) {
-    debugPrint('WalletRestoreHelper: restoreWalletIfNeeded start (silentOnly: $silentOnly)');
+    debugPrint('[WalletRestoreHelper] WalletRestoreHelper: restoreWalletIfNeeded start (silentOnly: $silentOnly)');
   }
   try {
     GoogleSignInAccount? driveAccount =
@@ -59,12 +59,12 @@ Future<void> restoreWalletIfNeeded(
     }
     if (driveAccount == null) {
       if (kDebugMode) {
-        debugPrint('WalletRestoreHelper: no Drive account, skipping');
+        debugPrint('[WalletRestoreHelper] WalletRestoreHelper: no Drive account, skipping');
       }
       return;
     }
     if (kDebugMode) {
-      debugPrint('WalletRestoreHelper: Drive account ok, calling restoreWallet...');
+      debugPrint('[WalletRestoreHelper] WalletRestoreHelper: Drive account ok, calling restoreWallet...');
     }
 
     final driveAuth = await driveAccount.authentication;
@@ -80,7 +80,7 @@ Future<void> restoreWalletIfNeeded(
         .read(walletCredentialsProvider.notifier)
         .restoreWallet(accessToken: accessToken, accountId: driveAccount.id);
     if (kDebugMode) {
-      debugPrint('WalletRestoreHelper: wallet restored on preload');
+      debugPrint('[WalletRestoreHelper] WalletRestoreHelper: wallet restored on preload');
     }
 
     // Validate restored credentials match Firestore wallet (recovery-first: try interactive restore once before showing error).
@@ -94,7 +94,7 @@ Future<void> restoreWalletIfNeeded(
         credEoAddress != null &&
         !_eoAddressMatches(credEoAddress, walletEoAddress)) {
       if (kDebugMode) {
-        debugPrint('WalletRestoreHelper: eoAddress mismatch after restore, clearing and trying interactive restore once');
+        debugPrint('[WalletRestoreHelper] WalletRestoreHelper: eoAddress mismatch after restore, clearing and trying interactive restore once');
       }
       ref.read(walletCredentialsProvider.notifier).clearCredentials();
       await restoreWalletIfNeeded(ref, silentOnly: false);
@@ -144,18 +144,18 @@ Future<void> restoreWalletIfNeeded(
             'smartAccountWalletAddress': smartAccountAddress,
           });
           if (kDebugMode) {
-            debugPrint('WalletRestoreHelper: backfilled smart account address');
+            debugPrint('[WalletRestoreHelper] WalletRestoreHelper: backfilled smart account address');
           }
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('WalletRestoreHelper: backfill failed (non-blocking): $e');
+            debugPrint('[WalletRestoreHelper] WalletRestoreHelper: backfill failed (non-blocking): $e');
           }
         }
       }
     }
   } catch (e) {
     if (kDebugMode) {
-      debugPrint('WalletRestoreHelper: preload restore failed: $e');
+      debugPrint('[WalletRestoreHelper] WalletRestoreHelper: preload restore failed: $e');
     }
     ref.read(walletCredentialsProvider.notifier).setError(e.toString());
   }
