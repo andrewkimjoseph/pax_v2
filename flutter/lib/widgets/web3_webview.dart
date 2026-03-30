@@ -97,7 +97,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Web3WebView: Failed to fetch chainId: $e');
+        debugPrint('[Web3WebView] Web3WebView: Failed to fetch chainId: $e');
       }
       if (mounted) {
         setState(() {
@@ -438,7 +438,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     if (kDebugMode) {
       debugPrint('[Web3WebView]: ✓ TX hash: $txHash');
       debugPrint('[Web3WebView]: Check: https://celoscan.io/tx/$txHash');
-      debugPrint('Web3WebView: ==========================');
+      debugPrint('[Web3WebView] Web3WebView: ==========================');
     }
 
     return txHash;
@@ -547,7 +547,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
       return {'id': id, 'result': txHash};
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Web3WebView: Transaction error: $e');
+        debugPrint('[Web3WebView] Web3WebView: Transaction error: $e');
       }
       return {'id': id, 'error': e.toString()};
     }
