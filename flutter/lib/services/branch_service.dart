@@ -26,7 +26,7 @@ class BranchService {
         _sdkInitCompleter.complete();
       }
       if (kDebugMode) {
-        debugPrint('BranchService: SDK marked as initialized');
+        debugPrint('[BranchService] BranchService: SDK marked as initialized');
       }
     }
   }
@@ -37,7 +37,7 @@ class BranchService {
   void init({required Function(Map<dynamic, dynamic>) deepLinkHandler}) {
     _deepLinkHandler = deepLinkHandler;
     if (kDebugMode) {
-      debugPrint('BranchService: Initialized with deep link handler');
+      debugPrint('[BranchService] BranchService: Initialized with deep link handler');
     }
   }
 
@@ -53,7 +53,7 @@ class BranchService {
 
     if (_isListening) {
       if (kDebugMode) {
-        debugPrint('Already listening to deep links');
+        debugPrint('[Already] Already listening to deep links');
       }
       return;
     }
@@ -61,18 +61,18 @@ class BranchService {
     // Wait for SDK to be initialized before listening
     if (!_sdkInitialized) {
       if (kDebugMode) {
-        debugPrint('BranchService: Waiting for SDK initialization...');
+        debugPrint('[BranchService] BranchService: Waiting for SDK initialization...');
       }
       await waitForSdkInit();
     }
 
     if (kDebugMode) {
-      debugPrint('BranchService: Starting deep link listener');
+      debugPrint('[BranchService] BranchService: Starting deep link listener');
     }
     _linkDataStreamSubscription = FlutterBranchSdk.listSession().listen(
       (linkData) {
         if (kDebugMode) {
-          debugPrint('BranchService: Deep link being listened to: $linkData');
+          debugPrint('[BranchService] BranchService: Deep link being listened to: $linkData');
         }
         // Only handle deep links if they contain actual link data
         if (linkData.isNotEmpty && linkData['+clicked_branch_link'] == true) {
@@ -81,7 +81,7 @@ class BranchService {
       },
       onError: (error) {
         if (kDebugMode) {
-          debugPrint('BranchService: Error receiving deep link: $error');
+          debugPrint('[BranchService] BranchService: Error receiving deep link: $error');
         }
       },
     );
@@ -90,7 +90,7 @@ class BranchService {
 
   void dispose() {
     if (kDebugMode) {
-      debugPrint('BranchService: Disposing deep link listener');
+      debugPrint('[BranchService] BranchService: Disposing deep link listener');
     }
     _linkDataStreamSubscription?.cancel();
     _deepLinkHandler = null;
@@ -102,11 +102,18 @@ class BranchService {
   }) async {
     if (kDebugMode) {
       debugPrint(
-        'BranchService: Generating referral link for participant $referringParticipantId',
+        '[BranchService] generateReferralLink called for participant $referringParticipantId',
+      );
+      debugPrint(
+        '[BranchService] SDK initialized: $_sdkInitialized, completer completed: ${_sdkInitCompleter.isCompleted}',
       );
     }
 
     await waitForSdkInit();
+
+    if (kDebugMode) {
+      debugPrint('[BranchService] waitForSdkInit resolved — proceeding to create short URL');
+    }
 
     final buo = BranchUniversalObject(
       canonicalIdentifier: referringParticipantId,
@@ -129,13 +136,28 @@ class BranchService {
             tags: ['referral', 'participant'],
           )
           ..addControlParam('referringParticipantId', referringParticipantId)
-          // Force the app to open on a stable in-app path and treat the
-          // referringParticipantId purely as data.
           ..addControlParam(r'$deeplink_path', Routes.loading);
 
-    return FlutterBranchSdk.getShortUrl(
-      buo: buo,
-      linkProperties: linkProperties,
-    );
+    if (kDebugMode) {
+      debugPrint('[BranchService] Calling FlutterBranchSdk.getShortUrl...');
+    }
+
+    try {
+      final response = await FlutterBranchSdk.getShortUrl(
+        buo: buo,
+        linkProperties: linkProperties,
+      );
+      if (kDebugMode) {
+        debugPrint('[BranchService] getShortUrl returned — success: ${response.success}, '
+            'result: ${response.result}');
+      }
+      return response;
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('[BranchService] getShortUrl threw: $e');
+        debugPrint('[BranchService] Stack trace: $st');
+      }
+      rethrow;
+    }
   }
 }
