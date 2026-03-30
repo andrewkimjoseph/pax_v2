@@ -111,6 +111,27 @@ export const sponsorWalletGas = onCall(
       }
 
       const amountWei = parseEther(DEFAULT_SPONSOR_AMOUNT_CELO);
+      const minBalanceThresholdWei = amountWei / BigInt(2);
+
+      const currentBalanceWei = await PUBLIC_CLIENT.getBalance({
+        address: eoAddress,
+      });
+      if (currentBalanceWei >= minBalanceThresholdWei) {
+        logger.info("[V2] Wallet has sufficient gas, skipping sponsorship", {
+          eoWalletAddress,
+          userId,
+          currentBalanceWei: currentBalanceWei.toString(),
+          minBalanceThresholdWei: minBalanceThresholdWei.toString(),
+        });
+        return {
+          skipped: true,
+          reason: "balance_sufficient",
+          currentBalanceWei: currentBalanceWei.toString(),
+          minBalanceThresholdWei: minBalanceThresholdWei.toString(),
+          amountWei: amountWei.toString(),
+          timestamp: new Date().toISOString(),
+        };
+      }
 
       logger.info("[V2] Sponsoring wallet gas", {
         eoWalletAddress,
