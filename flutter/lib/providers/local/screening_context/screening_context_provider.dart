@@ -39,7 +39,7 @@ final screeningByIdProvider = FutureProvider.family<Screening?, String>((
     return Screening.fromFirestore(docSnapshot);
   } catch (e) {
     if (kDebugMode) {
-      debugPrint('Error fetching screening: $e');
+      debugPrint('[Error] Error fetching screening: $e');
     }
     return null;
   }
@@ -111,7 +111,7 @@ class ScreeningContextNotifier extends Notifier<ScreeningContext?> {
       state = ScreeningContext(screening: screening);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error fetching screening: $e');
+        debugPrint('[Error] Error fetching screening: $e');
       }
       state = null;
     }

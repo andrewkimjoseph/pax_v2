@@ -58,7 +58,7 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
     required String accountId,
   }) async {
     if (kDebugMode) {
-      debugPrint('WalletCredentials: creating wallet');
+      debugPrint('[WalletCredentials] WalletCredentials: creating wallet');
     }
     state = state.copyWith(status: WalletCredentialsStatus.loading);
 
@@ -70,18 +70,18 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
     try {
       final result = await walletService.createWallet();
       if (kDebugMode) {
-        debugPrint('WalletCredentials: wallet created');
+        debugPrint('[WalletCredentials] WalletCredentials: wallet created');
       }
 
       final encrypted = walletEnc.encrypt(result.mnemonic, accountId);
       await drive.upload(encrypted);
       if (kDebugMode) {
-        debugPrint('WalletCredentials: uploaded to Drive');
+        debugPrint('[WalletCredentials] WalletCredentials: uploaded to Drive');
       }
 
       await localCache.cacheWallet(result.mnemonic, accountId);
       if (kDebugMode) {
-        debugPrint('WalletCredentials: cached locally');
+        debugPrint('[WalletCredentials] WalletCredentials: cached locally');
       }
 
       drive.close();
@@ -95,7 +95,7 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
     } catch (e) {
       drive.close();
       if (kDebugMode) {
-        debugPrint('WalletCredentials: create failed: $e');
+        debugPrint('[WalletCredentials] WalletCredentials: create failed: $e');
       }
       state = state.copyWith(
         status: WalletCredentialsStatus.error,
@@ -110,7 +110,7 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
     required String accountId,
   }) async {
     if (kDebugMode) {
-      debugPrint('WalletCredentials: restoreWallet start');
+      debugPrint('[WalletCredentials] WalletCredentials: restoreWallet start');
     }
     state = state.copyWith(status: WalletCredentialsStatus.loading);
 
@@ -120,19 +120,19 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
     try {
       // Try local cache first
       if (kDebugMode) {
-        debugPrint('WalletCredentials: trying local cache...');
+        debugPrint('[WalletCredentials] WalletCredentials: trying local cache...');
       }
       final cachedMnemonic = await localCache.getCachedWallet(accountId);
       if (cachedMnemonic != null) {
         if (kDebugMode) {
-          debugPrint('WalletCredentials: restored from cache, calling restoreFromMnemonic...');
+          debugPrint('[WalletCredentials] WalletCredentials: restored from cache, calling restoreFromMnemonic...');
         }
         final credentials = await walletService.restoreFromMnemonic(
           cachedMnemonic,
           saveToStorage: true,
         );
         if (kDebugMode) {
-          debugPrint('WalletCredentials: restoreFromMnemonic done, updating state');
+          debugPrint('[WalletCredentials] WalletCredentials: restoreFromMnemonic done, updating state');
         }
         state = state.copyWith(
           status: WalletCredentialsStatus.loaded,
@@ -145,7 +145,7 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
 
       // Fallback to Drive
       if (kDebugMode) {
-        debugPrint('WalletCredentials: cache miss, trying Drive');
+        debugPrint('[WalletCredentials] WalletCredentials: cache miss, trying Drive');
       }
       final drive = DriveService(accessToken: accessToken);
       try {
@@ -175,7 +175,7 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
         // No backup found -- create new wallet
         drive.close();
         if (kDebugMode) {
-          debugPrint('WalletCredentials: no Drive backup, creating new wallet');
+          debugPrint('[WalletCredentials] WalletCredentials: no Drive backup, creating new wallet');
         }
         await createWallet(accessToken: accessToken, accountId: accountId);
       } catch (e) {
@@ -184,7 +184,7 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('WalletCredentials: restore failed: $e');
+        debugPrint('[WalletCredentials] WalletCredentials: restore failed: $e');
       }
       state = state.copyWith(
         status: WalletCredentialsStatus.error,

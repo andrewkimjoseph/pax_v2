@@ -97,7 +97,7 @@ class AuthNotifier extends Notifier<AuthStateModel> {
         // Only log out after multiple consecutive failures
         if (_consecutiveValidationFailures >= _maxConsecutiveFailures) {
           if (kDebugMode) {
-            debugPrint('Multiple consecutive validation failures. Logging out.');
+            debugPrint('[Multiple] Multiple consecutive validation failures. Logging out.');
           }
 
           await _repository.signOut();
@@ -118,7 +118,7 @@ class AuthNotifier extends Notifier<AuthStateModel> {
       // On any error, log the error but don't count it as a validation failure
       // This prevents network errors from causing logouts
       if (kDebugMode) {
-        debugPrint('Error during token validation: $e');
+        debugPrint('[Error] Error during token validation: $e');
       }
     }
   }
@@ -168,7 +168,7 @@ class AuthNotifier extends Notifier<AuthStateModel> {
       // Error with validation, but don't automatically log out
       // Just log the error and continue
       if (kDebugMode) {
-        debugPrint('Error refreshing user state: $e');
+        debugPrint('[Error] Error refreshing user state: $e');
       }
     }
   }
@@ -243,7 +243,7 @@ class AuthNotifier extends Notifier<AuthStateModel> {
       );
 
       if (kDebugMode) {
-        debugPrint('Error during sign out: $e');
+        debugPrint('[Error] Error during sign out: $e');
       }
     }
   }
