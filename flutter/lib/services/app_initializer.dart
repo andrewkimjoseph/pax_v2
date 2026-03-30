@@ -6,7 +6,6 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
@@ -56,8 +55,13 @@ class AppInitializer {
   void _initializeNonCriticalServices() {
     // Use unawaited to prevent blocking
     _initializeRemoteConfigBackground();
-    if (!kIsWeb) {
-      // Branch SDK is not needed on web (handled in index.html)
+    if (kIsWeb) {
+      // On web, the Branch JS SDK is loaded and initialized in index.html.
+      // Skip FlutterBranchSdk.init() (which can hang when the JS SDK is
+      // already initialized) and just mark the Dart-side service as ready
+      // so that generateReferralLink / waitForSdkInit can proceed.
+      BranchService.markSdkInitialized();
+    } else {
       _initializeBranchBackground();
     }
   }
@@ -99,7 +103,7 @@ class AppInitializer {
       await _initializeBranch();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Branch SDK initialization failed: $e');
+        debugPrint('[Branch] Branch SDK initialization failed: $e');
       }
       // Don't block app startup if Branch fails
     }
@@ -150,8 +154,8 @@ class AppInitializer {
       } else {
         // Log to console on web for debugging
         if (kDebugMode) {
-          debugPrint('Flutter Error: ${errorDetails.exception}');
-          debugPrint('Stack: ${errorDetails.stack}');
+          debugPrint('[Flutter] Flutter Error: ${errorDetails.exception}');
+          debugPrint('[Stack] Stack: ${errorDetails.stack}');
         }
       }
     };
@@ -162,8 +166,8 @@ class AppInitializer {
       } else {
         // Log to console on web for debugging
         if (kDebugMode) {
-          debugPrint('Platform Error: $error');
-          debugPrint('Stack: $stack');
+          debugPrint('[Platform] Platform Error: $error');
+          debugPrint('[Stack] Stack: $stack');
         }
       }
       return true;
@@ -171,7 +175,6 @@ class AppInitializer {
   }
 
   Future<void> _initializeNotifications() async {
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await NotificationService().initialize();
   }
 
@@ -186,20 +189,7 @@ class AppInitializer {
     BranchService.markSdkInitialized();
 
     if (kDebugMode) {
-      debugPrint('Branch SDK initialized');
+      debugPrint('[Branch] Branch SDK initialized');
     }
-  }
-}
-
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  if (kDebugMode) {
-    debugPrint('Background message received: ${message.messageId}');
-    debugPrint(
-      'Background message notification: ${message.notification?.title}',
-    );
-    debugPrint('Background message data: ${message.data}');
   }
 }
