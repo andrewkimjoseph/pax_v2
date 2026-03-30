@@ -152,7 +152,7 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       } catch (e) {
         // Surface registration failure so user can retry
         if (kDebugMode) {
-          debugPrint('Registry log failed (non-blocking): $e');
+          debugPrint('[Registry] Registry log failed (non-blocking): $e');
         }
         viewModel.setError(
           'Wallet was created but could not be registered on-chain. '
@@ -220,11 +220,7 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
             children: [
               const Spacer(),
               if (!hasWalletNeedingVerification)
-                SvgPicture.asset(
-                  'lib/assets/svgs/wallets/pax_wallet.svg',
-                  width: 120,
-                  height: 120,
-                ).withPadding(bottom: 32),
+                _buildWalletIcon(state).withPadding(bottom: 32),
               if (hasWalletNeedingVerification)
                 _buildWalletAlreadyExistsContent()
               else
@@ -362,6 +358,50 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
     );
   }
 
+  Widget _buildWalletIcon(WalletCreationState state) {
+    Widget? badge;
+    if (state.step == WalletCreationStep.success) {
+      badge = FaIcon(
+        FontAwesomeIcons.solidCircleCheck,
+        color: PaxColors.green,
+        size: 40,
+      );
+    } else if (state.step == WalletCreationStep.error) {
+      badge = FaIcon(
+        FontAwesomeIcons.circleExclamation,
+        color: PaxColors.red,
+        size: 40,
+      );
+    }
+
+    final walletSvg = SvgPicture.asset(
+      'lib/assets/svgs/wallets/pax_wallet.svg',
+      width: 120,
+      height: 120,
+    );
+
+    if (badge == null) return walletSvg;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        walletSvg,
+        Positioned(
+          right: -8,
+          top: -8,
+          child: Container(
+            decoration: BoxDecoration(
+              color: PaxColors.white,
+              shape: BoxShape.circle,
+            ),
+            padding: const EdgeInsets.all(4),
+            child: badge,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildContent(WalletCreationState state) {
     switch (state.step) {
       case WalletCreationStep.info:
@@ -406,11 +446,6 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       case WalletCreationStep.success:
         return Column(
           children: [
-            FaIcon(
-              FontAwesomeIcons.solidCircleCheck,
-              color: PaxColors.green,
-              size: 64,
-            ).withPadding(bottom: 24),
             Text(
               'Wallet Created!',
               style: TextStyle(
@@ -439,11 +474,6 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       case WalletCreationStep.error:
         return Column(
           children: [
-            FaIcon(
-              FontAwesomeIcons.circleExclamation,
-              color: PaxColors.red,
-              size: 64,
-            ).withPadding(bottom: 24),
             Text(
               'Something went wrong',
               style: TextStyle(
