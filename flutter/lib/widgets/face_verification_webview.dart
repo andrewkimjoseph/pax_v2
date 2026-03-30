@@ -347,7 +347,7 @@ class FaceVerificationWebViewState
     } catch (e) {
       if (mounted) {
         if (kDebugMode) {
-          debugPrint('FaceVerificationWebView: Error injecting provider: $e');
+          debugPrint('[FaceVerificationWebView] FaceVerificationWebView: Error injecting provider: $e');
         }
       }
     }

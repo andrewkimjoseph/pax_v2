@@ -160,7 +160,7 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                           try {
                             // Refresh only referral activities (backed by allActivitiesProvider).
                             if (kDebugMode) {
-                              debugPrint('Refreshing referral activities');
+                              debugPrint('[Refreshing] Refreshing referral activities');
                             }
                             ref.invalidate(allActivitiesProvider(userId));
                             // Wait for the new activities to load before clearing the spinner.

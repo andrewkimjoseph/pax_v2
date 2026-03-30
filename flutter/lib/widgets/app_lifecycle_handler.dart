@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/services/branch_service.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 
@@ -39,7 +41,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     ); // Initialize with handler
     _branchService.listenToDeepLinks(); // Start listening (waits for SDK init)
     if (kDebugMode) {
-      debugPrint('AppLifecycleHandler: initState, observer added');
+      debugPrint('[AppLifecycleHandler] AppLifecycleHandler: initState, observer added');
     }
   }
 
@@ -48,7 +50,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     WidgetsBinding.instance.removeObserver(this);
     _branchService.dispose(); // Dispose the Branch service
     if (kDebugMode) {
-      debugPrint('AppLifecycleHandler: dispose, observer removed');
+      debugPrint('[AppLifecycleHandler] AppLifecycleHandler: dispose, observer removed');
     }
     super.dispose();
   }
@@ -93,10 +95,21 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
           if (ref.read(accountTypeProvider) == AccountType.v2) {
             if (kDebugMode) {
               debugPrint(
-                'AppLifecycleHandler: V2 authenticated, calling restoreWalletIfNeeded(silentOnly: true)',
+                '[AppLifecycleHandler] V2 authenticated, calling restoreWalletIfNeeded(silentOnly: true)',
               );
             }
             restoreWalletIfNeeded(ref, silentOnly: true);
+
+            if (kDebugMode) {
+              debugPrint(
+                '[AppLifecycleHandler] triggering backfillPostVerificationSideEffects on resume',
+              );
+            }
+            unawaited(
+              ref
+                  .read(paxWalletProvider.notifier)
+                  .backfillPostVerificationSideEffects(),
+            );
           }
         }
       });

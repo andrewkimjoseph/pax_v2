@@ -271,7 +271,7 @@ class _GoodWalletConnectionViewState
     } catch (e) {
       // Silently handle notification errors
       if (kDebugMode) {
-        debugPrint('Failed to send notification: $e');
+        debugPrint('[Failed] Failed to send notification: $e');
       }
     }
   }
