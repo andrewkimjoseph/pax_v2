@@ -125,7 +125,7 @@ class PaxWalletViewNotifier extends Notifier<PaxWalletViewStateModel> {
         );
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('Error fetching PaxWallet balance: $e');
+      if (kDebugMode) debugPrint('[Error] Error fetching PaxWallet balance: $e');
       state = state.copyWith(
         state: PaxWalletViewState.error,
         errorMessage: e.toString(),

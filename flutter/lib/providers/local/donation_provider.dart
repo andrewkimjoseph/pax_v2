@@ -109,7 +109,7 @@ class DonationNotifier extends Notifier<DonationStateModel> {
       await ref.read(paxAccountProvider.notifier).syncBalancesFromBlockchain();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error donating: $e');
+        debugPrint('[Error] Error donating: $e');
       }
       state = state.copyWith(
         state: DonationState.error,

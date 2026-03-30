@@ -17,7 +17,7 @@ class AnalyticsProvider {
     await _analyticsService.setUserId(participantId);
 
     if (kDebugMode) {
-      debugPrint('Analytics Service: Set user ID: $participantId');
+      debugPrint('[Analytics] Analytics Service: Set user ID: $participantId');
     }
   }
 

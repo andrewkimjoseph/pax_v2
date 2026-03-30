@@ -233,7 +233,7 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
       return txnHash;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error claiming achievement: $e');
+        debugPrint('[Error] Error claiming achievement: $e');
       }
 
       String errorMessage = e.toString();

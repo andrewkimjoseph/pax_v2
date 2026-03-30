@@ -97,7 +97,7 @@ class WalletTransactionsNotifier extends Notifier<WalletTransactionsState> {
         clearError: true,
       );
     } catch (e) {
-      if (kDebugMode) debugPrint('WalletTransactionsNotifier: fetch error $e');
+      if (kDebugMode) debugPrint('[WalletTransactionsNotifier] WalletTransactionsNotifier: fetch error $e');
       state = state.copyWith(
         isRefreshing: false,
         errorMessage: e.toString(),

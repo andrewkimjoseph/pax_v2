@@ -66,7 +66,7 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
     try {
       if (state.isInitialized) {
         if (kDebugMode) {
-          debugPrint('FCM Provider: Already initialized, skipping');
+          debugPrint('[FCM] FCM Provider: Already initialized, skipping');
         }
         return;
       }
@@ -87,11 +87,11 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
       state = state.copyWith(isInitialized: true, isSavingToken: false);
 
       if (kDebugMode) {
-        debugPrint('FCM Provider: Initialization complete');
+        debugPrint('[FCM] FCM Provider: Initialization complete');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('FCM Provider: Error during initialization: $e');
+        debugPrint('[FCM] FCM Provider: Error during initialization: $e');
       }
 
       state = state.copyWith(
@@ -108,13 +108,13 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
       if (previous?.state != current.state) {
         if (current.state == AuthState.authenticated) {
           if (kDebugMode) {
-            debugPrint('FCM Provider: Auth state changed to authenticated');
+            debugPrint('[FCM] FCM Provider: Auth state changed to authenticated');
           }
 
           _requestPermissionAndSaveTokenForCurrentUser(current.user.uid);
         } else if (current.state == AuthState.unauthenticated) {
           if (kDebugMode) {
-            debugPrint('FCM Provider: Auth state changed to unauthenticated');
+            debugPrint('[FCM] FCM Provider: Auth state changed to unauthenticated');
           }
 
           // Stop listening when user signs out
@@ -162,7 +162,7 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
       state = state.copyWith(isSavingToken: false);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('FCM Provider: Error saving token: $e');
+        debugPrint('[FCM] FCM Provider: Error saving token: $e');
       }
 
       state = state.copyWith(

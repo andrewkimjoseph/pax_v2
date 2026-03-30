@@ -175,7 +175,7 @@ class WithdrawalMethodConnectionNotifier
         .isWalletAddressUsed(walletAddress);
 
     if (kDebugMode) {
-      debugPrint('isWalletAddressUsed: $isWalletAddressUsed');
+      debugPrint('[isWalletAddressUsed] isWalletAddressUsed: $isWalletAddressUsed');
     }
 
     if (isWalletAddressUsed) {
@@ -275,7 +275,7 @@ class WithdrawalMethodConnectionNotifier
       return serverWalletData;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error creating server wallet: $e');
+        debugPrint('[Error] Error creating server wallet: $e');
       }
       throw Exception('Failed to create server wallet: ${e.toString()}');
     }
@@ -383,7 +383,7 @@ class WithdrawalMethodConnectionNotifier
       return contractData;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error deploying contract: $e');
+        debugPrint('[Error] Error deploying contract: $e');
       }
       throw Exception('Failed to deploy contract: ${e.toString()}');
     }
@@ -418,7 +418,7 @@ class WithdrawalMethodConnectionNotifier
       return contractData;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error deploying contract: $e');
+        debugPrint('[Error] Error deploying contract: $e');
       }
       throw Exception('Failed to deploy contract: ${e.toString()}');
     }
@@ -478,7 +478,7 @@ class WithdrawalMethodConnectionNotifier
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error creating payment method or updating participant: $e');
+        debugPrint('[Error] Error creating payment method or updating participant: $e');
       }
       throw Exception('Failed to complete wallet connection: ${e.toString()}');
     }
@@ -646,7 +646,7 @@ class WithdrawalMethodConnectionNotifier
     // Check if participant exists
     if (participant.participant == null) {
       if (kDebugMode) {
-        debugPrint('Warning: Participant is null, skipping analytics');
+        debugPrint('[Warning] Warning: Participant is null, skipping analytics');
       }
       return;
     }
@@ -666,7 +666,7 @@ class WithdrawalMethodConnectionNotifier
           .withdrawalMethodConnectionComplete(withdrawalMethodData);
     } else {
       if (kDebugMode) {
-        debugPrint('Warning: No withdrawal methods found for analytics');
+        debugPrint('[Warning] Warning: No withdrawal methods found for analytics');
       }
       // Send analytics without withdrawal method data
       ref.read(analyticsProvider).withdrawalMethodConnectionComplete({});
@@ -729,7 +729,7 @@ class WithdrawalMethodConnectionNotifier
   // Helper method to handle errors
   void _handleError(dynamic error, String primaryPaymentMethod) {
     if (kDebugMode) {
-      debugPrint('Error: $error');
+      debugPrint('[Error] Error: $error');
     }
 
     ref.read(analyticsProvider).withdrawalMethodConnectionFailed({

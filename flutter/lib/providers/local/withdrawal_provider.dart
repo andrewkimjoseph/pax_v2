@@ -60,10 +60,10 @@ class WithdrawNotifier extends Notifier<WithdrawStateModel> {
 
       if (kDebugMode) {
         debugPrint(
-          'Withdrawing: $amountToWithdraw tokens to payment method $paymentMethodId',
+          '[WithdrawNotifier] Withdrawing: $amountToWithdraw tokens to payment method $paymentMethodId',
         );
         debugPrint(
-          'Using currency address: $currencyAddress with $decimals decimals',
+          '[WithdrawNotifier] Using currency address: $currencyAddress with $decimals decimals',
         );
       }
 
@@ -146,7 +146,9 @@ class WithdrawNotifier extends Notifier<WithdrawStateModel> {
       );
 
       if (kDebugMode) {
-        debugPrint('Withdrawal transaction successful: ${result['txnHash']}');
+        debugPrint(
+          '[WithdrawNotifier] Withdrawal transaction successful: ${result['txnHash']}',
+        );
       }
 
       // Update state to success
@@ -196,7 +198,7 @@ class WithdrawNotifier extends Notifier<WithdrawStateModel> {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error withdrawing tokens: $e');
+        debugPrint('[Error] Error withdrawing tokens: $e');
       }
 
       ref.read(analyticsProvider).withdrawalFailed({
