@@ -81,7 +81,7 @@ class BlockchainService {
       return 'Network $chainId';
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('BlockchainService.getNetworkLabel: $e');
+        debugPrint('[Pax] BlockchainService.getNetworkLabel: $e');
       }
       return null;
     }
@@ -120,7 +120,7 @@ class BlockchainService {
         balances[entry.key] = balance;
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('Error fetching ${entry.value.name} balance: $e');
+          debugPrint('[Error] Error fetching ${entry.value.name} balance: $e');
         }
         balances[entry.key] = 0.0;
       }
@@ -235,7 +235,7 @@ class BlockchainService {
       return balance >= amountToWithdraw;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error checking contract balance: $e');
+        debugPrint('[Error] Error checking contract balance: $e');
       }
       return false;
     }

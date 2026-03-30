@@ -67,7 +67,7 @@ class GoodDollarIdentityService {
       return await attempt();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('GoodDollarIdentityService: isWhitelisted retry failed: $e');
+        debugPrint('[GoodDollarIdentityService] GoodDollarIdentityService: isWhitelisted retry failed: $e');
       }
       return false;
     }

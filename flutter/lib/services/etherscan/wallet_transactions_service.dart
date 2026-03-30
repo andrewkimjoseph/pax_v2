@@ -65,7 +65,7 @@ class WalletTransactionsService {
       return EtherscanTxListResponse.fromCallableResult(result.data);
     } on FirebaseFunctionsException catch (e) {
       if (kDebugMode) {
-        debugPrint('WalletTransactionsService: callable error ${e.code} ${e.message}');
+        debugPrint('[WalletTransactionsService] WalletTransactionsService: callable error ${e.code} ${e.message}');
       }
       rethrow;
     }

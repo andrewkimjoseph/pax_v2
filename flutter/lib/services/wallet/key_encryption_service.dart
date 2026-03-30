@@ -17,7 +17,7 @@ class KeyEncryptionService {
   }
 
   String encryptPrivateKey(String privateKeyHex, String sessionKey) {
-    if (kDebugMode) debugPrint('KeyEncryptionService: encrypting private key');
+    if (kDebugMode) debugPrint('[KeyEncryptionService] KeyEncryptionService: encrypting private key');
     final normalizedKey = privateKeyHex.startsWith('0x')
         ? privateKeyHex.substring(2)
         : privateKeyHex;
@@ -45,7 +45,7 @@ class KeyEncryptionService {
 
   String decryptPrivateKey(String encryptedJson, String sessionKey) {
     if (kDebugMode) {
-      debugPrint('KeyEncryptionService: decrypting private key');
+      debugPrint('[KeyEncryptionService] KeyEncryptionService: decrypting private key');
     }
     final map = jsonDecode(encryptedJson) as Map<String, dynamic>;
     if ((map['version'] as int?) != version) {

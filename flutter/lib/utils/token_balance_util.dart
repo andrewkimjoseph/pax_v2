@@ -120,7 +120,7 @@ class TokenBalanceUtil {
     final tokenId = _currencyToToken[currencyName.toLowerCase()];
     if (tokenId == null) {
       if (kDebugMode) {
-        debugPrint('Warning: Unknown currency name: $currencyName');
+        debugPrint('[Warning] Warning: Unknown currency name: $currencyName');
       }
       return 0;
     }

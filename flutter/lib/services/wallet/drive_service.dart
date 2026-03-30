@@ -15,7 +15,7 @@ class DriveService {
 
   Future<String?> findAppDataFile() async {
     if (kDebugMode) {
-      debugPrint('Drive: listing app data folder');
+      debugPrint('[Drive] Drive: listing app data folder');
     }
     final uri = Uri.parse('$_baseUrl/files').replace(
       queryParameters: {
@@ -43,20 +43,20 @@ class DriveService {
       if (map['name'] == _fileName) {
         final id = map['id'] as String?;
         if (kDebugMode) {
-          debugPrint('Drive: backup found (fileId present)');
+          debugPrint('[Drive] Drive: backup found (fileId present)');
         }
         return id;
       }
     }
     if (kDebugMode) {
-      debugPrint('Drive: no backup file found');
+      debugPrint('[Drive] Drive: no backup file found');
     }
     return null;
   }
 
   Future<String> download(String fileId) async {
     if (kDebugMode) {
-      debugPrint('Drive: downloading backup');
+      debugPrint('[Drive] Drive: downloading backup');
     }
     final uri = Uri.parse(
       '$_baseUrl/files/$fileId',
@@ -74,14 +74,14 @@ class DriveService {
       );
     }
     if (kDebugMode) {
-      debugPrint('Drive: download OK (${response.body.length} bytes)');
+      debugPrint('[Drive] Drive: download OK (${response.body.length} bytes)');
     }
     return response.body;
   }
 
   Future<void> upload(String content, {String? existingFileId}) async {
     if (kDebugMode) {
-      debugPrint('Drive: uploading backup');
+      debugPrint('[Drive] Drive: uploading backup');
     }
     final metadata = {
       'name': _fileName,
@@ -90,13 +90,13 @@ class DriveService {
     if (existingFileId != null) {
       await _updateFile(existingFileId, content);
       if (kDebugMode) {
-        debugPrint('Drive: upload OK (updated)');
+        debugPrint('[Drive] Drive: upload OK (updated)');
       }
       return;
     }
     await _createFile(metadata, content);
     if (kDebugMode) {
-      debugPrint('Drive: upload OK (created)');
+      debugPrint('[Drive] Drive: upload OK (created)');
     }
   }
 

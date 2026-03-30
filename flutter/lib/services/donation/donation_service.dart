@@ -66,7 +66,7 @@ class DonationService {
       };
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error donating tokens: $e');
+        debugPrint('[Error] Error donating tokens: $e');
       }
       throw Exception('Failed to donate tokens: ${e.toString()}');
     }

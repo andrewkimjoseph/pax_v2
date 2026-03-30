@@ -80,7 +80,7 @@ class ConnectivityService {
       return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error checking internet access: $e');
+        debugPrint('[Error] Error checking internet access: $e');
       }
       return false;
     }
@@ -121,7 +121,7 @@ class ConnectivityService {
       return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error checking Android VPN: $e');
+        debugPrint('[Error] Error checking Android VPN: $e');
       }
       return false; // Assume no VPN if there's an error
     }
@@ -143,7 +143,7 @@ class ConnectivityService {
       return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error checking iOS VPN: $e');
+        debugPrint('[Error] Error checking iOS VPN: $e');
       }
       return false; // Assume no VPN if there's an error
     }
