@@ -79,56 +79,67 @@ class ClaimSelectGoodCollectiveView extends ConsumerWidget {
       ],
       child: Column(
         children: [
-          ref
-              .watch(goodCollectiveConfigProvider)
-              .when(
-                data: (config) {
-                  final collectives =
-                      kDebugMode && config.goodcollectives.isEmpty
-                          ? const [
-                            GoodCollective(
-                              id: -1,
-                              name: 'Debug Collective',
-                              isGoodcollectiveAvailable: true,
-                              donationContract:
-                                  '0x0000000000000000000000000000000000000000',
-                            ),
-                          ]
-                          : config.goodcollectives;
+          Expanded(
+            child: ref
+                .watch(goodCollectiveConfigProvider)
+                .when(
+                  data: (config) {
+                    final collectives =
+                        kDebugMode && config.goodcollectives.isEmpty
+                            ? const [
+                              GoodCollective(
+                                id: -1,
+                                name: 'Debug Collective',
+                                isGoodcollectiveAvailable: true,
+                                donationContract:
+                                    '0x0000000000000000000000000000000000000000',
+                              ),
+                            ]
+                            : config.goodcollectives;
 
-                  if (!kDebugMode && collectives.isEmpty) {
-                    return const Center(
-                      child: Text('No GoodCollectives available'),
-                    ).withPadding(top: 24);
-                  }
+                    if (!kDebugMode && collectives.isEmpty) {
+                      return const Center(
+                        child: Text('No GoodCollectives available'),
+                      ).withPadding(top: 24);
+                    }
 
-                  return Container(
-                    padding: const EdgeInsets.only(top: 8, left: 8, right: 8),
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: PaxColors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: PaxColors.lightLilac, width: 1),
-                    ),
-                    child: Column(
-                      children: [
-                        ...collectives.map(
-                          (collective) => _GoodCollectiveTile(
-                            collective: collective,
-                            claimKind: claimContext?.claimKind.name,
-                          ).withPadding(bottom: 8),
+                    return SingleChildScrollView(
+                      child: Container(
+                        padding: const EdgeInsets.only(
+                          top: 8,
+                          left: 8,
+                          right: 8,
                         ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error:
-                    (_, __) => const Center(
-                      child: Text('Unable to load GoodCollectives'),
-                    ),
-              ),
-          const Spacer(),
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: PaxColors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: PaxColors.lightLilac,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            ...collectives.map(
+                              (collective) => _GoodCollectiveTile(
+                                collective: collective,
+                                claimKind: claimContext?.claimKind.name,
+                              ).withPadding(bottom: 8),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
+                  error:
+                      (_, __) => const Center(
+                        child: Text('Unable to load GoodCollectives'),
+                      ),
+                ),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Column(
