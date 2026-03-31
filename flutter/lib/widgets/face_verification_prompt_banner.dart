@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' show InkWell;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/routing/routes.dart';
@@ -13,6 +14,11 @@ class FaceVerificationPromptBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final accountType = ref.watch(accountTypeProvider);
+    if (accountType != AccountType.v2) {
+      return const SizedBox.shrink();
+    }
+
     final needsVerification = ref.watch(paxWalletNeedsVerificationProvider);
 
     return needsVerification.when(

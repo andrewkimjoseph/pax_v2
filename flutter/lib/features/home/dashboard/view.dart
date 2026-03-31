@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pax/data/forum_reports.dart';
 import 'package:pax/models/firestore/achievement/achievement_model.dart';
 import 'package:pax/routing/routes.dart';
-import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
@@ -44,8 +43,6 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     final donationsMadeCount = ref.watch(donationsMadeCountProvider);
     final totalGoodDollarDonated = ref.watch(totalGoodDollarDonatedProvider);
     final achievementState = ref.watch(achievementsProvider);
-    final accountType = ref.watch(accountTypeProvider);
-    final isV2 = accountType == AccountType.v2;
 
     final unclaimedAchievements =
         achievementState.achievements
@@ -60,9 +57,9 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
 
             const V2AvailabilityBanner(),
 
-            if (isV2) const FaceVerificationPromptBanner(),
+            const FaceVerificationPromptBanner(),
 
-            if (!isV2) const WithdrawalMethodPromptBanner(),
+            const WithdrawalMethodPromptBanner(),
 
             const ProfileCompletionPromptBanner(),
 
