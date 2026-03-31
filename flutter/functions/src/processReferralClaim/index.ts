@@ -354,6 +354,15 @@ export const processReferralClaim = onCall(
         Number(donationBasisPoints) > 0 &&
         Number(donationBasisPoints) <= 10000;
 
+      const payoutAmount = hasDonationSplit
+        ? Number(
+            (
+              (amountReceived * (10000 - Number(donationBasisPoints))) /
+              10000
+            ).toFixed(12)
+          )
+        : amountReceived;
+
       // Referrals are currently paid in the primary reward currency (token id 1).
       const { tokenAddress, decimals } = getTokenConfigForCurrencyId(1);
       const amountWei = parseUnits(String(amountReceived), decimals);
@@ -430,6 +439,7 @@ export const processReferralClaim = onCall(
 
       const now = new Date();
       await referralDoc.ref.update({
+        amountReceived: payoutAmount,
         txnHash: bundleTxnHash,
         timeRewarded: now,
         timeUpdated: now,
@@ -441,7 +451,7 @@ export const processReferralClaim = onCall(
         paxAccountContractAddress: recipientAddress,
         referralId,
         txnHash: bundleTxnHash,
-        amount: amountReceived,
+        amount: payoutAmount,
       };
     } catch (error) {
       if (isHttpsError(error)) throw error;
