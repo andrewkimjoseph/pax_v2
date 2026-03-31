@@ -73,6 +73,7 @@ class RemoteConfigService {
           RemoteConfigKeys.areTasksCompletionsAvailable: true,
           RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
           RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
+          RemoteConfigKeys.isVoteForCanvassingAvailable: false,
         }),
         RemoteConfigKeys.miniappsConfig: await _loadMiniappsConfigDefault(),
         RemoteConfigKeys.goodcollectiveConfig: json.encode({
@@ -303,6 +304,7 @@ class RemoteConfigService {
           RemoteConfigKeys.isV2UpgradeAvailable: false,
           RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
           RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
+          RemoteConfigKeys.isVoteForCanvassingAvailable: false,
         };
       }
 
@@ -332,6 +334,8 @@ class RemoteConfigService {
             false,
         RemoteConfigKeys.isV2ReferralFeatureAvailable:
             configMap[RemoteConfigKeys.isV2ReferralFeatureAvailable] ?? false,
+        RemoteConfigKeys.isVoteForCanvassingAvailable:
+            configMap[RemoteConfigKeys.isVoteForCanvassingAvailable] ?? false,
       };
     } catch (e) {
       if (kDebugMode) {
@@ -347,6 +351,7 @@ class RemoteConfigService {
         RemoteConfigKeys.isV2UpgradeAvailable: false,
         RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
         RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
+        RemoteConfigKeys.isVoteForCanvassingAvailable: false,
       };
     }
   }
