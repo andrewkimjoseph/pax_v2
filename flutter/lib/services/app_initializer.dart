@@ -9,6 +9,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
+import 'package:pax/env/env.dart';
 import 'package:pax/firebase_options.dart';
 import 'package:pax/services/branch_service.dart';
 import 'package:pax/services/notifications/notification_service.dart';
@@ -125,6 +126,7 @@ class AppInitializer {
                 kDebugMode
                     ? AndroidProvider.debug
                     : AndroidProvider.playIntegrity,
+            webProvider: ReCaptchaV3Provider(Env.webRecaptchaSiteKey),
           )
           .timeout(
             Duration(seconds: kIsWeb ? 3 : 10),
