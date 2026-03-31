@@ -197,7 +197,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                       loading: () => '--',
                       error: (_, __) => '0',
                     ),
-                    label: 'Pending Tasks',
+                    label: 'Pending Completions',
                     isLoading: unclaimedCount is AsyncLoading,
                   ).withPadding(right: 8),
                 ),
