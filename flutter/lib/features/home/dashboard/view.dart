@@ -20,6 +20,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:pax/widgets/socials/social_links_carousel.dart'
     show SocialLinksRow;
 import 'package:pax/widgets/v2_availability_banner.dart';
+import 'package:pax/widgets/vote_for_canvassing_banner.dart';
 import 'package:pax/widgets/withdrawal_method_prompt_banner.dart';
 
 class DashboardView extends ConsumerStatefulWidget {
@@ -55,6 +56,8 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
       child: SingleChildScrollView(
         child: Column(
           children: [
+            const VoteForCanvassingBanner(),
+
             const V2AvailabilityBanner(),
 
             if (isV2) const FaceVerificationPromptBanner(),

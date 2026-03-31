@@ -45,6 +45,12 @@ class RemoteConfigKeys {
   static const String isV2ReferralFeatureAvailable =
       'is_v2_referral_feature_available';
 
+  /// Controls whether the "Vote for Canvassing" dashboard banner is shown.
+  /// When false, the banner is hidden (unless in debug mode).
+  /// Key: 'is_vote_for_canvassing_available'
+  static const String isVoteForCanvassingAvailable =
+      'is_vote_for_canvassing_available';
+
   // App version config keys
   /// The minimum version of the app that users must have installed.
   /// Users with versions below this will be prompted to update.

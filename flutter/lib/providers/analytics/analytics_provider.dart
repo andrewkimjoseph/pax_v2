@@ -529,6 +529,9 @@ class AnalyticsProvider {
     Map<String, dynamic>? properties,
   ]) => _logEvent('v2_face_verification_prompt_tapped', properties: properties);
 
+  Future<void> voteForCanvassingTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('vote_for_canvassing_tapped', properties: properties);
+
   Future<void> v2ReferralRecordCreatedAttempt([
     Map<String, dynamic>? properties,
   ]) => _logEvent('v2_referral_record_created_attempt', properties: properties);
