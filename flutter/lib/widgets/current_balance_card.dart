@@ -84,13 +84,13 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                 FaIcon(
                   FontAwesomeIcons.handHoldingHeart,
                   color: PaxColors.white,
-                  size: 14,
+                  size: 12,
                 ).withPadding(right: 6),
                 Text(
-                  'Donate',
+                  'Give',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    fontSize: 14,
+                    fontSize: 12,
                     color: PaxColors.white,
                   ),
                 ),
@@ -257,19 +257,18 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                             child: Select<String>(
                               itemBuilder: (context, item) {
                                 final height =
-                                    item == 'usdm'
-                                        ? 28.5
-                                        : (item == 'good_dollar' ? 25.0 : 20.0);
+                                    item == 'good_dollar' ? 25.0 : 20.0;
                                 return Row(
                                   children: [
                                     SvgPicture.asset(
                                       'lib/assets/svgs/currencies/$item.svg',
                                       height: height,
-                                    ).withPadding(right: 8),
+                                    ).withPadding(right: 4),
                                     Text(
                                       CurrencySymbolUtil.getSymbolForCurrency(
                                         item,
                                       ),
+                                      style: TextStyle(fontSize: 12),
                                     ),
                                   ],
                                 );
@@ -414,7 +413,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                           : FaIcon(
                                             FontAwesomeIcons.arrowUpFromBracket,
                                             color: PaxColors.white,
-                                            size: 14,
+                                            size: 12,
                                           ).withPadding(right: 6),
                                       Text(
                                         widget.nextLocation == "/wallet"
@@ -422,7 +421,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                             : "Withdraw",
                                         style: TextStyle(
                                           fontWeight: FontWeight.w900,
-                                          fontSize: 14,
+                                          fontSize: 12,
                                           color: PaxColors.white,
                                         ),
                                       ),

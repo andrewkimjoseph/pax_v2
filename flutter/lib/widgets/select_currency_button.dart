@@ -29,10 +29,7 @@ class _SelectCurrencyButtonState extends ConsumerState<SelectCurrencyButton> {
           SvgPicture.asset(
             'lib/assets/svgs/currencies/${widget.value}.svg',
 
-            height:
-                widget.value == 'usdm'
-                    ? 30
-                    : (widget.value == 'good_dollar' ? 25 : 18),
+            height: (widget.value == 'good_dollar' ? 20 : 18),
           ).withPadding(right: 4),
           Text(CurrencySymbolUtil.getSymbolForCurrency(widget.value)),
         ],
