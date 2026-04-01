@@ -53,11 +53,14 @@ class _OnboardingQuestionnaireViewState
 
     final onboardingType = _computeOnboardingType();
 
-    await ref.read(participantProvider.notifier).updateProfile({
+    final participantNotifier = ref.read(participantProvider.notifier);
+    final analytics = ref.read(analyticsProvider);
+
+    await participantNotifier.updateProfile({
       'onboardingType': onboardingType,
     });
 
-    await ref.read(analyticsProvider).onboardingQuestionnaireCompleted({
+    await analytics.onboardingQuestionnaireCompleted({
       'onboardingType': onboardingType,
       'usageAnswer': _usageAnswer.toString().split('.').last,
       'walletAccessAnswer': _walletAccessAnswer?.toString().split('.').last,
