@@ -330,7 +330,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
             label,
             style: TextStyle(
               fontWeight: FontWeight.normal,
-              fontSize: 12,
+              fontSize: 11,
               color: PaxColors.darkGrey,
             ),
           ),
