@@ -4,6 +4,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
 
 class ReportPageView extends StatefulWidget {
@@ -37,7 +38,11 @@ class _ReportPageViewState extends State<ReportPageView> {
             children: [
               InkWell(
                 onTap: () {
-                  context.pop();
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go(Routes.home);
+                  }
                 },
                 child: FaIcon(
                   FontAwesomeIcons.arrowLeftLong,
