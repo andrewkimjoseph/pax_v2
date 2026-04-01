@@ -1,10 +1,9 @@
-import 'package:flutter/material.dart' show TextTheme;
-import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
+import 'package:flutter/material.dart' show TextTheme, Typography;
 
 /// The default text theme for the Pax design system.
 ///
-/// This text theme uses DM Sans as the primary font family throughout the application.
-/// DM Sans is a low-contrast geometric sans-serif design that provides excellent
+/// This text theme uses Sen as the primary font family throughout the application.
+/// Sen is a clean geometric sans-serif design that provides excellent
 /// readability across different screen sizes and resolutions.
 ///
 /// The theme uses the current Material 3 text styles:
@@ -28,4 +27,6 @@ import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
 ///
 /// The TextTheme provides the base styles that are mapped to the shadcn
 /// Typography class in PaxTypography for use throughout the application.
-final TextTheme paxTextTheme = GoogleFonts.senTextTheme();
+final TextTheme paxTextTheme = Typography.material2021().black.apply(
+  fontFamily: 'Sen',
+);
