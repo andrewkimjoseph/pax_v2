@@ -79,7 +79,7 @@ class FaceVerificationPromptBanner extends ConsumerWidget {
                         ),
                       ).withPadding(bottom: 2),
                       Text(
-                        'Verify your identity with GoodDollar to activate your PaxWallet.',
+                        'Verify your identity to activate your PaxWallet.',
                         style: TextStyle(
                           fontSize: 13,
                           color: PaxColors.darkGrey,
