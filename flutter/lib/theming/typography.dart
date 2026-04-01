@@ -7,7 +7,7 @@ import 'text_theme.dart';
 ///
 /// This class extends the shadcn Typography class to provide a consistent
 /// typographic system throughout the application. It maps Flutter's TextTheme
-/// to shadcn's Typography structure while maintaining the DM Sans font family.
+/// to shadcn's Typography structure while maintaining the Sen font family.
 ///
 /// The typography system includes:
 /// - Size variants (xSmall through x9Large)
@@ -23,15 +23,15 @@ import 'text_theme.dart';
 /// )
 /// ```
 class PaxTypography extends Typography {
-  /// Creates a new PaxTypography instance with DM Sans font family.
+  /// Creates a new PaxTypography instance with Sen font family.
   ///
   /// All text styles are derived from the paxTextTheme defined in text_theme.dart,
   /// ensuring consistency across the application.
   PaxTypography()
     : super(
         // Base font families
-        sans: paxTextTheme.bodyMedium!.copyWith(fontFamily: 'DM Sans'),
-        // Fix: Use appropriate monospace font instead of DM Sans for code
+        sans: paxTextTheme.bodyMedium!.copyWith(fontFamily: 'Sen'),
+        // Use an appropriate monospace font for code
         mono: GoogleFonts.robotoMono(),
 
         // Size variants
