@@ -258,7 +258,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
               ],
             ).withPadding(bottom: 8, top: 4),
 
-            _reportsTeaser().withPadding(bottom: 12),
+            _reportsTeaser().withPadding(bottom: 0),
           ],
         ).withPadding(all: 8),
       ),
@@ -276,7 +276,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
         borderRadius: BorderRadius.circular(10),
       ),
       child: SizedBox(
-        height: 150,
+        height: 125,
         child: ListView(
           scrollDirection: Axis.horizontal,
           shrinkWrap: true,
@@ -319,7 +319,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                 value,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 14,
                   color: valueColor ?? PaxColors.black,
                 ),
               ).asSkeleton(enabled: isLoading),
