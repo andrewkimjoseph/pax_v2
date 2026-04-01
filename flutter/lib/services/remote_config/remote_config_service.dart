@@ -1,6 +1,7 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pax/models/remote_config/app_version_config.dart';
 import 'package:pax/models/remote_config/goodcollective_config.dart';
 import 'package:pax/models/remote_config/maintenance_config.dart';
@@ -19,6 +20,27 @@ class RemoteConfigService {
   static const _refreshInterval = Duration(seconds: 3);
 
   static const _miniappsConfigAssetPath = 'lib/data/miniapps_config.json';
+
+  Future<String> _getInstalledAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final version = packageInfo.version.trim();
+      final buildNumber = packageInfo.buildNumber.trim();
+      if (version.isNotEmpty && buildNumber.isNotEmpty) {
+        return '$version+$buildNumber';
+      }
+      if (version.isNotEmpty) {
+        return version;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[Remote] Remote Config Service: Could not resolve app version from PackageInfo: $e',
+        );
+      }
+    }
+    return '2.4.8';
+  }
 
   Future<String> _loadMiniappsConfigDefault() async {
     try {
@@ -45,6 +67,8 @@ class RemoteConfigService {
     }
 
     try {
+      final installedVersion = await _getInstalledAppVersion();
+
       await _remoteConfig.setConfigSettings(
         RemoteConfigSettings(
           fetchTimeout: const Duration(minutes: 1),
@@ -55,7 +79,7 @@ class RemoteConfigService {
       // Set default values before fetching
       await _remoteConfig.setDefaults({
         RemoteConfigKeys.appVersionConfig: json.encode({
-          RemoteConfigKeys.currentVersion: '2.0.16+110',
+          RemoteConfigKeys.currentVersion: installedVersion,
           RemoteConfigKeys.forceUpdate: true,
           RemoteConfigKeys.updateMessage: 'A new version is available',
           RemoteConfigKeys.updateUrl:
@@ -82,26 +106,48 @@ class RemoteConfigService {
         }),
       });
 
-      final bool activated = await _remoteConfig.fetchAndActivate();
-      _isInitialized = true;
-      _lastFetchTime = DateTime.now();
+      try {
+        final bool activated = await _remoteConfig.fetchAndActivate();
+        _lastFetchTime = DateTime.now();
 
-      if (kDebugMode) {
-        debugPrint('[Remote] Remote Config Service: Successfully initialized');
-        debugPrint(
-          'Remote Config Service: Config ${activated ? "activated" : "not activated"}',
-        );
-        debugPrint(
-          'Remote Config Service: All parameters: ${_remoteConfig.getAll().map((key, value) => MapEntry(key, value.asString()))}',
-        );
+        if (kDebugMode) {
+          debugPrint(
+            '[Remote] Remote Config Service: Successfully initialized',
+          );
+          debugPrint(
+            'Remote Config Service: Config ${activated ? "activated" : "not activated"}',
+          );
+          debugPrint(
+            'Remote Config Service: All parameters: ${_remoteConfig.getAll().map((key, value) => MapEntry(key, value.asString()))}',
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[Remote] Remote Config Service: fetchAndActivate failed during initialize, continuing with defaults: $e',
+          );
+          if (e is PlatformException) {
+            debugPrint('[Remote] Remote Config Service: Error code: ${e.code}');
+            debugPrint(
+              '[Remote] Remote Config Service: Error message: ${e.message}',
+            );
+            debugPrint(
+              '[Remote] Remote Config Service: Error details: ${e.details}',
+            );
+          }
+        }
       }
+
+      // Mark initialized even if fetch fails, so callers can keep using defaults.
+      _isInitialized = true;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[Remote] Remote Config Service: Error initializing: $e');
       }
       // Set initialized to true even on error to prevent infinite retry loops
       _isInitialized = true;
-      rethrow;
+      // Do not rethrow; callers should continue with default values.
+      return;
     }
   }
 
@@ -127,7 +173,9 @@ class RemoteConfigService {
         RemoteConfigKeys.appVersionConfig,
       );
       if (kDebugMode) {
-        debugPrint('[Remote] Remote Config Service: Raw config string: $jsonString');
+        debugPrint(
+          '[Remote] Remote Config Service: Raw config string: $jsonString',
+        );
       }
 
       if (jsonString.isEmpty) {
@@ -143,7 +191,9 @@ class RemoteConfigService {
 
       final Map<String, dynamic> configMap = json.decode(jsonString);
       if (kDebugMode) {
-        debugPrint('[Remote] Remote Config Service: Parsed config map: $configMap');
+        debugPrint(
+          '[Remote] Remote Config Service: Parsed config map: $configMap',
+        );
       }
 
       return AppVersionConfig.fromJson(configMap);
@@ -222,7 +272,16 @@ class RemoteConfigService {
 
   Future<void> refreshConfig() async {
     if (!_isInitialized) {
-      await initialize();
+      try {
+        await initialize();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[Remote] Remote Config Service: initialize failed before refresh, continuing with existing/default config: $e',
+          );
+        }
+        return;
+      }
     }
 
     int retryCount = 0;
@@ -257,14 +316,20 @@ class RemoteConfigService {
           );
           if (e is PlatformException) {
             debugPrint('[Remote] Remote Config Service: Error code: ${e.code}');
-            debugPrint('[Remote] Remote Config Service: Error message: ${e.message}');
-            debugPrint('[Remote] Remote Config Service: Error details: ${e.details}');
+            debugPrint(
+              '[Remote] Remote Config Service: Error message: ${e.message}',
+            );
+            debugPrint(
+              '[Remote] Remote Config Service: Error details: ${e.details}',
+            );
           }
         }
 
         if (retryCount == maxRetries) {
           if (kDebugMode) {
-            debugPrint('[Remote] Remote Config Service: Max retries reached, giving up');
+            debugPrint(
+              '[Remote] Remote Config Service: Max retries reached, giving up',
+            );
           }
           return;
         }
@@ -339,7 +404,9 @@ class RemoteConfigService {
       };
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[Remote] Remote Config Service: Error getting feature flags: $e');
+        debugPrint(
+          '[Remote] Remote Config Service: Error getting feature flags: $e',
+        );
       }
       // Return default config on error
       return {
@@ -390,7 +457,9 @@ class RemoteConfigService {
       return MiniappsConfig.fromJson(configMap);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[Remote] Remote Config Service: Error getting miniapps config: $e');
+        debugPrint(
+          '[Remote] Remote Config Service: Error getting miniapps config: $e',
+        );
       }
       return MiniappsConfig(areMiniappsAvailable: false, miniapps: []);
     }
