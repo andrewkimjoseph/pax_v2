@@ -38,9 +38,12 @@ class _RootViewState extends ConsumerState<RootView> {
       if (!mounted) return;
       final isV2 = ref.read(accountTypeProvider) == AccountType.v2;
       if (isV2) {
-        restoreWalletIfNeeded(ref, silentOnly: true);
+        final container = ProviderScope.containerOf(context);
+        restoreWalletIfNeeded(container, silentOnly: true);
         if (kDebugMode) {
-          debugPrint('[RootView] triggering backfillPostVerificationSideEffects for V2 user');
+          debugPrint(
+            '[RootView] triggering backfillPostVerificationSideEffects for V2 user',
+          );
         }
         unawaited(
           ref

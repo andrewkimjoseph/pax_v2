@@ -70,7 +70,8 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
       if (isV2) {
         _restoreTriggered = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          restoreWalletIfNeeded(ref, silentOnly: true);
+          final container = ProviderScope.containerOf(context);
+          restoreWalletIfNeeded(container, silentOnly: true);
         });
       }
     }
@@ -87,7 +88,8 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         ref.read(walletCredentialsProvider.notifier).clearCredentials();
         _restoreTriggered = true;
-        await restoreWalletIfNeeded(ref, silentOnly: false);
+        final container = ProviderScope.containerOf(context);
+        await restoreWalletIfNeeded(container, silentOnly: false);
       });
     }
 
@@ -183,7 +185,8 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
                           .clearCredentials();
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (ref.read(accountTypeProvider) == AccountType.v2) {
-                          restoreWalletIfNeeded(ref, silentOnly: false);
+                          final container = ProviderScope.containerOf(context);
+                          restoreWalletIfNeeded(container, silentOnly: false);
                         }
                       });
                     },

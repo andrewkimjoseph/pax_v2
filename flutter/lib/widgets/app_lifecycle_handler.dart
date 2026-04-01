@@ -41,7 +41,9 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     ); // Initialize with handler
     _branchService.listenToDeepLinks(); // Start listening (waits for SDK init)
     if (kDebugMode) {
-      debugPrint('[AppLifecycleHandler] AppLifecycleHandler: initState, observer added');
+      debugPrint(
+        '[AppLifecycleHandler] AppLifecycleHandler: initState, observer added',
+      );
     }
   }
 
@@ -50,7 +52,9 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     WidgetsBinding.instance.removeObserver(this);
     _branchService.dispose(); // Dispose the Branch service
     if (kDebugMode) {
-      debugPrint('[AppLifecycleHandler] AppLifecycleHandler: dispose, observer removed');
+      debugPrint(
+        '[AppLifecycleHandler] AppLifecycleHandler: dispose, observer removed',
+      );
     }
     super.dispose();
   }
@@ -71,7 +75,15 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
             'AppLifecycleHandler: resumed postFrameCallback, refreshing remote config and invalidating config providers',
           );
         }
-        ref.read(remoteConfigServiceProvider).refreshConfig();
+        unawaited(
+          ref.read(remoteConfigServiceProvider).refreshConfig().catchError((e) {
+            if (kDebugMode) {
+              debugPrint(
+                '[AppLifecycleHandler] Remote config refresh failed on resume: $e',
+              );
+            }
+          }),
+        );
         // ref.invalidate(appVersionConfigProvider);
         // ref.invalidate(maintenanceConfigProvider);
         // ref.invalidate(featureFlagsProvider);
@@ -98,7 +110,8 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
                 '[AppLifecycleHandler] V2 authenticated, calling restoreWalletIfNeeded(silentOnly: true)',
               );
             }
-            restoreWalletIfNeeded(ref, silentOnly: true);
+            final container = ProviderScope.containerOf(context);
+            restoreWalletIfNeeded(container, silentOnly: true);
 
             if (kDebugMode) {
               debugPrint(

@@ -41,7 +41,8 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
   Future<void> _restoreWallet() async {
     if (!mounted) return;
     _restoreAttempted = true;
-    await restoreWalletIfNeeded(ref, silentOnly: false);
+    final container = ProviderScope.containerOf(context);
+    await restoreWalletIfNeeded(container, silentOnly: false);
   }
 
   Future<void> _onVerificationResult({

@@ -25,18 +25,28 @@ bool _eoAddressMatches(String? fromCreds, String? fromFirestore) {
   return _normalizeEoAddress(fromCreds) == _normalizeEoAddress(fromFirestore);
 }
 
-/// Restores wallet credentials from cache or Drive when the user is V2 and has a Pax wallet.
+/// Restores wallet credentials from cache or Drive when the user has a Pax wallet.
 /// Call on app resume or when entering Miniapps so the wallet is ready when the user opens a miniapp.
+///
+/// Accepts a [ProviderContainer] instead of [WidgetRef] so that all [container.read()]
+/// calls after async gaps are safe — [ProviderContainer] is not tied to the widget
+/// lifecycle and will not throw "Bad state: Using ref after widget unmounted".
+///
+/// Obtain the container in your widget BEFORE any await:
+///   final container = ProviderScope.containerOf(context);
+///   await restoreWalletIfNeeded(container);
+///
 /// [silentOnly] if true uses only signInSilently (no UI). Set false to allow interactive sign-in.
-/// Returns without doing anything if not authenticated, not V2, no wallet, or credentials already loaded/loading.
+/// Returns without doing anything if not authenticated, no wallet, or credentials already loaded/loading.
 Future<void> restoreWalletIfNeeded(
-  WidgetRef ref, {
+  ProviderContainer container, {
   bool silentOnly = true,
 }) async {
-  final authState = ref.read(authProvider);
+  // --- Snapshot all state & grab notifiers BEFORE any await ---
+  final authState = container.read(authProvider);
   if (authState.state != AuthState.authenticated) return;
 
-  final paxWalletState = ref.read(paxWalletProvider);
+  final paxWalletState = container.read(paxWalletProvider);
   final hasWallet =
       paxWalletState.state == PaxWalletState.loaded &&
       paxWalletState.wallet != null &&
@@ -44,13 +54,22 @@ Future<void> restoreWalletIfNeeded(
       paxWalletState.wallet!.eoAddress!.isNotEmpty;
   if (!hasWallet) return;
 
-  final credState = ref.read(walletCredentialsProvider);
+  final credState = container.read(walletCredentialsProvider);
   if (credState.status == WalletCredentialsStatus.loaded) return;
   if (credState.status == WalletCredentialsStatus.loading) return;
 
+  // Capture notifiers now — safe to call methods on these after awaits
+  // because notifiers are not tied to the widget lifecycle.
+  final walletCredNotifier = container.read(walletCredentialsProvider.notifier);
+  final paxWalletNotifier = container.read(paxWalletProvider.notifier);
+  final paxAccountNotifier = container.read(paxAccountProvider.notifier);
+
   if (kDebugMode) {
-    debugPrint('[WalletRestoreHelper] WalletRestoreHelper: restoreWalletIfNeeded start (silentOnly: $silentOnly)');
+    debugPrint(
+      '[WalletRestoreHelper] restoreWalletIfNeeded start (silentOnly: $silentOnly)',
+    );
   }
+
   try {
     GoogleSignInAccount? driveAccount =
         await driveSignInForWallet.signInSilently();
@@ -59,54 +78,62 @@ Future<void> restoreWalletIfNeeded(
     }
     if (driveAccount == null) {
       if (kDebugMode) {
-        debugPrint('[WalletRestoreHelper] WalletRestoreHelper: no Drive account, skipping');
+        debugPrint('[WalletRestoreHelper] no Drive account, skipping');
       }
       return;
     }
     if (kDebugMode) {
-      debugPrint('[WalletRestoreHelper] WalletRestoreHelper: Drive account ok, calling restoreWallet...');
+      debugPrint(
+        '[WalletRestoreHelper] Drive account ok, calling restoreWallet...',
+      );
     }
 
     final driveAuth = await driveAccount.authentication;
     final accessToken = driveAuth.accessToken;
     if (accessToken == null) {
-      ref
-          .read(walletCredentialsProvider.notifier)
-          .setError('Failed to get Drive access token');
+      walletCredNotifier.setError('Failed to get Drive access token');
       return;
     }
 
-    await ref
-        .read(walletCredentialsProvider.notifier)
-        .restoreWallet(accessToken: accessToken, accountId: driveAccount.id);
+    await walletCredNotifier.restoreWallet(
+      accessToken: accessToken,
+      accountId: driveAccount.id,
+    );
     if (kDebugMode) {
-      debugPrint('[WalletRestoreHelper] WalletRestoreHelper: wallet restored on preload');
+      debugPrint('[WalletRestoreHelper] wallet restored on preload');
     }
 
-    // Validate restored credentials match Firestore wallet (recovery-first: try interactive restore once before showing error).
-    final credStateAfterRestore = ref.read(walletCredentialsProvider);
-    final paxWalletStateAfterRestore = ref.read(paxWalletProvider);
-    final walletEoAddress = paxWalletStateAfterRestore.wallet?.eoAddress;
-    final credEoAddress = credStateAfterRestore.eoAddress;
-    if (credStateAfterRestore.status == WalletCredentialsStatus.loaded &&
+    // Validate restored credentials match Firestore wallet.
+    // (recovery-first: try interactive restore once before showing error)
+    final credAfterRestore = container.read(walletCredentialsProvider);
+    final walletAfterRestore = container.read(paxWalletProvider);
+    final walletEoAddress = walletAfterRestore.wallet?.eoAddress;
+    final credEoAddress = credAfterRestore.eoAddress;
+
+    if (credAfterRestore.status == WalletCredentialsStatus.loaded &&
         walletEoAddress != null &&
         walletEoAddress.isNotEmpty &&
         credEoAddress != null &&
         !_eoAddressMatches(credEoAddress, walletEoAddress)) {
       if (kDebugMode) {
-        debugPrint('[WalletRestoreHelper] WalletRestoreHelper: eoAddress mismatch after restore, clearing and trying interactive restore once');
+        debugPrint(
+          '[WalletRestoreHelper] eoAddress mismatch after restore, '
+          'clearing and trying interactive restore once',
+        );
       }
-      ref.read(walletCredentialsProvider.notifier).clearCredentials();
-      await restoreWalletIfNeeded(ref, silentOnly: false);
-      final credStateAfterRetry = ref.read(walletCredentialsProvider);
-      final paxWalletAfterRetry = ref.read(paxWalletProvider);
-      final walletEoAfterRetry = paxWalletAfterRetry.wallet?.eoAddress;
-      final credEoAfterRetry = credStateAfterRetry.eoAddress;
-      if (credStateAfterRetry.status != WalletCredentialsStatus.loaded ||
+      walletCredNotifier.clearCredentials();
+      await restoreWalletIfNeeded(container, silentOnly: false);
+
+      final credAfterRetry = container.read(walletCredentialsProvider);
+      final walletAfterRetry = container.read(paxWalletProvider);
+      final walletEoAfterRetry = walletAfterRetry.wallet?.eoAddress;
+      final credEoAfterRetry = credAfterRetry.eoAddress;
+
+      if (credAfterRetry.status != WalletCredentialsStatus.loaded ||
           walletEoAfterRetry == null ||
           credEoAfterRetry == null ||
           !_eoAddressMatches(credEoAfterRetry, walletEoAfterRetry)) {
-        ref.read(walletCredentialsProvider.notifier).setError(
+        walletCredNotifier.setError(
           'Please sign in with the same Google account you used when creating your wallet.',
         );
         return;
@@ -114,49 +141,57 @@ Future<void> restoreWalletIfNeeded(
     }
 
     // Backfill smart account address if missing (e.g. partial write or legacy data).
-    final credStateAfter = ref.read(walletCredentialsProvider);
-    if (credStateAfter.status == WalletCredentialsStatus.loaded &&
-        credStateAfter.credentials != null &&
-        credStateAfter.eoAddress != null) {
-      final paxWalletStateAfter = ref.read(paxWalletProvider);
-      final paxAccountStateAfter = ref.read(paxAccountProvider);
-      final wallet = paxWalletStateAfter.wallet;
-      final account = paxAccountStateAfter.account;
-      final missingOnWallet = wallet?.smartAccountAddress == null ||
+    final credAfterValidation = container.read(walletCredentialsProvider);
+    if (credAfterValidation.status == WalletCredentialsStatus.loaded &&
+        credAfterValidation.credentials != null &&
+        credAfterValidation.eoAddress != null) {
+      final walletAfterValidation = container.read(paxWalletProvider);
+      final accountAfterValidation = container.read(paxAccountProvider);
+      final wallet = walletAfterValidation.wallet;
+      final account = accountAfterValidation.account;
+      final missingOnWallet =
+          wallet?.smartAccountAddress == null ||
           (wallet?.smartAccountAddress ?? '').isEmpty;
-      final missingOnAccount = account?.smartAccountWalletAddress == null ||
+      final missingOnAccount =
+          account?.smartAccountWalletAddress == null ||
           (account?.smartAccountWalletAddress ?? '').isEmpty;
+
       if (missingOnWallet || missingOnAccount) {
         try {
-          final smartAccountAddress = await SmartAccountService().createSmartAccount(
-            credentials: credStateAfter.credentials!,
-            sessionKey: driveAccount.id,
-          );
+          final smartAccountAddress = await SmartAccountService()
+              .createSmartAccount(
+                credentials: credAfterValidation.credentials!,
+                sessionKey: driveAccount.id,
+              );
           if (wallet?.id != null) {
-            await ref.read(paxWalletProvider.notifier).updateSmartAccountAddress(
+            await paxWalletNotifier.updateSmartAccountAddress(
               walletId: wallet!.id!,
               smartAccountAddress: smartAccountAddress,
             );
           }
-          await ref.read(paxAccountProvider.notifier).updateAccount({
-            if (credStateAfter.eoAddress != null)
-              'eoWalletAddress': credStateAfter.eoAddress!,
+          await paxAccountNotifier.updateAccount({
+            if (credAfterValidation.eoAddress != null)
+              'eoWalletAddress': credAfterValidation.eoAddress!,
             'smartAccountWalletAddress': smartAccountAddress,
           });
           if (kDebugMode) {
-            debugPrint('[WalletRestoreHelper] WalletRestoreHelper: backfilled smart account address');
+            debugPrint(
+              '[WalletRestoreHelper] backfilled smart account address',
+            );
           }
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('[WalletRestoreHelper] WalletRestoreHelper: backfill failed (non-blocking): $e');
+            debugPrint(
+              '[WalletRestoreHelper] backfill failed (non-blocking): $e',
+            );
           }
         }
       }
     }
   } catch (e) {
     if (kDebugMode) {
-      debugPrint('[WalletRestoreHelper] WalletRestoreHelper: preload restore failed: $e');
+      debugPrint('[WalletRestoreHelper] preload restore failed: $e');
     }
-    ref.read(walletCredentialsProvider.notifier).setError(e.toString());
+    walletCredNotifier.setError(e.toString());
   }
 }
