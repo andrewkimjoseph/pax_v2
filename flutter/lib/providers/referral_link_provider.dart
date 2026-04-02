@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/services/branch_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Single source of truth for the current user's referral link.
 /// Generated once per participant; display and share should both use this value.
@@ -19,6 +20,20 @@ final referralLinkProvider = FutureProvider<String?>((ref) async {
   }
 
   try {
+    final storageKey = 'pax_referral_link_${participant.id}';
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getString(storageKey);
+      if (cached != null && cached.isNotEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            '[ReferralLink] Using cached referral link from web storage for participant ${participant.id}',
+          );
+        }
+        return cached;
+      }
+    }
+
     final response = await BranchService().generateReferralLink(
       referringParticipantId: participant.id,
     );
@@ -29,7 +44,12 @@ final referralLinkProvider = FutureProvider<String?>((ref) async {
     }
 
     if (response.success && response.result is String) {
-      return response.result as String;
+      final link = response.result as String;
+      if (kIsWeb && link.isNotEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(storageKey, link);
+      }
+      return link;
     }
 
     if (kDebugMode) {
