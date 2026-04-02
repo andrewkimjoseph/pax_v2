@@ -28,4 +28,22 @@ class ReferralRepository {
       return [];
     }
   }
+
+  /// True if this participant is the referred party on at least one referral doc.
+  Future<bool> referralExistsForReferredParticipant(String participantId) async {
+    try {
+      final snapshot =
+          await _firestore
+              .collection(collectionName)
+              .where('referredParticipantId', isEqualTo: participantId)
+              .limit(1)
+              .get();
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Error] Error checking referral existence for referred: $e');
+      }
+      return false;
+    }
+  }
 }

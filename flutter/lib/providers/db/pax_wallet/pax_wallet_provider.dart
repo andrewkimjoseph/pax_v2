@@ -6,6 +6,7 @@ import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/models/firestore/pax_wallet/pax_wallet_model.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
+import 'package:pax/providers/referral_existence_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
@@ -348,6 +349,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
             'referredParticipantId': participantId,
             'status': 'success',
           });
+          ref.invalidate(referralExistsForReferredParticipantProvider);
         } catch (e) {
           if (kDebugMode) {
             debugPrint(
@@ -381,9 +383,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         );
       }
       ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
-        'referringParticipantId_present': false,
+        'failure_phase': 'merge_branch_params',
         'referredParticipantId': participantId,
-        'status': 'error_preparing_params',
+        'status': 'error_branch_merge',
         'error': e.toString(),
       });
     }

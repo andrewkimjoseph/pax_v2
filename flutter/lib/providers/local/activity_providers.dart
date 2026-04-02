@@ -5,6 +5,7 @@ import 'package:pax/repositories/firestore/reward/reward_repository.dart';
 import 'package:pax/repositories/firestore/task_completion/task_completion_repository.dart';
 import 'package:pax/repositories/firestore/withdrawal/withdrawal_repository.dart';
 import 'package:pax/repositories/firestore/donation/donation_repository.dart';
+import 'package:pax/repositories/firestore/referral/referral_repository.dart';
 import 'package:pax/repositories/local/activity_repository.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/models/firestore/achievement/achievement_model.dart';
@@ -34,6 +35,10 @@ final withdrawalRepositoryProvider = Provider<WithdrawalRepository>((ref) {
 
 final donationRepositoryProvider = Provider<DonationRepository>((ref) {
   return DonationRepository();
+});
+
+final referralRepositoryProvider = Provider<ReferralRepository>((ref) {
+  return ReferralRepository();
 });
 
 final activityRepositoryProvider = Provider<ActivityRepository>((ref) {
