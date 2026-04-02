@@ -217,7 +217,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                       ),
                       SvgPicture.asset(
                         'lib/assets/svgs/currencies/$selectedCurrency.svg',
-                        height: tokenId == 2 ? 30 : (tokenId == 1 ? 25 : 20),
+                        height: tokenId == 1 ? 25 : 20,
                       ),
                     ],
                   ).withPadding(bottom: 16);
