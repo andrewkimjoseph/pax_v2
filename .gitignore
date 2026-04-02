@@ -2,6 +2,7 @@
 .deps/
 .prettierrc.json
 hardhat/contracts/artifacts
+hardhat/temp/
 
 deployments/
 .DS_Store
