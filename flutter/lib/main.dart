@@ -1,6 +1,5 @@
 import 'package:clarity_flutter/clarity_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -9,7 +8,6 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
 import 'package:flutter/services.dart';
 
 import 'package:pax/env/env.dart';
-import 'package:pax/firebase_options.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
@@ -243,16 +241,10 @@ class _AppState extends ConsumerState<App> {
 }
 
 @pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
 
-  if (kDebugMode) {
-    debugPrint(
-      '[Background] Background message received: ${message.messageId}',
-    );
-    debugPrint(
-      'Background message notification: ${message.notification?.title}',
-    );
-    debugPrint('[Background] Background message data: ${message.data}');
-  }
+// Backward-compatible entry point for older persisted callback handles.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await firebaseMessagingBackgroundHandler(message);
 }
