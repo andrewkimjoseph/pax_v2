@@ -37,6 +37,7 @@ class _ClaimSelectWalletViewState
                   config.goodcollectives.isNotEmpty,
           orElse: () => false,
         );
+    final isGoodDollarClaim = (claimContext?.tokenId ?? 1) == 1;
 
     final isContinueEnabled = claimContext?.selectedWithdrawalMethod != null;
 
@@ -115,7 +116,8 @@ class _ClaimSelectWalletViewState
                             });
                             final nextPath =
                                 (claimContext?.isDonation == true &&
-                                        showDonationFlow)
+                                        showDonationFlow &&
+                                        isGoodDollarClaim)
                                     ? '/claim-reward/claim-payout/select-wallet/select-goodcollective'
                                     : '/claim-reward/claim-payout/select-wallet/review-summary';
                             context.push(nextPath);
