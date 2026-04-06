@@ -210,8 +210,9 @@ class WalletTransactionTile extends ConsumerWidget {
                   if (currencyAssetPath != null) ...[
                     SvgPicture.asset(
                       currencyAssetPath,
-                      width: currencyAssetPath.endsWith('usdm.svg') ? 30 : 20,
-                      height: currencyAssetPath.endsWith('usdm.svg') ? 30 : 20,
+                      width: currencyAssetPath.endsWith('dollar.svg') ? 30 : 20,
+                      height:
+                          currencyAssetPath.endsWith('dollar.svg') ? 30 : 20,
                     ).withPadding(right: 6),
                   ],
                   Flexible(

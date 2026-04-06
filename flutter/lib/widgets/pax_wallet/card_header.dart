@@ -14,6 +14,9 @@ class PaxWalletCardHeader extends ConsumerWidget {
     required this.isFetching,
     required this.refreshTooltip,
     this.onFlip,
+    this.onRefillGas,
+    this.canRefillGas = false,
+    this.isRefillingGas = false,
   });
 
   final VoidCallback? onRefresh;
@@ -21,6 +24,9 @@ class PaxWalletCardHeader extends ConsumerWidget {
   final bool isFetching;
   final String refreshTooltip;
   final VoidCallback? onFlip;
+  final VoidCallback? onRefillGas;
+  final bool canRefillGas;
+  final bool isRefillingGas;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,6 +47,21 @@ class PaxWalletCardHeader extends ConsumerWidget {
           ),
         ),
         const Spacer(),
+        if (onRefillGas != null)
+          IconButton.outline(
+                onPressed: !canRefillGas || isRefillingGas ? null : onRefillGas,
+                density: ButtonDensity.icon,
+                icon:
+                    isRefillingGas
+                        ? const CircularProgressIndicator(onSurface: true)
+                        : const FaIcon(
+                          FontAwesomeIcons.gasPump,
+                          color: PaxColors.white,
+                          size: 15,
+                        ),
+              )
+              .withToolTip('Refill gas', showTooltip: canRefillGas)
+              .withPadding(right: 8),
         if (onFlip != null)
           IconButton.outline(
             onPressed: onFlip,

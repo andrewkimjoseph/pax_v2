@@ -1,7 +1,14 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_flip_card/flutter_flip_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:pax/extensions/tooltip.dart';
+import 'package:pax/providers/analytics/analytics_provider.dart';
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/widgets/pax_wallet/address_exchange_row.dart';
@@ -10,7 +17,7 @@ import 'package:pax/widgets/pax_wallet/card_header.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 /// Pax Wallet balance card: flippable front (balances) and back (blank placeholder).
-class PaxWalletBalanceCard extends StatefulWidget {
+class PaxWalletBalanceCard extends ConsumerStatefulWidget {
   const PaxWalletBalanceCard({
     super.key,
     required this.viewState,
@@ -33,17 +40,64 @@ class PaxWalletBalanceCard extends StatefulWidget {
   final void Function(num gdBalance)? onBeforeOpenConverter;
 
   @override
-  State<PaxWalletBalanceCard> createState() => _PaxWalletBalanceCardState();
+  ConsumerState<PaxWalletBalanceCard> createState() =>
+      _PaxWalletBalanceCardState();
 }
 
-class _PaxWalletBalanceCardState extends State<PaxWalletBalanceCard>
+class _PaxWalletBalanceCardState extends ConsumerState<PaxWalletBalanceCard>
     with SingleTickerProviderStateMixin {
   late final FlipCardController _controller;
+  bool _isRefillingGas = false;
 
   @override
   void initState() {
     super.initState();
     _controller = FlipCardController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(ref.read(paxWalletProvider.notifier).refreshNativeCeloBalance());
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant PaxWalletBalanceCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.address != widget.address) {
+      unawaited(ref.read(paxWalletProvider.notifier).refreshNativeCeloBalance());
+    }
+  }
+
+  Future<void> _triggerGasRefill() async {
+    if (_isRefillingGas) return;
+    final nativeCeloBalance = ref.read(paxWalletProvider).nativeCeloBalance;
+    ref.read(analyticsProvider).refillGasTapped({
+      'source': 'pax_wallet_balance_card',
+      'hasAddress': widget.address != null && widget.address!.isNotEmpty,
+      if (nativeCeloBalance != null) 'nativeCeloBalance': nativeCeloBalance,
+      'thresholdCelo': PaxWalletNotifier.autoTopUpThresholdCelo,
+    });
+    if (mounted) {
+      setState(() => _isRefillingGas = true);
+    }
+    try {
+      final didRefill = await ref.read(paxWalletProvider.notifier).topUpGasIfNeeded();
+      if (didRefill && widget.address != null && widget.address!.isNotEmpty) {
+        await ref.read(paxWalletViewProvider.notifier).fetchBalance(
+          widget.address!,
+          silent: true,
+          forceRefresh: true,
+        );
+      }
+      await ref.read(paxWalletProvider.notifier).refreshNativeCeloBalance();
+    } finally {
+      if (mounted) {
+        setState(() => _isRefillingGas = false);
+      }
+    }
+  }
+
+  String _formatNativeCeloBalance(double value) {
+    final formatter = NumberFormat('#,##0.####');
+    return formatter.format(value);
   }
 
   Widget _buildCardContainer({required Widget child}) {
@@ -68,7 +122,12 @@ class _PaxWalletBalanceCardState extends State<PaxWalletBalanceCard>
 
   @override
   Widget build(BuildContext context) {
+    final nativeCeloBalance = ref.watch(paxWalletProvider).nativeCeloBalance;
     final isLoading = widget.viewState.state == PaxWalletViewState.loading;
+    final shouldShowRefillGas =
+        kDebugMode ||
+        (nativeCeloBalance != null &&
+            nativeCeloBalance < PaxWalletNotifier.autoTopUpThresholdCelo);
 
     return AspectRatio(
       aspectRatio: 1.58,
@@ -94,10 +153,24 @@ class _PaxWalletBalanceCardState extends State<PaxWalletBalanceCard>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           PaxWalletCardHeader(
-                            onRefresh: widget.onRefresh,
+                            onRefresh: () {
+                              widget.onRefresh();
+                              unawaited(
+                                ref
+                                    .read(paxWalletProvider.notifier)
+                                    .refreshNativeCeloBalance(),
+                              );
+                            },
                             canRefresh: widget.canRefresh,
                             isFetching: false,
                             refreshTooltip: widget.refreshTooltip,
+                            onRefillGas:
+                                shouldShowRefillGas ? _triggerGasRefill : null,
+                            canRefillGas:
+                                !_isRefillingGas &&
+                                widget.address != null &&
+                                widget.address!.isNotEmpty,
+                            isRefillingGas: _isRefillingGas,
                             onFlip: () => _controller.flipcard(),
                           ),
                           Expanded(
@@ -136,12 +209,12 @@ class _PaxWalletBalanceCardState extends State<PaxWalletBalanceCard>
                           if (widget.address != null)
                             PaxWalletAddressAndExchangeRow(
                               address: widget.address!,
-                              gdBalance: widget.viewState.gdBalance,
-                              showExchangeLink:
-                                  widget.viewState.state ==
-                                  PaxWalletViewState.loaded,
-                              onBeforeOpenConverter:
-                                  widget.onBeforeOpenConverter,
+                              gasBalanceText:
+                                  nativeCeloBalance != null
+                                      ? _formatNativeCeloBalance(
+                                        nativeCeloBalance,
+                                      )
+                                      : null,
                             ),
                         ],
                       ),

@@ -462,6 +462,9 @@ class AnalyticsProvider {
   Future<void> drpcTapped([Map<String, dynamic>? properties]) =>
       _logEvent('drpc_tapped', properties: properties);
 
+  Future<void> refillGasTapped([Map<String, dynamic>? properties]) =>
+      _logEvent('refill_gas_tapped', properties: properties);
+
   Future<void> optionsTapped([Map<String, dynamic>? properties]) =>
       _logEvent('options_tapped', properties: properties);
 
