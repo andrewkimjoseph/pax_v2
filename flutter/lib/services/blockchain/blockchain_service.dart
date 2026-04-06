@@ -8,8 +8,7 @@ import 'package:pax/utils/currency_symbol.dart';
 
 class BlockchainService {
   // API key should ideally be stored in a secure configuration
-  static final String _apiKey =
-      Env.drpcAPIKey; // Replace with your actual API key
+  static final String _apiKey = Env.drpcAPIKey;
   static final String _apiUrl = 'https://lb.drpc.live/celo/';
 
   // Token configurations
@@ -47,6 +46,42 @@ class BlockchainService {
   // Get the full API URL with key
   static String get _fullApiUrl => '$_apiUrl$_apiKey';
 
+  /// Fetches native CELO balance for a wallet using eth_getBalance.
+  static Future<double> fetchNativeCeloBalance(String walletAddress) async {
+    final requestBody = jsonEncode({
+      'method': 'eth_getBalance',
+      'params': [walletAddress, 'latest'],
+      'id': '1',
+      'jsonrpc': '2.0',
+    });
+
+    final response = await http.post(
+      Uri.parse(_fullApiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: requestBody,
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      if (responseData.containsKey('result')) {
+        final balanceHex = responseData['result'] as String?;
+        if (balanceHex == null || balanceHex == '0x' || balanceHex == '0x0') {
+          return 0.0;
+        }
+
+        final balanceWei = BigInt.parse(balanceHex.substring(2), radix: 16);
+        final weiPerCelo = BigInt.from(10).pow(18).toDouble();
+        return balanceWei.toDouble() / weiPerCelo;
+      } else if (responseData.containsKey('error')) {
+        throw Exception("RPC Error: ${responseData['error']}");
+      }
+    }
+
+    throw Exception(
+      "Failed to get native CELO balance. Status code: ${response.statusCode}",
+    );
+  }
+
   /// Returns a friendly network label (e.g. "Celo") from chain ID, or null on failure.
   /// Uses eth_chainId RPC only; no balance or other calls.
   static Future<String?> getNetworkLabel() async {
@@ -68,9 +103,7 @@ class BlockchainService {
       if (result == null) return null;
       final chainIdHex = result is String ? result : result.toString();
       final chainId = int.tryParse(
-        chainIdHex.startsWith('0x')
-            ? chainIdHex.substring(2)
-            : chainIdHex,
+        chainIdHex.startsWith('0x') ? chainIdHex.substring(2) : chainIdHex,
         radix: 16,
       );
       if (chainId == null) return null;
