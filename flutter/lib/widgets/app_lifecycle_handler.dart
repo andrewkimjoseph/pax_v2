@@ -123,6 +123,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
                   .read(paxWalletProvider.notifier)
                   .backfillPostVerificationSideEffects(),
             );
+            unawaited(ref.read(paxWalletProvider.notifier).topUpGasIfNeeded());
           }
         }
       });
@@ -131,6 +132,24 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<PaxWalletStateModel>(paxWalletProvider, (previous, next) {
+      final didLoadWallet =
+          previous?.state != PaxWalletState.loaded &&
+          next.state == PaxWalletState.loaded;
+      if (!didLoadWallet) {
+        return;
+      }
+
+      final isAuthenticated =
+          ref.read(authProvider).state == AuthState.authenticated;
+      final isV2Account = ref.read(accountTypeProvider) == AccountType.v2;
+      if (!isAuthenticated || !isV2Account) {
+        return;
+      }
+
+      unawaited(ref.read(paxWalletProvider.notifier).topUpGasIfNeeded());
+    });
+
     // Listen to remote config updates - moved from initState to build
     ref.listen<AsyncValue<RemoteConfigUpdate>>(remoteConfigUpdateProvider, (
       previous,

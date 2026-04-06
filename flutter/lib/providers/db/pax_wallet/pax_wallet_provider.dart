@@ -15,6 +15,7 @@ import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.da
 import 'package:pax/utils/achievement_constants.dart';
 import 'package:pax/utils/branch_param_cleaner.dart';
 import 'package:pax/repositories/firestore/pax_wallet/pax_wallet_repository.dart';
+import 'package:pax/services/blockchain/blockchain_service.dart';
 import 'package:pax/services/wallet/gooddollar_identity_service.dart';
 
 enum PaxWalletState { initial, loading, loaded, creating, error }
@@ -49,6 +50,7 @@ class PaxWalletStateModel {
 
 class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   PaxWalletRepository get _repository => ref.read(paxWalletRepositoryProvider);
+  static const double _autoTopUpThresholdCelo = 0.01;
 
   /// EOA we have already requested gas sponsorship for this session; avoids duplicate sponsorWalletGas calls.
   String? _gasSponsorshipRequestedForEoAddress;
@@ -391,6 +393,53 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
     }
   }
 
+  /// Auto top-up flow for V2 wallet gas.
+  /// Calls sponsorWalletGas when native CELO balance is below 0.01 CELO.
+  Future<void> topUpGasIfNeeded() async {
+    try {
+      final wallet = state.wallet;
+      final eoAddress = wallet?.eoAddress;
+      if (eoAddress == null || eoAddress.isEmpty) {
+        return;
+      }
+
+      final celoBalance = await BlockchainService.fetchNativeCeloBalance(
+        eoAddress,
+      );
+      if (celoBalance >= _autoTopUpThresholdCelo) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] topUpGasIfNeeded skipped: CELO balance sufficient '
+            '(eoAddress=$eoAddress, celoBalance=$celoBalance)',
+          );
+        }
+        return;
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] topUpGasIfNeeded triggering sponsorWalletGas '
+          '(eoAddress=$eoAddress, celoBalance=$celoBalance)',
+        );
+      }
+
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('sponsorWalletGas')
+          .call({'eoWalletAddress': eoAddress});
+
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] topUpGasIfNeeded sponsorWalletGas result '
+          '(eoAddress=$eoAddress): ${result.data}',
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PaxWalletNotifier] topUpGasIfNeeded failed: $e');
+      }
+    }
+  }
+
   /// Sponsor gas at most once per wallet per app session; errors are swallowed.
   Future<void> _safeSponsorGas(String eoAddress) async {
     try {
@@ -406,7 +455,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
       if (kDebugMode) {
         debugPrint(
-            '[PaxWalletNotifier] calling sponsorWalletGas for eoAddress=$eoAddress',
+          '[PaxWalletNotifier] calling sponsorWalletGas for eoAddress=$eoAddress',
         );
       }
       try {
@@ -421,13 +470,15 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         }
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('[PaxWalletNotifier] Gas sponsorship failed (non-blocking): $e');
+          debugPrint(
+            '[PaxWalletNotifier] Gas sponsorship failed (non-blocking): $e',
+          );
         }
         _gasSponsorshipRequestedForEoAddress = null;
       }
     } catch (e) {
       if (kDebugMode) {
-          debugPrint('[PaxWalletNotifier] _safeSponsorGas unexpected error: $e');
+        debugPrint('[PaxWalletNotifier] _safeSponsorGas unexpected error: $e');
       }
     }
   }
