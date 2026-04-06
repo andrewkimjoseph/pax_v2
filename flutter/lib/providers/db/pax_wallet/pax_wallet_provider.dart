@@ -24,11 +24,13 @@ class PaxWalletStateModel {
   final PaxWallet? wallet;
   final PaxWalletState state;
   final String? errorMessage;
+  final double? nativeCeloBalance;
 
   PaxWalletStateModel({
     this.wallet,
     this.state = PaxWalletState.initial,
     this.errorMessage,
+    this.nativeCeloBalance,
   });
 
   factory PaxWalletStateModel.initial() {
@@ -39,11 +41,17 @@ class PaxWalletStateModel {
     PaxWallet? wallet,
     PaxWalletState? state,
     String? errorMessage,
+    double? nativeCeloBalance,
+    bool clearNativeCeloBalance = false,
   }) {
     return PaxWalletStateModel(
       wallet: wallet ?? this.wallet,
       state: state ?? this.state,
       errorMessage: errorMessage ?? this.errorMessage,
+      nativeCeloBalance:
+          clearNativeCeloBalance
+              ? null
+              : (nativeCeloBalance ?? this.nativeCeloBalance),
     );
   }
 }
@@ -51,6 +59,7 @@ class PaxWalletStateModel {
 class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   PaxWalletRepository get _repository => ref.read(paxWalletRepositoryProvider);
   static const double _autoTopUpThresholdCelo = 0.01875;
+  static double get autoTopUpThresholdCelo => _autoTopUpThresholdCelo;
 
   /// EOA we have already requested gas sponsorship for this session; avoids duplicate sponsorWalletGas calls.
   String? _gasSponsorshipRequestedForEoAddress;
@@ -81,6 +90,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       state = state.copyWith(state: PaxWalletState.loading);
       final wallet = await _repository.getWalletByParticipantId(participantId);
       state = state.copyWith(wallet: wallet, state: PaxWalletState.loaded);
+      await refreshNativeCeloBalance();
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[PaxWalletNotifier] Error fetching pax wallet: $e');
@@ -106,6 +116,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
       if (wallet != null) {
         state = state.copyWith(wallet: wallet, state: PaxWalletState.loaded);
+        await refreshNativeCeloBalance();
       }
 
       return wallet;
@@ -118,6 +129,26 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         errorMessage: e.toString(),
       );
       return null;
+    }
+  }
+
+  Future<void> refreshNativeCeloBalance() async {
+    final eoAddress = state.wallet?.eoAddress;
+    if (eoAddress == null || eoAddress.isEmpty) {
+      state = state.copyWith(clearNativeCeloBalance: true);
+      return;
+    }
+
+    try {
+      final celoBalance = await BlockchainService.fetchNativeCeloBalance(
+        eoAddress,
+      );
+      state = state.copyWith(nativeCeloBalance: celoBalance);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PaxWalletNotifier] Failed to refresh native CELO: $e');
+      }
+      state = state.copyWith(clearNativeCeloBalance: true);
     }
   }
 
@@ -395,17 +426,17 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
   /// Auto top-up flow for V2 wallet gas.
   /// Calls sponsorWalletGas when native CELO balance is below 0.01875 CELO.
-  Future<void> topUpGasIfNeeded() async {
+  Future<bool> topUpGasIfNeeded() async {
     try {
       final wallet = state.wallet;
       final eoAddress = wallet?.eoAddress;
       if (eoAddress == null || eoAddress.isEmpty) {
-        return;
+        state = state.copyWith(clearNativeCeloBalance: true);
+        return false;
       }
 
-      final celoBalance = await BlockchainService.fetchNativeCeloBalance(
-        eoAddress,
-      );
+      final celoBalance = await BlockchainService.fetchNativeCeloBalance(eoAddress);
+      state = state.copyWith(nativeCeloBalance: celoBalance);
       if (celoBalance >= _autoTopUpThresholdCelo) {
         if (kDebugMode) {
           debugPrint(
@@ -413,7 +444,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
             '(eoAddress=$eoAddress, celoBalance=$celoBalance)',
           );
         }
-        return;
+        return false;
       }
 
       if (kDebugMode) {
@@ -433,10 +464,13 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
           '(eoAddress=$eoAddress): ${result.data}',
         );
       }
+      await refreshNativeCeloBalance();
+      return true;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[PaxWalletNotifier] topUpGasIfNeeded failed: $e');
       }
+      return false;
     }
   }
 
@@ -561,7 +595,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
   void clearWallet() {
     _gasSponsorshipRequestedForEoAddress = null;
-    state = PaxWalletStateModel.initial();
+    state = PaxWalletStateModel.initial().copyWith(clearNativeCeloBalance: true);
   }
 }
 
