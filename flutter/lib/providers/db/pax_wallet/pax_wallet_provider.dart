@@ -50,7 +50,7 @@ class PaxWalletStateModel {
 
 class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   PaxWalletRepository get _repository => ref.read(paxWalletRepositoryProvider);
-  static const double _autoTopUpThresholdCelo = 0.01;
+  static const double _autoTopUpThresholdCelo = 0.01875;
 
   /// EOA we have already requested gas sponsorship for this session; avoids duplicate sponsorWalletGas calls.
   String? _gasSponsorshipRequestedForEoAddress;
@@ -394,7 +394,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   }
 
   /// Auto top-up flow for V2 wallet gas.
-  /// Calls sponsorWalletGas when native CELO balance is below 0.01 CELO.
+  /// Calls sponsorWalletGas when native CELO balance is below 0.01875 CELO.
   Future<void> topUpGasIfNeeded() async {
     try {
       final wallet = state.wallet;
