@@ -255,7 +255,7 @@ class _GoodCollectiveTile extends StatelessWidget {
                             collective.name,
                             style: const TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 18,
+                              fontSize: 16,
                               color: PaxColors.black,
                             ),
                           ).withPadding(bottom: 8),

@@ -244,15 +244,17 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
         (isValid == false && taskIsCompleted == true) ||
         (taskIsCompleted == false && isExpired);
     final goodCollectiveConfigAsync = ref.watch(goodCollectiveConfigProvider);
+    final isGoodDollarClaim = (tokenId ?? 1) == 1;
     final showDonationClaimCta =
-        kDebugMode ||
-        goodCollectiveConfigAsync.maybeWhen(
-          data:
-              (config) =>
-                  config.isDonationAvailable &&
-                  config.goodcollectives.isNotEmpty,
-          orElse: () => false,
-        );
+        isGoodDollarClaim &&
+        (kDebugMode ||
+            goodCollectiveConfigAsync.maybeWhen(
+              data:
+                  (config) =>
+                      config.isDonationAvailable &&
+                      config.goodcollectives.isNotEmpty,
+              orElse: () => false,
+            ));
     final claimActionLabel =
         isReferral
             ? (txnHash != null && txnHash.isNotEmpty)
