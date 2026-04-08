@@ -114,14 +114,15 @@ export const sponsorWalletGas = onCall(
       const isWhitelisted = await isWalletWhitelisted(eoAddress);
 
       if (!isWhitelisted) {
-        logger.error("[V2] Wallet not whitelisted, cannot sponsor", {
+        logger.info("[V2] Wallet not whitelisted, skipping sponsorship", {
           eoWalletAddress,
           userId,
         });
-        throw new HttpsError(
-          "failed-precondition",
-          "Wallet must be whitelisted before gas can be sponsored."
-        );
+        return {
+          skipped: true,
+          reason: "wallet_not_whitelisted",
+          timestamp: new Date().toISOString(),
+        };
       }
 
       const amountWei = parseEther(DEFAULT_SPONSOR_AMOUNT_CELO);
