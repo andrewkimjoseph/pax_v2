@@ -59,6 +59,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="thepax.app" />
+                <data android:scheme="https" android:host="vu64g.app.link" />
                 <data android:scheme="https" android:host="vu64g-alternate.app.link" />
             </intent-filter>
 
