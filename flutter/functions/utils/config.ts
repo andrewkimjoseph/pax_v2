@@ -38,6 +38,16 @@ export const CREATE2_FACTORY = "0x4e59b44847b379578588920cA78FbF26c0B4956C" as A
 export const IDENTITY_PROXY_CONTRACT_ADDRESS =
   "0xC361A6E67822a0EDc17D899227dd9FC50BD62F42" as Address;
 
+export const WHITELIST_ABI = [
+  {
+    name: "getWhitelistedRoot",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "whitelisted", type: "address" }],
+  },
+] as const;
+
 // Canvassing contract addresses (proxies)
 export const CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS: Address = "0x74Cc10C7c8EE72CbAB508f3A6142C90c68579f3F"; // Implm - 0x2b62b26049c54c3d46638617ce6ea4b7e1f1c365
 export const CANVASSING_GAS_SPONSOR_PROXY_ADDRESS: Address = "0xBdA6e6b41a688eaB89C57d3DA3BF8b556B43AB2C"; // Implm - 0xE6570E2DD6A24f48092Ae4c9F60012Efd87CEcB7

@@ -21,6 +21,7 @@ import {
 } from "../../utils/config";
 import { canvassingGasSponsorABI } from "../../utils/abis/canvassingGasSponsor";
 import { canvassingWalletRegistryABI } from "../../utils/abis/canvassingWalletRegistry";
+import { isWalletWhitelisted } from "../../utils/helpers/isWalletWhitelisted";
 
 /**
  * Callable to sponsor gas for a registered wallet.
@@ -107,6 +108,19 @@ export const sponsorWalletGas = onCall(
         throw new HttpsError(
           "failed-precondition",
           "Wallet must be registered in the wallet registry before gas can be sponsored."
+        );
+      }
+
+      const isWhitelisted = await isWalletWhitelisted(eoAddress);
+
+      if (!isWhitelisted) {
+        logger.error("[V2] Wallet not whitelisted, cannot sponsor", {
+          eoWalletAddress,
+          userId,
+        });
+        throw new HttpsError(
+          "failed-precondition",
+          "Wallet must be whitelisted before gas can be sponsored."
         );
       }
 

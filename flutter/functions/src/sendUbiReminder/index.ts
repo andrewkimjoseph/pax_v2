@@ -2,17 +2,8 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { logger } from "firebase-functions/v2";
 import { getMessaging, Message } from "firebase-admin/messaging";
 import type { Address } from "viem";
-import { PUBLIC_CLIENT, DB, IDENTITY_PROXY_CONTRACT_ADDRESS } from "../../utils/config";
-
-const WHITELIST_ABI = [
-  {
-    name: "getWhitelistedRoot",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "account", type: "address" }],
-    outputs: [{ name: "whitelisted", type: "address" }],
-  },
-] as const;
+import { DB } from "../../utils/config";
+import { isWalletWhitelisted } from "../../utils/helpers/isWalletWhitelisted";
 
 type PaxWalletDoc = {
   participantId?: string;
@@ -73,24 +64,13 @@ export const sendUbiReminder = onSchedule(
 
     for (const batch of chunkArray(wallets, CHUNK_SIZE)) {
       const results = await Promise.allSettled(
-        batch.map((wallet) =>
-          PUBLIC_CLIENT.readContract({
-            address: IDENTITY_PROXY_CONTRACT_ADDRESS,
-            abi: WHITELIST_ABI,
-            functionName: "getWhitelistedRoot",
-            args: [wallet.eoAddress],
-          }) as Promise<Address>
-        )
+        batch.map((wallet) => isWalletWhitelisted(wallet.eoAddress))
       );
 
       results.forEach((result, index) => {
         const wallet = batch[index];
         if (result.status === "fulfilled") {
-          const whitelistedRoot = result.value;
-          const isVerified =
-            whitelistedRoot.toLowerCase() !==
-            "0x0000000000000000000000000000000000000000";
-          if (isVerified) {
+          if (result.value) {
             verifiedWallets.push({
               id: wallet.id,
               participantId: wallet.participantId,
