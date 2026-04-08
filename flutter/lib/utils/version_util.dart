@@ -1,38 +1,33 @@
 /// Utility functions for handling version comparisons
 class VersionUtil {
+  /// Strips build metadata (+...) and pre-release tags (-...) from a version
+  /// string, then splits into numeric parts, padding to at least 3 segments.
+  static List<int> _parseVersion(String version) {
+    final semverOnly = version.split('+').first.split('-').first;
+    final parts = semverOnly.split('.');
+    return List.generate(3, (i) {
+      if (i < parts.length) return int.tryParse(parts[i]) ?? 0;
+      return 0;
+    });
+  }
+
   /// Checks if the current version is lower than the minimum required version.
   ///
   /// [currentVersion] - The version of the app currently installed (e.g. '1.0.0')
   /// [minimumVersion] - The minimum version required to run the app (e.g. '1.1.0')
   ///
+  /// Handles versions with build metadata (e.g. '1.0.0+42') and pre-release
+  /// suffixes (e.g. '1.0.0-beta') by comparing only the numeric semver parts.
+  ///
   /// Returns true if the current version is lower than the minimum required version,
   /// indicating that an update is needed.
-  ///
-  /// Example:
-  /// ```dart
-  /// // Current app version is 1.0.0, minimum required is 1.1.0
-  /// VersionUtil.isVersionLower('1.0.0', '1.1.0') // returns true (update needed)
-  ///
-  /// // Current app version is 1.1.0, minimum required is 1.0.0
-  /// VersionUtil.isVersionLower('1.1.0', '1.0.0') // returns false (no update needed)
-  ///
-  /// // Current app version is 1.0.0, minimum required is 1.0.0
-  /// VersionUtil.isVersionLower('1.0.0', '1.0.0') // returns false (no update needed)
-  /// ```
   static bool isVersionLower(String currentVersion, String minimumVersion) {
-    final currentParts = currentVersion.split('.');
-    final minimumParts = minimumVersion.split('.');
+    final current = _parseVersion(currentVersion);
+    final minimum = _parseVersion(minimumVersion);
 
     for (int i = 0; i < 3; i++) {
-      final currentNum = int.tryParse(currentParts[i]);
-      final minimumNum = int.tryParse(minimumParts[i]);
-
-      if (currentNum == null || minimumNum == null) {
-        throw Exception('Invalid version format');
-      }
-
-      if (currentNum < minimumNum) return true;
-      if (currentNum > minimumNum) return false;
+      if (current[i] < minimum[i]) return true;
+      if (current[i] > minimum[i]) return false;
     }
 
     return false;
@@ -48,7 +43,6 @@ class VersionUtil {
     String currentVersion,
     String minimumVersion,
   ) {
-    // Different if current is lower OR minimum is lower (i.e. they are not equal)
     return isVersionLower(currentVersion, minimumVersion) ||
         isVersionLower(minimumVersion, currentVersion);
   }

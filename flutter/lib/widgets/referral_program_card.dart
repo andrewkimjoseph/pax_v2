@@ -69,6 +69,7 @@ class ReferralProgramCard extends ConsumerWidget {
     final referralLinkAsync = ref.watch(referralLinkProvider);
     final inviteLink = referralLinkAsync.value;
     final hasValidReferralLink = _isValidProductionReferralLink(inviteLink);
+    final displayLink = inviteLink ?? 'Generating your referral link...';
 
     final isVisible =
         kDebugMode ||
@@ -167,7 +168,7 @@ class ReferralProgramCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          inviteLink!,
+                          displayLink,
                           style: TextStyle(
                             fontSize: 15,
                             color: PaxColors.darkGrey,
@@ -188,16 +189,18 @@ class ReferralProgramCard extends ConsumerWidget {
                   ),
                   IconButton(
                     variance: ButtonStyle.linkIcon(),
-                    onPressed: () async {
+                    onPressed: hasValidReferralLink
+                        ? () async {
                       try {
                         await Share.share(
-                          inviteLink,
+                          inviteLink!,
                           subject: 'Join Pax with my link',
                         );
                       } catch (_) {
                         // Silent failure; user can tap again if needed.
                       }
-                    },
+                    }
+                        : null,
                     icon: FaIcon(
                       FontAwesomeIcons.shareNodes,
                       size: 24,
