@@ -71,9 +71,10 @@ class ReferralProgramCard extends ConsumerWidget {
     final hasValidReferralLink = _isValidProductionReferralLink(inviteLink);
 
     final isVisible =
-        referralFeatureOn &&
-        (isV1WithVerified || isV2WithFaceVerification) &&
-        hasValidReferralLink;
+        kDebugMode ||
+        (referralFeatureOn &&
+            (isV1WithVerified || isV2WithFaceVerification) &&
+            hasValidReferralLink);
 
     if (!isVisible) return const SizedBox.shrink();
 
