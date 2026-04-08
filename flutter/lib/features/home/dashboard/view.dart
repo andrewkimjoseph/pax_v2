@@ -91,7 +91,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                       loading: () => '--',
                       error: (_, __) => '0',
                     ),
-                    label: 'Lifetime G\$ Earned',
+                    label: 'All G\$ Earned',
                     isLoading: totalGoodDollars is AsyncLoading,
                     suffix: totalGoodDollars.maybeWhen(
                       data:

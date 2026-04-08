@@ -213,7 +213,7 @@ class _RootViewState extends ConsumerState<RootView> {
     ];
   }
 
-  IconData _getIconForLabel(String label) {
+  IconData _getIconForLabel(String label, {bool isSelected = false}) {
     switch (label) {
       case 'Home':
         return FontAwesomeIcons.house;
@@ -222,7 +222,9 @@ class _RootViewState extends ConsumerState<RootView> {
       case 'Activity':
         return FontAwesomeIcons.clockRotateLeft;
       case 'Account':
-        return FontAwesomeIcons.circleUser;
+        return isSelected
+            ? FontAwesomeIcons.solidCircleUser
+            : FontAwesomeIcons.circleUser;
       default:
         return FontAwesomeIcons.circle;
     }
@@ -251,7 +253,7 @@ class _RootViewState extends ConsumerState<RootView> {
               height: 32,
             )
             : FaIcon(
-              _getIconForLabel(label),
+              _getIconForLabel(label, isSelected: isSelected),
               size: 24,
               color: isSelected ? PaxColors.deepPurple : PaxColors.lilac,
             );

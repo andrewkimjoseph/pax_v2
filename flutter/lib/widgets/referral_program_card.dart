@@ -13,6 +13,22 @@ import 'package:pax/routing/routes.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
+const Set<String> _allowedReferralHosts = {
+  'thepax.app',
+  'vu64g.app.link',
+  'vu64g-alternate.app.link',
+};
+
+bool _isValidProductionReferralLink(String? link) {
+  if (link == null || link.isEmpty) return false;
+  final uri = Uri.tryParse(link);
+  if (uri == null) return false;
+  if (uri.scheme != 'https') return false;
+  if (!_allowedReferralHosts.contains(uri.host)) return false;
+  if (uri.pathSegments.isEmpty) return false;
+  return uri.pathSegments.first.isNotEmpty;
+}
+
 class ReferralProgramCard extends ConsumerWidget {
   const ReferralProgramCard({super.key});
 
@@ -50,16 +66,16 @@ class ReferralProgramCard extends ConsumerWidget {
     final isV2WithFaceVerification =
         accountType == AccountType.v2 && v2NeedsVerification.value == false;
 
-    // Always show the referral card in debug, otherwise respect eligibility.
-    final isVisible =
-        kDebugMode ||
-        (referralFeatureOn && (isV1WithVerified || isV2WithFaceVerification));
-
-    if (!isVisible) return const SizedBox.shrink();
-
     final referralLinkAsync = ref.watch(referralLinkProvider);
     final inviteLink = referralLinkAsync.value;
-    final loading = referralLinkAsync.isLoading && inviteLink == null;
+    final hasValidReferralLink = _isValidProductionReferralLink(inviteLink);
+
+    final isVisible =
+        referralFeatureOn &&
+        (isV1WithVerified || isV2WithFaceVerification) &&
+        hasValidReferralLink;
+
+    if (!isVisible) return const SizedBox.shrink();
 
     return Container(
       width: double.infinity,
@@ -150,10 +166,7 @@ class ReferralProgramCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          inviteLink ??
-                              (loading
-                                  ? 'Generating your link…'
-                                  : 'Tap to view and share'),
+                          inviteLink!,
                           style: TextStyle(
                             fontSize: 15,
                             color: PaxColors.darkGrey,
@@ -174,19 +187,16 @@ class ReferralProgramCard extends ConsumerWidget {
                   ),
                   IconButton(
                     variance: ButtonStyle.linkIcon(),
-                    onPressed:
-                        inviteLink != null
-                            ? () async {
-                              try {
-                                await Share.share(
-                                  inviteLink,
-                                  subject: 'Join Pax with my link',
-                                );
-                              } catch (_) {
-                                // Silent failure; user can tap again if needed.
-                              }
-                            }
-                            : null,
+                    onPressed: () async {
+                      try {
+                        await Share.share(
+                          inviteLink,
+                          subject: 'Join Pax with my link',
+                        );
+                      } catch (_) {
+                        // Silent failure; user can tap again if needed.
+                      }
+                    },
                     icon: FaIcon(
                       FontAwesomeIcons.shareNodes,
                       size: 24,
