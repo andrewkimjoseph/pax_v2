@@ -312,7 +312,11 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
             children: [
               InkWell(
                 onTap: () {
-                  context.pop();
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
                 },
                 child: FaIcon(
                   FontAwesomeIcons.arrowLeftLong,

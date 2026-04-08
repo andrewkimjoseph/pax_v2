@@ -314,7 +314,11 @@ class _ClaimImpactReviewSummaryViewState
                   ref.read(analyticsProvider).claimImpactReviewBackTapped({
                     "claimKind": claimContext?.claimKind.name,
                   });
-                  context.pop();
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
                 },
                 child: FaIcon(
                   FontAwesomeIcons.arrowLeftLong,
