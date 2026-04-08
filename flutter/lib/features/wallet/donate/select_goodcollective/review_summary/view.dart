@@ -179,7 +179,13 @@ class _DonationReviewSummaryViewState
           child: Row(
             children: [
               InkWell(
-                onTap: context.pop,
+                onTap: () {
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
+                },
                 child: const FaIcon(
                   FontAwesomeIcons.arrowLeftLong,
                   size: 20,

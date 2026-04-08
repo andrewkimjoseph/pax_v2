@@ -311,7 +311,11 @@ class _ClaimReviewSummaryViewState
                   ref.read(analyticsProvider).claimReviewSummaryBackTapped({
                     "claimKind": claimContext?.claimKind.name,
                   });
-                  context.pop();
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/home');
+                  }
                 },
                 child: FaIcon(
                   FontAwesomeIcons.arrowLeftLong,
