@@ -59,6 +59,10 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   Future<void> _startWalletCreation() async {
     final viewModel = ref.read(walletCreationProvider.notifier);
     final analytics = ref.read(analyticsProvider);
+    final walletCredentialsNotifier = ref.read(walletCredentialsProvider.notifier);
+    final paxWalletNotifier = ref.read(paxWalletProvider.notifier);
+    final paxAccountNotifier = ref.read(paxAccountProvider.notifier);
+    final participantNotifier = ref.read(participantProvider.notifier);
     viewModel.setStep(WalletCreationStep.creating);
     analytics.v2WalletCreationInitiated();
 
@@ -71,6 +75,7 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       }
 
       final driveAuth = await driveAccount.authentication;
+      if (!mounted) return;
       final accessToken = driveAuth.accessToken;
       if (accessToken == null) {
         viewModel.setError('Failed to get Drive access token');
@@ -78,13 +83,15 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       }
 
       // Create wallet
-      await ref
-          .read(walletCredentialsProvider.notifier)
-          .createWallet(accessToken: accessToken, accountId: driveAccount.id);
+      await walletCredentialsNotifier.createWallet(
+        accessToken: accessToken,
+        accountId: driveAccount.id,
+      );
+      if (!mounted) return;
 
       final walletState = ref.read(walletCredentialsProvider);
       if (walletState.status == WalletCredentialsStatus.error) {
-        ref.read(walletCredentialsProvider.notifier).clearCredentials();
+        walletCredentialsNotifier.clearCredentials();
         viewModel.setError(
           walletState.errorMessage ?? 'Wallet creation failed',
         );
@@ -97,12 +104,11 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       final participantId = authState.user.uid;
 
       // Create pax_wallets document
-      await ref
-          .read(paxWalletProvider.notifier)
-          .createWalletDocument(
-            participantId: participantId,
-            eoAddress: eoAddress,
-          );
+      await paxWalletNotifier.createWalletDocument(
+        participantId: participantId,
+        eoAddress: eoAddress,
+      );
+      if (!mounted) return;
 
       // Create smart account
       final smartAccountService = SmartAccountService();
@@ -111,27 +117,29 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
         credentials: credentials,
         sessionKey: sessionKey,
       );
+      if (!mounted) return;
 
       // Save smart account address to pax_wallets document
       final currentWalletState = ref.read(paxWalletProvider);
       if (currentWalletState.wallet?.id != null) {
-        await ref
-            .read(paxWalletProvider.notifier)
-            .updateSmartAccountAddress(
-              walletId: currentWalletState.wallet!.id!,
-              smartAccountAddress: smartAccountAddress,
-            );
+        await paxWalletNotifier.updateSmartAccountAddress(
+          walletId: currentWalletState.wallet!.id!,
+          smartAccountAddress: smartAccountAddress,
+        );
+        if (!mounted) return;
       }
 
       // Update PaxAccount
-      await ref.read(paxAccountProvider.notifier).updateAccount({
+      await paxAccountNotifier.updateAccount({
         'eoWalletAddress': eoAddress,
         'smartAccountWalletAddress': smartAccountAddress,
       });
+      if (!mounted) return;
 
-      await ref.read(participantProvider.notifier).updateProfile({
+      await participantNotifier.updateProfile({
         'accountType': 'v2',
       });
+      if (!mounted) return;
 
       // Register wallet on-chain via Cloud Function
       final registryService = WalletRegistryService();
@@ -139,15 +147,15 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
         final registryResult = await registryService.logWallet(
           eoWalletAddress: eoAddress,
         );
+        if (!mounted) return;
         final walletState = ref.read(paxWalletProvider);
         if (walletState.wallet?.id != null) {
-          await ref
-              .read(paxWalletProvider.notifier)
-              .updateWithLogData(
-                walletId: walletState.wallet!.id!,
-                logTxnHash: registryResult.txnHash,
-                logTimeCreated: registryResult.logTimeCreated,
-              );
+          await paxWalletNotifier.updateWithLogData(
+            walletId: walletState.wallet!.id!,
+            logTxnHash: registryResult.txnHash,
+            logTimeCreated: registryResult.logTimeCreated,
+          );
+          if (!mounted) return;
         }
       } catch (e) {
         // Surface registration failure so user can retry
@@ -167,9 +175,8 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       });
 
       // Register Pax Wallet as withdrawal method (before face verification)
-      await ref
-          .read(paxWalletProvider.notifier)
-          .registerPaxWalletAsWithdrawalMethod();
+      await paxWalletNotifier.registerPaxWalletAsWithdrawalMethod();
+      if (!mounted) return;
 
       // Navigate to face verification after a brief delay
       await Future.delayed(const Duration(seconds: 2));
@@ -322,8 +329,9 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
                       final registryResult = await registryService.logWallet(
                         eoWalletAddress: eoAddress,
                       );
+                      if (!mounted) return;
                       final walletState = ref.read(paxWalletProvider);
-                      if (walletState.wallet?.id != null && mounted) {
+                      if (walletState.wallet?.id != null) {
                         await ref
                             .read(paxWalletProvider.notifier)
                             .updateWithLogData(
@@ -331,6 +339,7 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
                               logTxnHash: registryResult.txnHash,
                               logTimeCreated: registryResult.logTimeCreated,
                             );
+                        if (!mounted) return;
                       }
                       if (mounted) {
                         setState(() => _isRegisteringWallet = false);
