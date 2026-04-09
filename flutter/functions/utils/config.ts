@@ -40,11 +40,11 @@ export const IDENTITY_PROXY_CONTRACT_ADDRESS =
 
 export const WHITELIST_ABI = [
   {
-    name: "getWhitelistedRoot",
+    name: "isWhitelisted",
     type: "function",
     stateMutability: "view",
     inputs: [{ name: "account", type: "address" }],
-    outputs: [{ name: "whitelisted", type: "address" }],
+    outputs: [{ name: "", type: "bool" }],
   },
 ] as const;
 

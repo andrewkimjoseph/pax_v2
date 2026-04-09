@@ -5,15 +5,11 @@ import {
   WHITELIST_ABI,
 } from "../config";
 
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-
 export async function isWalletWhitelisted(eoAddress: Address): Promise<boolean> {
-  const whitelistedRoot = (await PUBLIC_CLIENT.readContract({
+  return PUBLIC_CLIENT.readContract({
     address: IDENTITY_PROXY_CONTRACT_ADDRESS,
     abi: WHITELIST_ABI,
-    functionName: "getWhitelistedRoot",
+    functionName: "isWhitelisted",
     args: [eoAddress],
-  })) as Address;
-
-  return whitelistedRoot.toLowerCase() !== ZERO_ADDRESS;
+  });
 }
