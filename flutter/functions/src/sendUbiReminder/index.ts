@@ -78,7 +78,7 @@ export const sendUbiReminder = onSchedule(
             });
           }
         } else {
-          logger.error("[UBI] getWhitelistedRoot failed", {
+          logger.error("[UBI] isWhitelisted check failed", {
             walletId: wallet.id,
             eoAddress: wallet.eoAddress,
             error: result.reason,
