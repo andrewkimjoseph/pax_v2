@@ -123,7 +123,6 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
                   .read(paxWalletProvider.notifier)
                   .backfillPostVerificationSideEffects(),
             );
-            unawaited(ref.read(paxWalletProvider.notifier).topUpGasIfNeeded());
           }
         }
       });
@@ -147,7 +146,9 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         return;
       }
 
-      unawaited(ref.read(paxWalletProvider.notifier).topUpGasIfNeeded());
+      unawaited(
+        ref.read(paxWalletProvider.notifier).backfillPostVerificationSideEffects(),
+      );
     });
 
     // Listen to remote config updates - moved from initState to build
