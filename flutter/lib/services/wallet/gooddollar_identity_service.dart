@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pax/env/env.dart';
+import 'package:pax/utils/evm_selector_util.dart';
 
 /// Verifies GoodDollar identity status for V2 users via direct RPC calls
 /// rather than relying on Firestore participant fields.
@@ -9,14 +10,17 @@ class GoodDollarIdentityService {
   static final String _rpcUrl = 'https://lb.drpc.live/celo/${Env.drpcAPIKey}';
 
   // GoodDollar Identity contract on Celo
-  static const String _identityContractAddress =
+  static const String _identityContractAddressProxy =
       '0xC361A6E67822a0EDc17D899227dd9FC50BD62F42';
 
   // Function signatures
   // isWhitelisted(address) -> bool
-  static const String _isWhitelistedSelector = '0x3af32abf';
+  static final String _isWhitelistedSelector = EvmSelectorUtil.computeSelector(
+    'isWhitelisted(address)',
+  );
   // getWhitelistedOnChainId(address) -> string
-  static const String _getWhitelistedOnChainIdSelector = '0x98f22bda';
+  static final String _getWhitelistedOnChainIdSelector =
+      EvmSelectorUtil.computeSelector('getWhitelistedOnChainId(address)');
 
   static Future<Map<String, dynamic>> _rpcCall(
     String method,
@@ -45,7 +49,7 @@ class GoodDollarIdentityService {
 
       final data = '$_isWhitelistedSelector$paddedAddress';
       final result = await _rpcCall('eth_call', [
-        {'to': _identityContractAddress, 'data': data},
+        {'to': _identityContractAddressProxy, 'data': data},
         'latest',
       ]);
 
@@ -67,7 +71,9 @@ class GoodDollarIdentityService {
       return await attempt();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[GoodDollarIdentityService] GoodDollarIdentityService: isWhitelisted retry failed: $e');
+        debugPrint(
+          '[GoodDollarIdentityService] GoodDollarIdentityService: isWhitelisted retry failed: $e',
+        );
       }
       return false;
     }
@@ -84,7 +90,7 @@ class GoodDollarIdentityService {
 
       final data = '$_getWhitelistedOnChainIdSelector$paddedAddress';
       final result = await _rpcCall('eth_call', [
-        {'to': _identityContractAddress, 'data': data},
+        {'to': _identityContractAddressProxy, 'data': data},
         'latest',
       ]);
 

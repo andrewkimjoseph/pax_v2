@@ -79,34 +79,11 @@ class WithdrawalMethodConnectionService {
         return false;
       }
 
-      // Use logic from whitelist_status.dart
       if (!checkWhitelist) {
         return true;
       }
 
-      final rootAddress = await _getWhitelistedRoot(walletAddress);
-
-      if (rootAddress == "0x0000000000000000000000000000000000000000") {
-        return false; // Not whitelisted
-      }
-
-      // Get last authentication timestamp
-      final lastAuthTimestamp = await getLastAuthenticated(rootAddress);
-
-      // Get authentication period
-      final authPeriod = await _getAuthenticationPeriod();
-
-      // Calculate if verification is still valid
-      if (lastAuthTimestamp > 0) {
-        final expiryTimestamp =
-            lastAuthTimestamp +
-            (authPeriod * 24 * 60 * 60); // Convert days to seconds
-        final currentTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-
-        return currentTimestamp <= expiryTimestamp; // Valid if not expired
-      }
-
-      return false; // No authentication timestamp found
+      return await _isWhitelisted(walletAddress);
     }
 
     try {
@@ -307,30 +284,26 @@ class WithdrawalMethodConnectionService {
   //   }
   // }
 
-  // Rest of the service methods remain the same...
-  // Helper method to get the root whitelisted address (from whitelist_status.dart)
-  Future<String> _getWhitelistedRoot(String walletAddress) async {
-    // Function signature for getWhitelistedRoot(address)
-    var functionSignature = "getWhitelistedRoot(address)";
+  /// On-chain source of truth for whitelist + reverify (same account as expiry below).
+  Future<bool> _isWhitelisted(String walletAddress) async {
+    var functionSignature = "isWhitelisted(address)";
     var functionSelector = _bytesToHex(
       _keccak256(ascii.encode(functionSignature)),
     ).substring(0, 8);
 
-    // Remove 0x prefix if present and pad address
     var addressWithoutPrefix =
         walletAddress.startsWith('0x')
             ? walletAddress.substring(2)
             : walletAddress;
     var paddedAddress = addressWithoutPrefix.padLeft(64, '0');
 
-    // Construct the data payload
     var data = "0x$functionSelector$paddedAddress";
 
     var result = await _makeEthCall(
       _goodDollarIdentityWhitelistContractAddress,
       data,
     );
-    return _parseAddressResult(result);
+    return _parseBoolResult(result);
   }
 
   // New method to add to the MiniPayService class
@@ -340,15 +313,11 @@ class WithdrawalMethodConnectionService {
     String walletAddress,
   ) async {
     try {
-      // Get the root whitelisted address
-      final rootAddress = await _getWhitelistedRoot(walletAddress);
-
-      if (rootAddress == "0x0000000000000000000000000000000000000000") {
-        return null; // Not whitelisted
+      if (!await _isWhitelisted(walletAddress)) {
+        return null;
       }
 
-      // Get last authentication timestamp
-      final lastAuthTimestamp = await getLastAuthenticated(rootAddress);
+      final lastAuthTimestamp = await getLastAuthenticated(walletAddress);
 
       // Get authentication period
       final authPeriod = await _getAuthenticationPeriod();
@@ -454,14 +423,13 @@ class WithdrawalMethodConnectionService {
     return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  String _parseAddressResult(String hexResult) {
+  bool _parseBoolResult(String hexResult) {
     if (hexResult == "0x" || hexResult == "0x0") {
-      return "0x0000000000000000000000000000000000000000";
+      return false;
     }
 
-    // The address is in the last 20 bytes of the result
-    var addressHex = "0x${hexResult.substring(hexResult.length - 40)}";
-    return addressHex;
+    final word = int.parse(hexResult.substring(2), radix: 16);
+    return word != 0;
   }
 
   int _parseIntResult(String hexResult) {

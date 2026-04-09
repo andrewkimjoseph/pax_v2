@@ -17,8 +17,17 @@ import 'package:pax/utils/branch_param_cleaner.dart';
 import 'package:pax/repositories/firestore/pax_wallet/pax_wallet_repository.dart';
 import 'package:pax/services/blockchain/blockchain_service.dart';
 import 'package:pax/services/wallet/gooddollar_identity_service.dart';
+import 'package:pax/services/wallet/wallet_registry_service.dart';
 
 enum PaxWalletState { initial, loading, loaded, creating, error }
+
+enum WalletRegistryLogStatus {
+  loggedLocally,
+  loggedNow,
+  alreadyLoggedOnChain,
+  missingWalletData,
+  failed,
+}
 
 class PaxWalletStateModel {
   final PaxWallet? wallet;
@@ -198,6 +207,78 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
     }
   }
 
+  /// Ensures wallet is logged to the on-chain registry.
+  /// Idempotent and safe to call from multiple entry points.
+  Future<WalletRegistryLogStatus> ensureWalletLoggedToRegistry() async {
+    final wallet = state.wallet;
+    final eoAddress = wallet?.eoAddress;
+    final walletId = wallet?.id;
+    final hasLocalLogHash = (wallet?.logTxnHash ?? '').isNotEmpty;
+
+    if (eoAddress == null ||
+        eoAddress.isEmpty ||
+        walletId == null ||
+        walletId.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] ensureWalletLoggedToRegistry skipped: missing wallet data',
+        );
+      }
+      return WalletRegistryLogStatus.missingWalletData;
+    }
+
+    try {
+      final registryService = WalletRegistryService();
+      final onChainLogged = await registryService.isWalletLogged(eoAddress);
+      if (onChainLogged) {
+        return hasLocalLogHash
+            ? WalletRegistryLogStatus.loggedLocally
+            : WalletRegistryLogStatus.alreadyLoggedOnChain;
+      }
+
+      if (hasLocalLogHash && kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] local log hash exists but on-chain status is false; attempting relog',
+        );
+      }
+
+      final registryResult = await registryService.logWallet(
+        eoWalletAddress: eoAddress,
+      );
+      final txHash = registryResult.txnHash;
+
+      if (txHash != null && txHash.isNotEmpty) {
+        await updateWithLogData(
+          walletId: walletId,
+          logTxnHash: txHash,
+          logTimeCreated: registryResult.logTimeCreated,
+        );
+        return WalletRegistryLogStatus.loggedNow;
+      }
+
+      if (registryResult.alreadyLogged) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] wallet already logged on-chain; local log hash remains empty',
+          );
+        }
+        return WalletRegistryLogStatus.alreadyLoggedOnChain;
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] ensureWalletLoggedToRegistry failed: missing txHash and alreadyLogged=false',
+        );
+      }
+      return WalletRegistryLogStatus.failed;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[PaxWalletNotifier] ensureWalletLoggedToRegistry error: $e');
+      }
+      return WalletRegistryLogStatus.failed;
+    }
+  }
+
   /// Registers the Pax Wallet as a withdrawal method (creates payment_methods doc if missing).
   /// Call after wallet is successfully backed up, before face verification.
   Future<void> registerPaxWalletAsWithdrawalMethod() async {
@@ -270,10 +351,19 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
 
     await _safeCreateVerifiedHumanAfterV2FaceVerification(participantId);
 
-    await Future.wait([
-      _safeCreateReferralRecord(participantId),
-      _safeSponsorGas(wallet.eoAddress!),
-    ]);
+    await _safeCreateReferralRecord(participantId);
+
+    final logStatus = await ensureWalletLoggedToRegistry();
+    if (logStatus == WalletRegistryLogStatus.failed ||
+        logStatus == WalletRegistryLogStatus.missingWalletData) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] skipping sponsorWalletGas after face verification: wallet not logged',
+        );
+      }
+      return;
+    }
+    await _safeSponsorGas(wallet.eoAddress!);
   }
 
   /// Backfill pass for users who already completed face verification earlier.
@@ -325,8 +415,19 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
     await Future.wait([
       _safeCreateVerifiedHumanAfterV2FaceVerification(participantId),
       _safeCreateReferralRecord(participantId),
-      _safeSponsorGas(wallet.eoAddress!),
     ]);
+
+    final logStatus = await ensureWalletLoggedToRegistry();
+    if (logStatus == WalletRegistryLogStatus.failed ||
+        logStatus == WalletRegistryLogStatus.missingWalletData) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] backfill: skipping sponsorWalletGas because wallet logging failed',
+        );
+      }
+      return;
+    }
+    await _safeSponsorGas(wallet.eoAddress!);
   }
 
   Future<void> _safeCreateVerifiedHumanAfterV2FaceVerification(
@@ -435,6 +536,17 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         return false;
       }
 
+      final logStatus = await ensureWalletLoggedToRegistry();
+      if (logStatus == WalletRegistryLogStatus.failed ||
+          logStatus == WalletRegistryLogStatus.missingWalletData) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] topUpGasIfNeeded skipped: wallet not logged in registry',
+          );
+        }
+        return false;
+      }
+
       final celoBalance = await BlockchainService.fetchNativeCeloBalance(eoAddress);
       state = state.copyWith(nativeCeloBalance: celoBalance);
       if (celoBalance >= _autoTopUpThresholdCelo) {
@@ -477,6 +589,17 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   /// Sponsor gas at most once per wallet per app session; errors are swallowed.
   Future<void> _safeSponsorGas(String eoAddress) async {
     try {
+      final logStatus = await ensureWalletLoggedToRegistry();
+      if (logStatus == WalletRegistryLogStatus.failed ||
+          logStatus == WalletRegistryLogStatus.missingWalletData) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] _safeSponsorGas skipped: wallet not logged in registry',
+          );
+        }
+        return;
+      }
+
       if (_gasSponsorshipRequestedForEoAddress == eoAddress) {
         if (kDebugMode) {
           debugPrint(

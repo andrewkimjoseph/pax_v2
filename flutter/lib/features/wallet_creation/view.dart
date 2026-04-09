@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +10,6 @@ import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/services/wallet/smart_account_service.dart';
-import 'package:pax/services/wallet/wallet_registry_service.dart';
 import 'package:pax/services/wallet/gooddollar_identity_service.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -27,8 +25,6 @@ class WalletCreationView extends ConsumerStatefulWidget {
 
 class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   bool? _isWhitelisted;
-  bool _isRegisteringWallet = false;
-  String? _registryErrorMessage;
 
   @override
   void initState() {
@@ -140,34 +136,6 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
         'accountType': 'v2',
       });
       if (!mounted) return;
-
-      // Register wallet on-chain via Cloud Function
-      final registryService = WalletRegistryService();
-      try {
-        final registryResult = await registryService.logWallet(
-          eoWalletAddress: eoAddress,
-        );
-        if (!mounted) return;
-        final walletState = ref.read(paxWalletProvider);
-        if (walletState.wallet?.id != null) {
-          await paxWalletNotifier.updateWithLogData(
-            walletId: walletState.wallet!.id!,
-            logTxnHash: registryResult.txnHash,
-            logTimeCreated: registryResult.logTimeCreated,
-          );
-          if (!mounted) return;
-        }
-      } catch (e) {
-        // Surface registration failure so user can retry
-        if (kDebugMode) {
-          debugPrint('[Registry] Registry log failed (non-blocking): $e');
-        }
-        viewModel.setError(
-          'Wallet was created but could not be registered on-chain. '
-          'You can try again from the next screen.',
-        );
-        return;
-      }
 
       viewModel.setStep(WalletCreationStep.success);
       analytics.v2WalletCreationSuccess({
@@ -292,78 +260,18 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   }
 
   Widget _buildContinueToFaceVerificationButton() {
-    final wallet = ref.read(paxWalletProvider).wallet;
-    final eoAddress = wallet?.eoAddress;
-    final alreadyLogged = (wallet?.logTxnHash ?? '').isNotEmpty;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_registryErrorMessage != null)
-          Text(
-            _registryErrorMessage!,
-            style: TextStyle(fontSize: 14, color: PaxColors.red),
-            textAlign: TextAlign.center,
-          ).withPadding(bottom: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: PrimaryButton(
-            onPressed: _isRegisteringWallet
-                ? null
-                : () async {
-                    if (eoAddress == null) return;
-                    if (alreadyLogged) {
-                      context.go(
-                        Routes.completeGoodDollarFaceVerification,
-                        extra: 'wallet_creation',
-                      );
-                      return;
-                    }
-                    setState(() {
-                      _isRegisteringWallet = true;
-                      _registryErrorMessage = null;
-                    });
-                    try {
-                      final registryService = WalletRegistryService();
-                      final registryResult = await registryService.logWallet(
-                        eoWalletAddress: eoAddress,
-                      );
-                      if (!mounted) return;
-                      final walletState = ref.read(paxWalletProvider);
-                      if (walletState.wallet?.id != null) {
-                        await ref
-                            .read(paxWalletProvider.notifier)
-                            .updateWithLogData(
-                              walletId: walletState.wallet!.id!,
-                              logTxnHash: registryResult.txnHash,
-                              logTimeCreated: registryResult.logTimeCreated,
-                            );
-                        if (!mounted) return;
-                      }
-                      if (mounted) {
-                        setState(() => _isRegisteringWallet = false);
-                        context.go(
-                          Routes.completeGoodDollarFaceVerification,
-                          extra: 'wallet_creation',
-                        );
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        setState(() {
-                          _isRegisteringWallet = false;
-                          _registryErrorMessage =
-                              'Could not register wallet. Please try again.';
-                        });
-                      }
-                    }
-                  },
-            child: _isRegisteringWallet
-                ? const CircularProgressIndicator(onSurface: true)
-                : const Text('Continue to Face Verification'),
-          ),
-        ),
-      ],
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: PrimaryButton(
+        onPressed: () {
+          context.go(
+            Routes.completeGoodDollarFaceVerification,
+            extra: 'wallet_creation',
+          );
+        },
+        child: const Text('Continue to Face Verification'),
+      ),
     );
   }
 
