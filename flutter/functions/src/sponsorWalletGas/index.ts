@@ -15,13 +15,12 @@ import {
   DRPC_URL,
   AUTH,
   CANVASSING_GAS_SPONSOR_PROXY_ADDRESS,
-  CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
   DB,
   DEFAULT_SPONSOR_AMOUNT_CELO,
 } from "../../utils/config";
 import { canvassingGasSponsorABI } from "../../utils/abis/canvassingGasSponsor";
-import { canvassingWalletRegistryABI } from "../../utils/abis/canvassingWalletRegistry";
 import { isWalletWhitelisted } from "../../utils/helpers/isWalletWhitelisted";
+import { isWalletAlreadyLogged } from "../../utils/registry";
 
 /**
  * Callable to sponsor gas for a registered wallet.
@@ -93,12 +92,7 @@ export const sponsorWalletGas = onCall(
 
       const eoAddress = eoWalletAddress as Address;
 
-      const isLogged = (await PUBLIC_CLIENT.readContract({
-        address: CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
-        abi: canvassingWalletRegistryABI,
-        functionName: "isWalletLogged",
-        args: [eoAddress],
-      })) as boolean;
+      const isLogged = await isWalletAlreadyLogged(eoAddress);
 
       if (!isLogged) {
         logger.error("[V2] Wallet not in registry, cannot sponsor", {
