@@ -160,7 +160,9 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                           try {
                             // Refresh only referral activities (backed by allActivitiesProvider).
                             if (kDebugMode) {
-                              debugPrint('[Refreshing] Refreshing referral activities');
+                              debugPrint(
+                                '[Refreshing] Refreshing referral activities',
+                              );
                             }
                             ref.invalidate(allActivitiesProvider(userId));
                             // Wait for the new activities to load before clearing the spinner.
@@ -420,12 +422,12 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                                     () => activityNotifier.setCompletionFilter(
                                       CompletionFilter.expired,
                                     ),
-                                badgeCount: ref
-                                    .watch(expiredTaskCompletionsCountProvider)
-                                    .maybeWhen(
-                                      data: (c) => c,
-                                      orElse: () => null,
-                                    ),
+                                // badgeCount: ref
+                                //     .watch(expiredTaskCompletionsCountProvider)
+                                //     .maybeWhen(
+                                //       data: (c) => c,
+                                //       orElse: () => null,
+                                //     ),
                               ),
                             ],
                           ),

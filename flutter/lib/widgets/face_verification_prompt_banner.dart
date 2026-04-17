@@ -29,8 +29,6 @@ class FaceVerificationPromptBanner extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        ref.read(analyticsProvider).v2FaceVerificationPromptShown();
-
         return InkWell(
           onTap: () {
             ref.read(analyticsProvider).v2FaceVerificationPromptTapped({

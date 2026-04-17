@@ -524,10 +524,6 @@ class AnalyticsProvider {
   Future<void> v2WithdrawalMethodAdded([Map<String, dynamic>? properties]) =>
       _logEvent('v2_withdrawal_method_added', properties: properties);
 
-  Future<void> v2FaceVerificationPromptShown([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_face_verification_prompt_shown', properties: properties);
-
   Future<void> v2FaceVerificationPromptTapped([
     Map<String, dynamic>? properties,
   ]) => _logEvent('v2_face_verification_prompt_tapped', properties: properties);

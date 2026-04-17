@@ -79,7 +79,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                       loading: () => '--',
                       error: (_, __) => '0',
                     ),
-                    label: 'Completed Tasks',
+                    label: 'Tasks Done',
                     isLoading: tasksCount is AsyncLoading,
                   ).withPadding(right: 8),
                 ),
