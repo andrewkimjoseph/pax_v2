@@ -153,6 +153,8 @@ class _ClaimReviewSummaryViewState
 
   void _showSuccessDialog() {
     final claimContext = ref.read(claimPayoutContextProvider);
+    final analytics = ref.read(analyticsProvider);
+    final claimPayoutNotifier = ref.read(claimPayoutContextProvider.notifier);
     final amount = claimContext?.amount ?? 0;
     final tokenId = claimContext?.tokenId ?? 0;
     final paymentMethod = claimContext?.selectedWithdrawalMethod;
@@ -224,12 +226,10 @@ class _ClaimReviewSummaryViewState
                       child: PrimaryButton(
                         child: const Text('OK'),
                         onPressed: () {
-                          ref
-                              .read(analyticsProvider)
-                              .claimReviewSummarySuccessOkTapped({
-                                "claimKind": claimContext?.claimKind.name,
-                              });
-                          ref.read(claimPayoutContextProvider.notifier).clear();
+                          analytics.claimReviewSummarySuccessOkTapped({
+                            "claimKind": claimContext?.claimKind.name,
+                          });
+                          claimPayoutNotifier.clear();
                           context.go("/home");
                         },
                       ),
@@ -245,6 +245,7 @@ class _ClaimReviewSummaryViewState
   }
 
   void _showErrorDialog(String errorMessage) {
+    final analytics = ref.read(analyticsProvider);
     showDialog(
       barrierDismissible: false,
       context: context,
@@ -272,7 +273,7 @@ class _ClaimReviewSummaryViewState
             actions: [
               OutlineButton(
                 onPressed: () {
-                  ref.read(analyticsProvider).claimReviewSummaryErrorOkTapped();
+                  analytics.claimReviewSummaryErrorOkTapped();
                   context.go("/home");
                 },
                 child: Text('OK'),

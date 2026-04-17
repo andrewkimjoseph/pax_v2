@@ -6,6 +6,7 @@ import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/services/withdrawal/withdrawal_method_connection_service.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/utils/achievement_constants.dart';
@@ -97,6 +98,22 @@ class WithdrawalMethodConnectionNotifier
     extends Notifier<WithdrawalMethodConnectionStateModel> {
   late final WithdrawalMethodConnectionService _withdrawalMethodService;
 
+  Map<String, int> _achievementAmounts() {
+    return ref
+        .read(achievementAmountsProvider)
+        .maybeWhen(
+          data: (data) => data,
+          orElse: () => AchievementConstants.defaultAchievementAmounts,
+        );
+  }
+
+  int _achievementAmountFor(String achievementName) {
+    return AchievementConstants.getAmountForAchievement(
+      achievementName,
+      _achievementAmounts(),
+    );
+  }
+
   @override
   WithdrawalMethodConnectionStateModel build() {
     _withdrawalMethodService = ref.watch(withdrawalMethodConnectionProvider);
@@ -175,7 +192,9 @@ class WithdrawalMethodConnectionNotifier
         .isWalletAddressUsed(walletAddress);
 
     if (kDebugMode) {
-      debugPrint('[isWalletAddressUsed] isWalletAddressUsed: $isWalletAddressUsed');
+      debugPrint(
+        '[isWalletAddressUsed] isWalletAddressUsed: $isWalletAddressUsed',
+      );
     }
 
     if (isWalletAddressUsed) {
@@ -297,9 +316,7 @@ class WithdrawalMethodConnectionNotifier
     if (latestPaxAccount?.isV2 == true) {
       final payoutAddress = latestPaxAccount!.payoutWalletAddress;
       if (payoutAddress != null && payoutAddress.isNotEmpty) {
-        final contractData = {
-          'contractAddress': payoutAddress,
-        };
+        final contractData = {'contractAddress': payoutAddress};
         state = state.copyWith(
           contractData: contractData,
           contractDeployed: true,
@@ -468,7 +485,10 @@ class WithdrawalMethodConnectionNotifier
       }
 
       if (predefinedId == 2 || predefinedId == 3) {
-        await _createPayoutConnectorAchievementForNthMethod(userId, predefinedId);
+        await _createPayoutConnectorAchievementForNthMethod(
+          userId,
+          predefinedId,
+        );
 
         await _sendAnalyticsAndNotificationsForNonFirstTimeWithdrawalMethodConnection(
           userId: userId,
@@ -478,7 +498,9 @@ class WithdrawalMethodConnectionNotifier
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[Error] Error creating payment method or updating participant: $e');
+        debugPrint(
+          '[Error] Error creating payment method or updating participant: $e',
+        );
       }
       throw Exception('Failed to complete wallet connection: ${e.toString()}');
     }
@@ -524,6 +546,9 @@ class WithdrawalMethodConnectionNotifier
     await _createPayoutConnectorAchievementForNthMethod(userId, 1);
 
     final fcmToken = await ref.read(fcmTokenProvider.future);
+    final verifiedHumanAmount = _achievementAmountFor(
+      AchievementConstants.verifiedHuman,
+    );
 
     // Create verified human achievement
     await ref
@@ -536,12 +561,12 @@ class WithdrawalMethodConnectionNotifier
               AchievementConstants.verifiedHumanTasksNeeded,
           tasksCompleted: 1,
           timeCompleted: Timestamp.now(),
-          amountEarned: AchievementConstants.verifiedHumanAmount,
+          amountEarned: verifiedHumanAmount,
         );
 
     ref.read(analyticsProvider).achievementCreated({
       'achievementName': AchievementConstants.verifiedHuman,
-      'amountEarned': AchievementConstants.verifiedHumanAmount,
+      'amountEarned': verifiedHumanAmount,
     });
 
     if (fcmToken != null) {
@@ -551,7 +576,7 @@ class WithdrawalMethodConnectionNotifier
             token: fcmToken,
             achievementData: {
               'achievementName': AchievementConstants.verifiedHuman,
-              'amountEarned': AchievementConstants.verifiedHumanAmount,
+              'amountEarned': verifiedHumanAmount,
             },
           );
     }
@@ -580,17 +605,17 @@ class WithdrawalMethodConnectionNotifier
     switch (predefinedId) {
       case 1:
         name = AchievementConstants.payoutConnector;
-        amount = AchievementConstants.payoutConnectorAmount;
+        amount = _achievementAmountFor(name);
         tasksNeeded = AchievementConstants.payoutConnectorTasksNeeded;
         break;
       case 2:
         name = AchievementConstants.doublePayoutConnector;
-        amount = AchievementConstants.doublePayoutConnectorAmount;
+        amount = _achievementAmountFor(name);
         tasksNeeded = AchievementConstants.doublePayoutConnectorTasksNeeded;
         break;
       case 3:
         name = AchievementConstants.triplePayoutConnector;
-        amount = AchievementConstants.triplePayoutConnectorAmount;
+        amount = _achievementAmountFor(name);
         tasksNeeded = AchievementConstants.triplePayoutConnectorTasksNeeded;
         break;
       default:
@@ -599,15 +624,17 @@ class WithdrawalMethodConnectionNotifier
 
     final fcmToken = await ref.read(fcmTokenProvider.future);
 
-    await ref.read(achievementsProvider.notifier).createAchievement(
-      timeCreated: Timestamp.now(),
-      participantId: userId,
-      name: name,
-      tasksNeededForCompletion: tasksNeeded,
-      tasksCompleted: 1,
-      timeCompleted: Timestamp.now(),
-      amountEarned: amount,
-    );
+    await ref
+        .read(achievementsProvider.notifier)
+        .createAchievement(
+          timeCreated: Timestamp.now(),
+          participantId: userId,
+          name: name,
+          tasksNeededForCompletion: tasksNeeded,
+          tasksCompleted: 1,
+          timeCompleted: Timestamp.now(),
+          amountEarned: amount,
+        );
 
     ref.read(analyticsProvider).achievementCreated({
       'achievementName': name,
@@ -619,10 +646,7 @@ class WithdrawalMethodConnectionNotifier
           .read(notificationServiceProvider)
           .sendAchievementEarnedNotification(
             token: fcmToken,
-            achievementData: {
-              'achievementName': name,
-              'amountEarned': amount,
-            },
+            achievementData: {'achievementName': name, 'amountEarned': amount},
           );
     }
 
@@ -646,7 +670,9 @@ class WithdrawalMethodConnectionNotifier
     // Check if participant exists
     if (participant.participant == null) {
       if (kDebugMode) {
-        debugPrint('[Warning] Warning: Participant is null, skipping analytics');
+        debugPrint(
+          '[Warning] Warning: Participant is null, skipping analytics',
+        );
       }
       return;
     }
@@ -666,7 +692,9 @@ class WithdrawalMethodConnectionNotifier
           .withdrawalMethodConnectionComplete(withdrawalMethodData);
     } else {
       if (kDebugMode) {
-        debugPrint('[Warning] Warning: No withdrawal methods found for analytics');
+        debugPrint(
+          '[Warning] Warning: No withdrawal methods found for analytics',
+        );
       }
       // Send analytics without withdrawal method data
       ref.read(analyticsProvider).withdrawalMethodConnectionComplete({});

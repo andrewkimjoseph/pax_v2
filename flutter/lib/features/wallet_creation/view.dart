@@ -55,7 +55,9 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   Future<void> _startWalletCreation() async {
     final viewModel = ref.read(walletCreationProvider.notifier);
     final analytics = ref.read(analyticsProvider);
-    final walletCredentialsNotifier = ref.read(walletCredentialsProvider.notifier);
+    final walletCredentialsNotifier = ref.read(
+      walletCredentialsProvider.notifier,
+    );
     final paxWalletNotifier = ref.read(paxWalletProvider.notifier);
     final paxAccountNotifier = ref.read(paxAccountProvider.notifier);
     final participantNotifier = ref.read(participantProvider.notifier);
@@ -132,15 +134,11 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       });
       if (!mounted) return;
 
-      await participantNotifier.updateProfile({
-        'accountType': 'v2',
-      });
+      await participantNotifier.updateProfile({'accountType': 'v2'});
       if (!mounted) return;
 
       viewModel.setStep(WalletCreationStep.success);
-      analytics.v2WalletCreationSuccess({
-        'eoAddress': eoAddress,
-      });
+      analytics.v2WalletCreationSuccess({'eoAddress': eoAddress});
 
       // Register Pax Wallet as withdrawal method (before face verification)
       await paxWalletNotifier.registerPaxWalletAsWithdrawalMethod();

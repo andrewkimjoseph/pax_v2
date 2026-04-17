@@ -37,7 +37,9 @@ class BranchService {
   void init({required Function(Map<dynamic, dynamic>) deepLinkHandler}) {
     _deepLinkHandler = deepLinkHandler;
     if (kDebugMode) {
-      debugPrint('[BranchService] BranchService: Initialized with deep link handler');
+      debugPrint(
+        '[BranchService] BranchService: Initialized with deep link handler',
+      );
     }
   }
 
@@ -61,7 +63,9 @@ class BranchService {
     // Wait for SDK to be initialized before listening
     if (!_sdkInitialized) {
       if (kDebugMode) {
-        debugPrint('[BranchService] BranchService: Waiting for SDK initialization...');
+        debugPrint(
+          '[BranchService] BranchService: Waiting for SDK initialization...',
+        );
       }
       await waitForSdkInit();
     }
@@ -72,7 +76,9 @@ class BranchService {
     _linkDataStreamSubscription = FlutterBranchSdk.listSession().listen(
       (linkData) {
         if (kDebugMode) {
-          debugPrint('[BranchService] BranchService: Deep link being listened to: $linkData');
+          debugPrint(
+            '[BranchService] BranchService: Deep link being listened to: $linkData',
+          );
         }
         // Only handle deep links if they contain actual link data
         if (linkData.isNotEmpty && linkData['+clicked_branch_link'] == true) {
@@ -81,7 +87,9 @@ class BranchService {
       },
       onError: (error) {
         if (kDebugMode) {
-          debugPrint('[BranchService] BranchService: Error receiving deep link: $error');
+          debugPrint(
+            '[BranchService] BranchService: Error receiving deep link: $error',
+          );
         }
       },
     );
@@ -112,7 +120,9 @@ class BranchService {
     await waitForSdkInit();
 
     if (kDebugMode) {
-      debugPrint('[BranchService] waitForSdkInit resolved — proceeding to create short URL');
+      debugPrint(
+        '[BranchService] waitForSdkInit resolved — proceeding to create short URL',
+      );
     }
 
     final buo = BranchUniversalObject(
@@ -148,8 +158,10 @@ class BranchService {
         linkProperties: linkProperties,
       );
       if (kDebugMode) {
-        debugPrint('[BranchService] getShortUrl returned — success: ${response.success}, '
-            'result: ${response.result}');
+        debugPrint(
+          '[BranchService] getShortUrl returned — success: ${response.success}, '
+          'result: ${response.result}',
+        );
       }
       return response;
     } catch (e, st) {
