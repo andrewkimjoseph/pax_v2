@@ -33,6 +33,13 @@ final goodCollectiveConfigProvider = FutureProvider<GoodCollectiveConfig>((
   return service.getGoodCollectiveConfig();
 });
 
+final achievementAmountsProvider = FutureProvider<Map<String, int>>((
+  ref,
+) async {
+  final service = ref.watch(remoteConfigServiceProvider);
+  return service.getAchievementAmounts();
+});
+
 final remoteConfigUpdateProvider = StreamProvider<RemoteConfigUpdate>((ref) {
   final service = ref.watch(remoteConfigServiceProvider);
   return service.onConfigUpdated;

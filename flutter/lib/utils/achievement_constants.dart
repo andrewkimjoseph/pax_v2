@@ -23,6 +23,19 @@ class AchievementConstants {
   static const int verifiedHumanAmount = 500;
   static const int goodImpactAmount = 500;
 
+  // Remote config keys for achievement amounts
+  static const String taskStarterAmountKey = 'taskStarterAmount';
+  static const String taskExpertAmountKey = 'taskExpertAmount';
+  static const String profilePerfectionistAmountKey =
+      'profilePerfectionistAmount';
+  static const String payoutConnectorAmountKey = 'payoutConnectorAmount';
+  static const String doublePayoutConnectorAmountKey =
+      'doublePayoutConnectorAmount';
+  static const String triplePayoutConnectorAmountKey =
+      'triplePayoutConnectorAmount';
+  static const String verifiedHumanAmountKey = 'verifiedHumanAmount';
+  static const String goodImpactAmountKey = 'goodImpactAmount';
+
   // Achievement Tasks Needed
   static const int taskStarterTasksNeeded = 1;
   static const int taskExpertTasksNeeded = 10;
@@ -32,6 +45,61 @@ class AchievementConstants {
   static const int triplePayoutConnectorTasksNeeded = 1;
   static const int verifiedHumanTasksNeeded = 1;
   static const int goodImpactTasksNeeded = 5000;
+
+  static const Map<String, int> defaultAchievementAmounts = {
+    taskStarterAmountKey: taskStarterAmount,
+    taskExpertAmountKey: taskExpertAmount,
+    profilePerfectionistAmountKey: profilePerfectionistAmount,
+    payoutConnectorAmountKey: payoutConnectorAmount,
+    doublePayoutConnectorAmountKey: doublePayoutConnectorAmount,
+    triplePayoutConnectorAmountKey: triplePayoutConnectorAmount,
+    verifiedHumanAmountKey: verifiedHumanAmount,
+    goodImpactAmountKey: goodImpactAmount,
+  };
+
+  /// Maps an achievement name to its remote-config amount key.
+  static String? amountKeyForAchievementName(String achievementName) {
+    switch (achievementName) {
+      case taskStarter:
+        return taskStarterAmountKey;
+      case taskExpert:
+        return taskExpertAmountKey;
+      case profilePerfectionist:
+        return profilePerfectionistAmountKey;
+      case payoutConnector:
+        return payoutConnectorAmountKey;
+      case doublePayoutConnector:
+        return doublePayoutConnectorAmountKey;
+      case triplePayoutConnector:
+        return triplePayoutConnectorAmountKey;
+      case verifiedHuman:
+        return verifiedHumanAmountKey;
+      case goodImpact:
+        return goodImpactAmountKey;
+      default:
+        return null;
+    }
+  }
+
+  /// Returns the effective amount for a given remote-config amount key.
+  static int getAmountByKey(
+    String amountKey, [
+    Map<String, int>? remoteAmounts,
+  ]) {
+    return remoteAmounts?[amountKey] ??
+        defaultAchievementAmounts[amountKey] ??
+        0;
+  }
+
+  /// Returns the effective amount for a given achievement name.
+  static int getAmountForAchievement(
+    String achievementName, [
+    Map<String, int>? remoteAmounts,
+  ]) {
+    final amountKey = amountKeyForAchievementName(achievementName);
+    if (amountKey == null) return 0;
+    return getAmountByKey(amountKey, remoteAmounts);
+  }
 
   // Helper method to get amount for achievement
   // static int getAmountForAchievement(String achievementName) {

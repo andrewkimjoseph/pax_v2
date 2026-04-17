@@ -6,6 +6,7 @@ import 'package:pax/models/remote_config/app_version_config.dart';
 import 'package:pax/models/remote_config/goodcollective_config.dart';
 import 'package:pax/models/remote_config/maintenance_config.dart';
 import 'package:pax/models/remote_config/miniapps_config.dart';
+import 'package:pax/utils/achievement_constants.dart';
 import 'package:pax/utils/remote_config_constants.dart';
 import 'dart:convert';
 
@@ -104,6 +105,9 @@ class RemoteConfigService {
           RemoteConfigKeys.isDonationAvailable: false,
           RemoteConfigKeys.goodcollectives: [],
         }),
+        RemoteConfigKeys.achievementAmounts: json.encode(
+          AchievementConstants.defaultAchievementAmounts,
+        ),
       });
 
       try {
@@ -510,6 +514,55 @@ class RemoteConfigService {
         isDonationAvailable: false,
         goodcollectives: [],
       );
+    }
+  }
+
+  Future<Map<String, int>> getAchievementAmounts() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    if (_lastFetchTime == null ||
+        DateTime.now().difference(_lastFetchTime!) > _refreshInterval) {
+      await refreshConfig();
+    }
+
+    final defaults = AchievementConstants.defaultAchievementAmounts;
+
+    try {
+      final jsonString = _remoteConfig.getString(
+        RemoteConfigKeys.achievementAmounts,
+      );
+      if (kDebugMode) {
+        debugPrint(
+          'Remote Config Service: Raw achievement amounts string: $jsonString',
+        );
+      }
+
+      if (jsonString.isEmpty) {
+        return Map<String, int>.from(defaults);
+      }
+
+      final decoded = json.decode(jsonString);
+      if (decoded is! Map<String, dynamic>) {
+        return Map<String, int>.from(defaults);
+      }
+
+      final merged = Map<String, int>.from(defaults);
+      for (final entry in decoded.entries) {
+        final value = entry.value;
+        if (value is num) {
+          merged[entry.key] = value.toInt();
+        }
+      }
+      return merged;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'Remote Config Service: Error getting achievement amounts: $e',
+        );
+      }
+      return Map<String, int>.from(defaults);
     }
   }
 

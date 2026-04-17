@@ -115,6 +115,11 @@ class RemoteConfigKeys {
   /// Key: 'goodcollective_config'
   static const String goodcollectiveConfig = 'goodcollective_config';
 
+  /// The name of the remote config parameter containing achievement reward amounts.
+  /// Contains achievement amount overrides as a JSON string.
+  /// Key: 'achievement_amounts'
+  static const String achievementAmounts = 'achievement_amounts';
+
   /// Whether the miniapps feature is enabled for V2 users.
   /// Key: 'are_miniapps_available'
   static const String areMiniappsAvailable = 'are_miniapps_available';
