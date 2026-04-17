@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
@@ -9,6 +11,7 @@ import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/referral_existence_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/providers/withdrawal_method_connection/withdrawal_method_connection_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
@@ -69,9 +72,12 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   PaxWalletRepository get _repository => ref.read(paxWalletRepositoryProvider);
   static const double _autoTopUpThresholdCelo = 0.01875;
   static double get autoTopUpThresholdCelo => _autoTopUpThresholdCelo;
+  static const Duration _fetchWalletTimeout = Duration(seconds: 15);
 
   /// EOA we have already requested gas sponsorship for this session; avoids duplicate sponsorWalletGas calls.
   String? _gasSponsorshipRequestedForEoAddress;
+  int _fetchWalletRequestId = 0;
+  String? _loadingWalletParticipantId;
 
   @override
   PaxWalletStateModel build() {
@@ -95,19 +101,100 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   }
 
   Future<void> fetchWallet(String participantId) async {
+    if (participantId.isEmpty) return;
+    if (state.state == PaxWalletState.loading &&
+        _loadingWalletParticipantId == participantId) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] fetchWallet deduped while loading '
+          '(participantId=$participantId, requestId=$_fetchWalletRequestId)',
+        );
+      }
+      return;
+    }
+    if (state.state == PaxWalletState.loaded &&
+        state.wallet?.participantId == participantId) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] fetchWallet skipped (already loaded for participantId=$participantId)',
+        );
+      }
+      return;
+    }
+
+    final requestId = ++_fetchWalletRequestId;
+    _loadingWalletParticipantId = participantId;
+    if (kDebugMode) {
+      debugPrint(
+        '[PaxWalletNotifier] fetchWallet started '
+        '(participantId=$participantId, requestId=$requestId)',
+      );
+    }
+
     try {
       state = state.copyWith(state: PaxWalletState.loading);
-      final wallet = await _repository.getWalletByParticipantId(participantId);
+      final wallet = await _repository
+          .getWalletByParticipantId(participantId)
+          .timeout(_fetchWalletTimeout);
+
+      final authState = ref.read(authProvider);
+      final isCurrentRequest = requestId == _fetchWalletRequestId;
+      final isCurrentUser =
+          authState.state == AuthState.authenticated &&
+          authState.user.uid == participantId;
+      if (!isCurrentRequest || !isCurrentUser) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] Ignoring stale fetchWallet result '
+            '(participantId=$participantId, requestId=$requestId, '
+            'latestRequestId=$_fetchWalletRequestId, authUid=${authState.user.uid}, '
+            'authState=${authState.state})',
+          );
+        }
+        return;
+      }
+
       state = state.copyWith(wallet: wallet, state: PaxWalletState.loaded);
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] fetchWallet completed '
+          '(participantId=$participantId, requestId=$requestId, hasWallet=${wallet != null})',
+        );
+      }
       await refreshNativeCeloBalance();
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] fetchWallet timed out for participantId=$participantId: $e',
+        );
+      }
+      final isCurrentRequest = requestId == _fetchWalletRequestId;
+      if (!isCurrentRequest) return;
+      state = state.copyWith(
+        state: PaxWalletState.error,
+        errorMessage: 'Wallet fetch timed out. Please try again.',
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[PaxWalletNotifier] Error fetching pax wallet: $e');
       }
+      final isCurrentRequest = requestId == _fetchWalletRequestId;
+      if (!isCurrentRequest) return;
       state = state.copyWith(
         state: PaxWalletState.error,
         errorMessage: e.toString(),
       );
+    } finally {
+      if (requestId == _fetchWalletRequestId) {
+        _loadingWalletParticipantId = null;
+      }
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] fetchWallet finalized '
+          '(participantId=$participantId, requestId=$requestId, '
+          'latestRequestId=$_fetchWalletRequestId, state=${state.state})',
+        );
+      }
     }
   }
 
@@ -273,7 +360,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       return WalletRegistryLogStatus.failed;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[PaxWalletNotifier] ensureWalletLoggedToRegistry error: $e');
+        debugPrint(
+          '[PaxWalletNotifier] ensureWalletLoggedToRegistry error: $e',
+        );
       }
       return WalletRegistryLogStatus.failed;
     }
@@ -547,7 +636,9 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         return false;
       }
 
-      final celoBalance = await BlockchainService.fetchNativeCeloBalance(eoAddress);
+      final celoBalance = await BlockchainService.fetchNativeCeloBalance(
+        eoAddress,
+      );
       state = state.copyWith(nativeCeloBalance: celoBalance);
       if (celoBalance >= _autoTopUpThresholdCelo) {
         if (kDebugMode) {
@@ -649,6 +740,17 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   Future<void> _createVerifiedHumanAfterV2FaceVerification(
     String participantId,
   ) async {
+    final achievementAmounts = ref
+        .read(achievementAmountsProvider)
+        .maybeWhen(
+          data: (data) => data,
+          orElse: () => AchievementConstants.defaultAchievementAmounts,
+        );
+    final verifiedHumanAmount = AchievementConstants.getAmountForAchievement(
+      AchievementConstants.verifiedHuman,
+      achievementAmounts,
+    );
+
     if (kDebugMode) {
       debugPrint(
         '[PaxWalletNotifier] _createVerifiedHumanAfterV2FaceVerification start '
@@ -682,12 +784,12 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       tasksCompleted: 1,
       timeCreated: Timestamp.now(),
       timeCompleted: Timestamp.now(),
-      amountEarned: AchievementConstants.verifiedHumanAmount,
+      amountEarned: verifiedHumanAmount,
     );
 
     ref.read(analyticsProvider).achievementCreated({
       'achievementName': AchievementConstants.verifiedHuman,
-      'amountEarned': AchievementConstants.verifiedHumanAmount,
+      'amountEarned': verifiedHumanAmount,
     });
 
     try {
@@ -699,7 +801,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
               token: fcmToken,
               achievementData: {
                 'achievementName': AchievementConstants.verifiedHuman,
-                'amountEarned': AchievementConstants.verifiedHumanAmount,
+                'amountEarned': verifiedHumanAmount,
               },
             );
       }
@@ -717,8 +819,22 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   }
 
   void clearWallet() {
+    final previousRequestId = _fetchWalletRequestId;
+    final previousParticipantId = state.wallet?.participantId;
+    _fetchWalletRequestId++;
+    _loadingWalletParticipantId = null;
     _gasSponsorshipRequestedForEoAddress = null;
-    state = PaxWalletStateModel.initial().copyWith(clearNativeCeloBalance: true);
+    state = PaxWalletStateModel.initial().copyWith(
+      clearNativeCeloBalance: true,
+    );
+    if (kDebugMode) {
+      debugPrint(
+        '[PaxWalletNotifier] clearWallet '
+        '(previousParticipantId=$previousParticipantId, '
+        'previousRequestId=$previousRequestId, '
+        'newRequestId=$_fetchWalletRequestId)',
+      );
+    }
   }
 }
 

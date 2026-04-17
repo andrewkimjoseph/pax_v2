@@ -9,6 +9,7 @@ import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
 import 'package:pax/providers/local/donation_service_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/services/donation/donation_service.dart';
 import 'package:pax/services/wallet/smart_account_service.dart';
@@ -135,6 +136,16 @@ class DonationNotifier extends Notifier<DonationStateModel> {
     String participantId,
     double amountToDonate,
   ) async {
+    final achievementAmounts = ref
+        .read(achievementAmountsProvider)
+        .maybeWhen(
+          data: (data) => data,
+          orElse: () => AchievementConstants.defaultAchievementAmounts,
+        );
+    final goodImpactAmount = AchievementConstants.getAmountForAchievement(
+      AchievementConstants.goodImpact,
+      achievementAmounts,
+    );
     final donatedAmount = amountToDonate.floor();
     if (donatedAmount <= 0) {
       return;
@@ -167,7 +178,7 @@ class DonationNotifier extends Notifier<DonationStateModel> {
             tasksNeededForCompletion:
                 AchievementConstants.goodImpactTasksNeeded,
             tasksCompleted: donatedAmount,
-            amountEarned: AchievementConstants.goodImpactAmount,
+            amountEarned: goodImpactAmount,
             timeCompleted:
                 donatedAmount >= AchievementConstants.goodImpactTasksNeeded
                     ? Timestamp.now()
@@ -182,7 +193,7 @@ class DonationNotifier extends Notifier<DonationStateModel> {
                 token: fcmToken,
                 achievementData: {
                   'achievementName': AchievementConstants.goodImpact,
-                  'amountEarned': AchievementConstants.goodImpactAmount,
+                  'amountEarned': goodImpactAmount,
                 },
               );
         }
@@ -215,7 +226,7 @@ class DonationNotifier extends Notifier<DonationStateModel> {
               token: fcmToken,
               achievementData: {
                 'achievementName': AchievementConstants.goodImpact,
-                'amountEarned': AchievementConstants.goodImpactAmount,
+                'amountEarned': goodImpactAmount,
               },
             );
       }

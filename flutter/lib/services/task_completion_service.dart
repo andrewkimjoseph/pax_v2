@@ -15,6 +15,7 @@ import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
 import 'package:pax/providers/local/task_completion_state_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/services/notifications/notification_service.dart';
 import 'package:pax/utils/achievement_constants.dart';
 
@@ -61,6 +62,20 @@ class TaskCompletionService {
       final authState = ref.read(authProvider);
 
       final achievements = ref.read(achievementsProvider).achievements;
+      final achievementAmounts = ref
+          .read(achievementAmountsProvider)
+          .maybeWhen(
+            data: (data) => data,
+            orElse: () => AchievementConstants.defaultAchievementAmounts,
+          );
+      final taskStarterAmount = AchievementConstants.getAmountForAchievement(
+        AchievementConstants.taskStarter,
+        achievementAmounts,
+      );
+      final taskExpertAmount = AchievementConstants.getAmountForAchievement(
+        AchievementConstants.taskExpert,
+        achievementAmounts,
+      );
       final hasTaskStarter = achievements.any(
         (a) =>
             a.name == AchievementConstants.taskStarter &&
@@ -83,11 +98,11 @@ class TaskCompletionService {
                   AchievementConstants.taskStarterTasksNeeded,
               tasksCompleted: 1,
               timeCompleted: Timestamp.now(),
-              amountEarned: AchievementConstants.taskStarterAmount,
+              amountEarned: taskStarterAmount,
             );
         ref.read(analyticsProvider).achievementCreated({
           'achievementName': AchievementConstants.taskStarter,
-          'amountEarned': AchievementConstants.taskStarterAmount,
+          'amountEarned': taskStarterAmount,
         });
         final fcmToken = await ref.read(fcmTokenProvider.future);
 
@@ -98,7 +113,7 @@ class TaskCompletionService {
                 token: fcmToken,
                 achievementData: {
                   'achievementName': AchievementConstants.taskStarter,
-                  'amountEarned': AchievementConstants.taskStarterAmount,
+                  'amountEarned': taskStarterAmount,
                 },
               );
         }
@@ -116,11 +131,11 @@ class TaskCompletionService {
               tasksNeededForCompletion:
                   AchievementConstants.taskExpertTasksNeeded,
               tasksCompleted: 1,
-              amountEarned: AchievementConstants.taskExpertAmount,
+              amountEarned: taskExpertAmount,
             );
         ref.read(analyticsProvider).achievementCreated({
           'achievementName': AchievementConstants.taskExpert,
-          'amountEarned': AchievementConstants.taskExpertAmount,
+          'amountEarned': taskExpertAmount,
         });
       } else if (taskExpert.tasksCompleted <
           taskExpert.tasksNeededForCompletion) {
@@ -150,7 +165,7 @@ class TaskCompletionService {
                   token: fcmToken,
                   achievementData: {
                     'achievementName': AchievementConstants.taskExpert,
-                    'amountEarned': AchievementConstants.taskExpertAmount,
+                    'amountEarned': taskExpertAmount,
                   },
                 );
           }

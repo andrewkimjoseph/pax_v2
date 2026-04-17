@@ -14,9 +14,9 @@ class GoodDollarIdentityService {
       '0xC361A6E67822a0EDc17D899227dd9FC50BD62F42';
 
   // Function signatures
-  // isWhitelisted(address) -> bool
-  static final String _isWhitelistedSelector = EvmSelectorUtil.computeSelector(
-    'isWhitelisted(address)',
+  // identities(address) -> (uint256,uint256,string,uint256,uint8,uint32)
+  static final String _identitiesSelector = EvmSelectorUtil.computeSelector(
+    'identities(address)',
   );
   // getWhitelistedOnChainId(address) -> string
   static final String _getWhitelistedOnChainIdSelector =
@@ -42,19 +42,89 @@ class GoodDollarIdentityService {
   /// Checks if a wallet address is whitelisted (verified) in GoodDollar Identity.
   static Future<bool> isWhitelisted(String walletAddress) async {
     Future<bool> attempt() async {
+      String readWord(String hexStr, int index) {
+        final start = index * 64;
+        final end = start + 64;
+        if (hexStr.length < end) {
+          throw FormatException('Identities response too short at word $index');
+        }
+        return hexStr.substring(start, end);
+      }
+
+      BigInt readUint(String hexStr, int index) {
+        return BigInt.parse(readWord(hexStr, index), radix: 16);
+      }
+
+      String readDynamicString(String hexStr, int offsetWordIndex) {
+        final offsetHex = readWord(hexStr, offsetWordIndex);
+        final offsetBytes = int.parse(offsetHex, radix: 16);
+        final offsetChars = offsetBytes * 2;
+
+        if (hexStr.length < offsetChars + 64) {
+          throw const FormatException(
+            'Identities response too short for string length',
+          );
+        }
+
+        final length = int.parse(
+          hexStr.substring(offsetChars, offsetChars + 64),
+          radix: 16,
+        );
+        final dataStart = offsetChars + 64;
+        final dataEnd = dataStart + length * 2;
+        if (hexStr.length < dataEnd) {
+          throw const FormatException(
+            'Identities response too short for string bytes',
+          );
+        }
+
+        final contentHex = hexStr.substring(dataStart, dataEnd);
+        final bytes = <int>[];
+        for (var i = 0; i < contentHex.length; i += 2) {
+          bytes.add(int.parse(contentHex.substring(i, i + 2), radix: 16));
+        }
+        return String.fromCharCodes(bytes);
+      }
+
       final paddedAddress = walletAddress
           .replaceFirst('0x', '')
           .toLowerCase()
           .padLeft(64, '0');
 
-      final data = '$_isWhitelistedSelector$paddedAddress';
+      final data = '$_identitiesSelector$paddedAddress';
       final result = await _rpcCall('eth_call', [
         {'to': _identityContractAddressProxy, 'data': data},
         'latest',
       ]);
 
-      final returnValue = result['result'] as String? ?? '0x0';
-      return returnValue.endsWith('1');
+      final returnValue = result['result'] as String? ?? '0x';
+      if (returnValue == '0x' || returnValue.length <= 2) {
+        throw const FormatException('Empty identities response');
+      }
+
+      final hexStr = returnValue.substring(2);
+      final dateAuthenticated = readUint(hexStr, 0);
+      final dateAdded = readUint(hexStr, 1);
+      final did = readDynamicString(hexStr, 2);
+      final whitelistedOnChainId = readUint(hexStr, 3);
+      final status = readUint(hexStr, 4).toInt();
+      final authCount = readUint(hexStr, 5).toInt();
+
+      if (kDebugMode) {
+        debugPrint(
+          '[GoodDollarIdentityService] identities($walletAddress): '
+          '${jsonEncode({
+            'dateAuthenticated': dateAuthenticated.toString(),
+            'dateAdded': dateAdded.toString(),
+            'did': did,
+            'whitelistedOnChainId': whitelistedOnChainId.toString(),
+            'status': status,
+            'authCount': authCount,
+          })}',
+        );
+      }
+
+      return status == 1;
     }
 
     try {

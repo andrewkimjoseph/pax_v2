@@ -40,8 +40,19 @@ class AuthNotifier extends Notifier<AuthStateModel> {
   // Start listening to Firebase auth state changes
   void _startListeningToAuthChanges() {
     _authStateSubscription = _repository.authStateChanges.listen((user) {
+      if (kDebugMode) {
+        debugPrint(
+          '[AuthNotifier] authStateChanges event: userPresent=${user != null}, '
+          'previousState=${state.state}, uid=${user?.uid}',
+        );
+      }
       if (user != null) {
         state = state.copyWith(user: user, state: AuthState.authenticated);
+        if (kDebugMode) {
+          debugPrint(
+            '[AuthNotifier] transitioned to authenticated via stream (uid=${user.uid})',
+          );
+        }
         // Reset consecutive failures when user successfully authenticates
         _consecutiveValidationFailures = 0;
         // Start periodic validation when user is authenticated
@@ -54,6 +65,11 @@ class AuthNotifier extends Notifier<AuthStateModel> {
             user: AuthUser.empty(),
             state: AuthState.unauthenticated,
           );
+          if (kDebugMode) {
+            debugPrint(
+              '[AuthNotifier] transitioned to unauthenticated via stream',
+            );
+          }
         }
         // Cancel validation when user is signed out
         _cancelTokenValidation();
@@ -176,6 +192,9 @@ class AuthNotifier extends Notifier<AuthStateModel> {
   // Sign in with Google
   Future<void> signInWithGoogle() async {
     try {
+      if (kDebugMode) {
+        debugPrint('[AuthNotifier] signInWithGoogle started');
+      }
       // Set loading state
       state = state.copyWith(state: AuthState.loading);
 
@@ -185,6 +204,9 @@ class AuthNotifier extends Notifier<AuthStateModel> {
       // Update state based on result
       if (user != null) {
         state = state.copyWith(user: user, state: AuthState.authenticated);
+        if (kDebugMode) {
+          debugPrint('[AuthNotifier] signInWithGoogle success (uid=${user.uid})');
+        }
         // Reset consecutive failures on successful sign in
         _consecutiveValidationFailures = 0;
 
@@ -196,6 +218,9 @@ class AuthNotifier extends Notifier<AuthStateModel> {
 
         ref.read(analyticsProvider).signInWithGoogleComplete(user.toMap());
       } else {
+        if (kDebugMode) {
+          debugPrint('[AuthNotifier] signInWithGoogle cancelled by user');
+        }
         // User cancelled the sign-in flow
         state = state.copyWith(
           state: AuthState.unauthenticated,
@@ -207,6 +232,9 @@ class AuthNotifier extends Notifier<AuthStateModel> {
         });
       }
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AuthNotifier] signInWithGoogle failed: $e');
+      }
       // Handle error
       state = state.copyWith(
         state: AuthState.error,
@@ -221,6 +249,12 @@ class AuthNotifier extends Notifier<AuthStateModel> {
 
   // Sign out
   Future<void> signOut() async {
+    final currentUid = state.user.uid;
+    if (kDebugMode) {
+      debugPrint(
+        '[AuthNotifier] signOut started (currentUid=$currentUid, currentState=${state.state})',
+      );
+    }
     try {
       await _repository.signOut();
 
@@ -234,6 +268,9 @@ class AuthNotifier extends Notifier<AuthStateModel> {
         user: AuthUser.empty(),
         state: AuthState.unauthenticated,
       );
+      if (kDebugMode) {
+        debugPrint('[AuthNotifier] signOut completed (previousUid=$currentUid)');
+      }
     } catch (e) {
       // Even if there's an error, still update the local state to unauthenticated
       // This ensures the user is logged out even if the backend call fails
@@ -243,7 +280,7 @@ class AuthNotifier extends Notifier<AuthStateModel> {
       );
 
       if (kDebugMode) {
-        debugPrint('[Error] Error during sign out: $e');
+        debugPrint('[AuthNotifier] signOut failed but forced local logout: $e');
       }
     }
   }

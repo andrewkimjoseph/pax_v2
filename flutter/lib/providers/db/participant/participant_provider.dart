@@ -6,6 +6,7 @@ import 'package:pax/models/firestore/participant/participant_model.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/repositories/firestore/participant/participants_repository.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/utils/achievement_constants.dart';
@@ -172,6 +173,18 @@ class ParticipantNotifier extends Notifier<ParticipantStateModel> {
           !data.containsKey('goodDollarIdentityExpiryDate');
 
       if (isFirstTimeCompletingProfile) {
+        final achievementAmounts = ref
+            .read(achievementAmountsProvider)
+            .maybeWhen(
+              data: (data) => data,
+              orElse: () => AchievementConstants.defaultAchievementAmounts,
+            );
+        final profilePerfectionistAmount =
+            AchievementConstants.getAmountForAchievement(
+              AchievementConstants.profilePerfectionist,
+              achievementAmounts,
+            );
+
         // Create Profile Perfectionist achievement
         await ref
             .read(achievementsProvider.notifier)
@@ -183,11 +196,11 @@ class ParticipantNotifier extends Notifier<ParticipantStateModel> {
                   AchievementConstants.profilePerfectionistTasksNeeded,
               tasksCompleted: 1,
               timeCompleted: Timestamp.now(),
-              amountEarned: AchievementConstants.profilePerfectionistAmount,
+              amountEarned: profilePerfectionistAmount,
             );
         ref.read(analyticsProvider).achievementCreated({
           'achievementName': 'Profile Perfectionist',
-          'amountEarned': 400,
+          'amountEarned': profilePerfectionistAmount,
         });
         final fcmToken = await ref.read(fcmTokenProvider.future);
         if (fcmToken != null) {
@@ -197,8 +210,7 @@ class ParticipantNotifier extends Notifier<ParticipantStateModel> {
                 token: fcmToken,
                 achievementData: {
                   'achievementName': AchievementConstants.profilePerfectionist,
-                  'amountEarned':
-                      AchievementConstants.profilePerfectionistAmount,
+                  'amountEarned': profilePerfectionistAmount,
                 },
               );
         }
