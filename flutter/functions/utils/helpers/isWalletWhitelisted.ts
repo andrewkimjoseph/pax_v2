@@ -2,14 +2,17 @@ import type { Address } from "viem";
 import {
   IDENTITY_PROXY_CONTRACT_ADDRESS,
   PUBLIC_CLIENT,
-  WHITELIST_ABI,
 } from "../config";
+import { identityABI } from "../abis/identity";
 
 export async function isWalletWhitelisted(eoAddress: Address): Promise<boolean> {
-  return PUBLIC_CLIENT.readContract({
+  const identity = await PUBLIC_CLIENT.readContract({
     address: IDENTITY_PROXY_CONTRACT_ADDRESS,
-    abi: WHITELIST_ABI,
-    functionName: "isWhitelisted",
+    abi: identityABI,
+    functionName: "identities",
     args: [eoAddress],
   });
+
+  const status = Number(identity[4]);
+  return status === 1;
 }

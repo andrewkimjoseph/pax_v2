@@ -119,7 +119,7 @@ export const sponsorWalletGas = onCall(
         };
       }
 
-      const amountWei = parseEther(DEFAULT_SPONSOR_AMOUNT_CELO);
+      const amountWei = parseEther(DEFAULT_SPONSOR_AMOUNT_CELO) / BigInt(2);
       const minBalanceThresholdWei = amountWei / BigInt(2);
 
       const currentBalanceWei = await PUBLIC_CLIENT.getBalance({

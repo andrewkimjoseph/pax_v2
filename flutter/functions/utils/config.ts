@@ -68,7 +68,7 @@ export const USDC_TOKEN_ADDRESS = "0xcebA9300f2b948710d2653dD7B07f33A8B32118C" a
 export const DEFAULT_SPONSOR_AMOUNT_CELO = "0.0375";
 
 /** Default referral reward amount (off-chain, stored as numeric). */
-export const REFERRAL_REWARD_AMOUNT = 1000;
+export const REFERRAL_REWARD_AMOUNT = 100;
 
 /** Minimum donation amount in G$ for GoodCollective donations. */
 export const MIN_DONATION_AMOUNT_GD = 100;
