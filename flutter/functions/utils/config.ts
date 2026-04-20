@@ -38,13 +38,20 @@ export const CREATE2_FACTORY = "0x4e59b44847b379578588920cA78FbF26c0B4956C" as A
 export const IDENTITY_PROXY_CONTRACT_ADDRESS =
   "0xC361A6E67822a0EDc17D899227dd9FC50BD62F42" as Address;
 
-export const WHITELIST_ABI = [
+export const IDENTITY_ABI = [
   {
-    name: "isWhitelisted",
+    name: "identities",
     type: "function",
     stateMutability: "view",
     inputs: [{ name: "account", type: "address" }],
-    outputs: [{ name: "", type: "bool" }],
+    outputs: [
+      { name: "dateAuthenticated", type: "uint256" },
+      { name: "dateAdded", type: "uint256" },
+      { name: "did", type: "string" },
+      { name: "whitelistedOnChainId", type: "uint256" },
+      { name: "status", type: "uint8" },
+      { name: "authCount", type: "uint32" },
+    ],
   },
 ] as const;
 

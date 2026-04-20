@@ -7,6 +7,7 @@ import 'package:pax/env/env.dart';
 import 'package:pax/models/firestore/pax_account/pax_account_model.dart';
 import 'package:pax/repositories/firestore/pax_account/pax_account_repository.dart';
 import 'package:pax/repositories/firestore/withdrawal_method/withdrawal_method_repository.dart';
+import 'package:pax/services/wallet/gooddollar_identity_service.dart';
 import 'package:pointycastle/digests/keccak.dart';
 
 class WithdrawalMethodConnectionService {
@@ -197,113 +198,9 @@ class WithdrawalMethodConnectionService {
     }
   }
 
-  // Connect wallet to PaxAccount and create payment method (transaction-like pattern)
-  // Future<bool> connectWallet({
-  //   required String userId,
-  //   required String walletAddress,
-  //   required int predefinedId,
-  //   required String name,
-  // }) async {
-  //   try {
-  //     // 1. Get PaxAccount
-  //     final paxAccount = await _paxAccountRepository.getAccount(userId);
-  //     if (paxAccount == null) {
-  //       throw Exception('PaxAccount not found');
-  //     }
-
-  //     // 2. Get or create server wallet - will use existing if available
-  //     Map<String, dynamic> serverWalletData;
-  //     if (paxAccount.serverWalletId != null &&
-  //         paxAccount.serverWalletId!.isNotEmpty &&
-  //         paxAccount.serverWalletAddress != null &&
-  //         paxAccount.serverWalletAddress!.isNotEmpty &&
-  //         paxAccount.smartAccountWalletAddress != null &&
-  //         paxAccount.smartAccountWalletAddress!.isNotEmpty) {
-  //       // Use existing server wallet
-  //       serverWalletData = {
-  //         'serverWalletId': paxAccount.serverWalletId,
-  //         'serverWalletAddress': paxAccount.serverWalletAddress,
-  //         'smartAccountWalletAddress': paxAccount.smartAccountWalletAddress,
-  //       };
-  //     } else {
-  //       // Create a new server wallet
-  //       serverWalletData = await createServerWallet();
-
-  //       // Update PaxAccount with server wallet data immediately
-  //       // This is critical to prevent creating duplicate server wallets if later steps fail
-  //       await _paxAccountRepository.updateAccount(userId, {
-  //         'serverWalletId': serverWalletData['serverWalletId'],
-  //         'serverWalletAddress': serverWalletData['serverWalletAddress'],
-  //         'smartAccountWalletAddress':
-  //             serverWalletData['smartAccountWalletAddress'],
-  //       });
-  //     }
-
-  //     // 3. Get or deploy contract
-  //     Map<String, dynamic> contractData;
-  //     if (paxAccount.contractAddress != null &&
-  //         paxAccount.contractAddress!.isNotEmpty &&
-  //         paxAccount.contractCreationTxnHash != null &&
-  //         paxAccount.contractCreationTxnHash!.isNotEmpty) {
-  //       // Use existing contract
-  //       contractData = {
-  //         'contractAddress': paxAccount.contractAddress,
-  //         'contractCreationTxnHash': paxAccount.contractCreationTxnHash,
-  //       };
-  //     } else {
-  //       // Deploy a new contract
-  //       contractData = await deployPaxAccountV1ProxyContractAddress(
-  //         walletAddress,
-  //         serverWalletData['serverWalletId'],
-  //       );
-
-  //       // Update PaxAccount with contract data immediately
-  //       await _paxAccountRepository.updateAccount(userId, {
-  //         'contractAddress': contractData['contractAddress'],
-  //         'contractCreationTxnHash':
-  //             contractData['contractCreationTxnHash'] ??
-  //             contractData['txnHash'],
-  //       });
-  //     }
-
-  //     // 4. Create payment method
-  //     await _withdrawalMethodRepository.createWithdrawalMethod(
-  //       participantId: userId,
-  //       paxAccountId: paxAccount.id,
-  //       walletAddress: walletAddress,
-  //       predefinedId: predefinedId,
-  //       name: name,
-  //     );
-
-  //     return true;
-  //   } catch (e) {
-  //     if (kDebugMode) {
-  //       print('Error connecting wallet: $e');
-  //     }
-  //     return false;
-  //   }
-  // }
-
   /// On-chain source of truth for whitelist + reverify (same account as expiry below).
   Future<bool> _isWhitelisted(String walletAddress) async {
-    var functionSignature = "isWhitelisted(address)";
-    var functionSelector = _bytesToHex(
-      _keccak256(ascii.encode(functionSignature)),
-    ).substring(0, 8);
-
-    var addressWithoutPrefix =
-        walletAddress.startsWith('0x')
-            ? walletAddress.substring(2)
-            : walletAddress;
-    var paddedAddress = addressWithoutPrefix.padLeft(64, '0');
-
-    var data = "0x$functionSelector$paddedAddress";
-
-    var result = await _makeEthCall(
-      _goodDollarIdentityWhitelistContractAddress,
-      data,
-    );
-    return _parseBoolResult(result);
+    return GoodDollarIdentityService.isWhitelisted(walletAddress);
   }
 
   // New method to add to the MiniPayService class
@@ -421,15 +318,6 @@ class WithdrawalMethodConnectionService {
 
   String _bytesToHex(List<int> bytes) {
     return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
-  }
-
-  bool _parseBoolResult(String hexResult) {
-    if (hexResult == "0x" || hexResult == "0x0") {
-      return false;
-    }
-
-    final word = int.parse(hexResult.substring(2), radix: 16);
-    return word != 0;
   }
 
   int _parseIntResult(String hexResult) {
