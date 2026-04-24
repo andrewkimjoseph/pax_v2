@@ -271,9 +271,6 @@ class AnalyticsProvider {
   Future<void> achievementComplete([Map<String, dynamic>? properties]) =>
       _logEvent('achievement_complete', properties: properties);
 
-  Future<void> claimAchievementTapped([Map<String, dynamic>? properties]) =>
-      _logEvent('claim_achievement_tapped', properties: properties);
-
   Future<void> claimAchievementComplete([Map<String, dynamic>? properties]) =>
       _logEvent('claim_achievement_complete', properties: properties);
 
@@ -292,8 +289,6 @@ class AnalyticsProvider {
   Future<void> unrewardedTaskCompletionTapped(Map<String, String?> map) =>
       _logEvent('unrewarded_task_completion_tapped', properties: map);
 
-  Future<void> claimRewardTapped(Map<String, String?> map) =>
-      _logEvent('claim_reward_tapped', properties: map);
   Future<void> claimRewardComplete(Map<String, String?> map) =>
       _logEvent('claim_reward_complete', properties: map);
   Future<void> claimRewardFailed(Map<String, String?> map) =>
@@ -304,90 +299,6 @@ class AnalyticsProvider {
 
   Future<void> goHomeToCompleteTaskTapped(Map<String, String?> map) =>
       _logEvent('go_home_to_complete_task_tapped', properties: map);
-
-  Future<void> claimDonationCtaTapped([Map<String, dynamic>? properties]) =>
-      _logEvent('claim_donation_cta_tapped', properties: properties);
-
-  Future<void> claimPrimaryCtaTapped([Map<String, dynamic>? properties]) =>
-      _logEvent('claim_primary_cta_tapped', properties: properties);
-
-  Future<void> claimErrorDialogOkTapped([Map<String, dynamic>? properties]) =>
-      _logEvent('claim_error_dialog_ok_tapped', properties: properties);
-
-  Future<void> claimReferralIdCopyTapped([Map<String, dynamic>? properties]) =>
-      _logEvent('claim_referral_id_copy_tapped', properties: properties);
-
-  Future<void> claimTaskCompletionIdCopyTapped([
-    Map<String, dynamic>? properties,
-  ]) =>
-      _logEvent('claim_task_completion_id_copy_tapped', properties: properties);
-
-  Future<void> claimSelectWalletBackTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_select_wallet_back_tapped', properties: properties);
-
-  Future<void> claimSelectGoodcollectiveBackTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_select_gc_back_tapped', properties: properties);
-
-  Future<void> claimSelectGoodcollectiveInfoTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_select_gc_info_tapped', properties: properties);
-
-  Future<void> claimSelectGoodcollectiveOptionTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_select_gc_option_tapped', properties: properties);
-
-  Future<void> claimSelectGoodcollectiveContinueTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_select_gc_continue_tapped', properties: properties);
-
-  Future<void> claimReviewSummaryBackTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_review_summary_back_tapped', properties: properties);
-
-  Future<void> claimReviewSummarySubmitTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_review_summary_submit_tapped', properties: properties);
-
-  Future<void> claimReviewSummarySuccessOkTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent(
-    'claim_review_summary_success_ok_tapped',
-    properties: properties,
-  );
-
-  Future<void> claimReviewSummaryErrorOkTapped([
-    Map<String, dynamic>? properties,
-  ]) =>
-      _logEvent('claim_review_summary_error_ok_tapped', properties: properties);
-
-  Future<void> claimImpactReviewBackTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_impact_review_back_tapped', properties: properties);
-
-  Future<void> claimImpactReviewChangeWalletTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent(
-    'claim_impact_review_change_wallet_tapped',
-    properties: properties,
-  );
-
-  Future<void> claimImpactReviewSubmitTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('claim_impact_review_submit_tapped', properties: properties);
-
-  Future<void> claimImpactReviewSuccessOkTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent(
-    'claim_impact_review_success_ok_tapped',
-    properties: properties,
-  );
-
-  Future<void> claimImpactReviewErrorOkTapped([
-    Map<String, dynamic>? properties,
-  ]) =>
-      _logEvent('claim_impact_review_error_ok_tapped', properties: properties);
 
   Future<void> refreshBalancesTapped([Map<String, dynamic>? properties]) =>
       _logEvent('refresh_balances_tapped', properties: properties);
@@ -422,42 +333,9 @@ class AnalyticsProvider {
   Future<void> customDappOpened([Map<String, dynamic>? properties]) =>
       _logEvent('custom_dapp_opened', properties: properties);
 
-  Future<void> gdConverterOpened([Map<String, dynamic>? properties]) =>
-      _logEvent('gd_converter_opened', properties: properties);
-
-  // Notification permission (after sign-in)
-  //   Future<void> notificationPermissionRequested([
-  //     Map<String, dynamic>? properties,
-  //   ]) => _logEvent('notification_permission_requested', properties: properties);
-
-  //   Future<void> notificationPermissionGranted([
-  //     Map<String, dynamic>? properties,
-  //   ]) => _logEvent('notification_permission_granted', properties: properties);
-
-  //   Future<void> notificationPermissionDenied([
-  //     Map<String, dynamic>? properties,
-  //   ]) => _logEvent('notification_permission_denied', properties: properties);
-
-  // Future<void> goodWalletWithdrawalMethodCardTapped([
-  //   Map<String, dynamic>? properties,
-  // ]) => _logEvent(
-  //   'good_wallet_withdrawal_method_card_tapped',
-  //   properties: properties,
-  // );
-
-  // Future<void> connectGoodWalletTapped([Map<String, dynamic>? properties]) =>
-  //     _logEvent('connect_good_wallet_tapped', properties: properties);
-
   Future<void> setUpWithdrawalMethodTapped([
     Map<String, dynamic>? properties,
   ]) => _logEvent('set_up_withdrawal_method_tapped', properties: properties);
-
-  Future<void> checkOutCopyWalletAddressStepsTapped([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent(
-    'check_out_copy_wallet_address_steps_tapped',
-    properties: properties,
-  );
 
   Future<void> drpcTapped([Map<String, dynamic>? properties]) =>
       _logEvent('drpc_tapped', properties: properties);
@@ -496,15 +374,6 @@ class AnalyticsProvider {
   Future<void> v2ProfileCompletionSuccess([Map<String, dynamic>? properties]) =>
       _logEvent('v2_profile_completion_success', properties: properties);
 
-  // V1 user events
-  // Future<void> v2AvailabilityBannerShown([
-  //   Map<String, dynamic>? properties,
-  // ]) => _logEvent('v2_availability_banner_shown', properties: properties);
-
-  Future<void> v2UpgradeEligibilityChecked([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_upgrade_eligibility_checked', properties: properties);
-
   Future<void> v2UpgradeInitiated([Map<String, dynamic>? properties]) =>
       _logEvent('v2_upgrade_initiated', properties: properties);
 
@@ -536,9 +405,6 @@ class AnalyticsProvider {
 
   Future<void> referralActivityTapped([Map<String, dynamic>? properties]) =>
       _logEvent('referral_activity_tapped', properties: properties);
-
-  Future<void> referralRewardClaimStarted([Map<String, dynamic>? properties]) =>
-      _logEvent('referral_reward_claim_started', properties: properties);
 
   Future<void> referralRewardClaimSucceeded([
     Map<String, dynamic>? properties,
