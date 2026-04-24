@@ -64,11 +64,6 @@ class RemoteConfigKeys {
       'is_current_balance_card_available';
 
   // App version config keys
-  /// The minimum version of the app that users must have installed.
-  /// Users with versions below this will be prompted to update.
-  /// Key: 'minimum_version'
-  static const String minimumVersion = 'minimum_version';
-
   /// The current latest version of the app available in stores.
   /// Used to inform users about available updates.
   /// Key: 'current_version'
@@ -131,6 +126,27 @@ class RemoteConfigKeys {
   /// Contains achievement amount overrides as a JSON string.
   /// Key: 'achievement_amounts'
   static const String achievementAmounts = 'achievement_amounts';
+
+  /// The name of the remote config parameter containing Pax Wallet configuration.
+  /// Contains wallet-specific settings (e.g. auto top-up threshold) as JSON.
+  /// Key: 'pax_wallet_config'
+  static const String paxWalletConfig = 'pax_wallet_config';
+
+  /// Auto top-up threshold key inside pax_wallet_config JSON.
+  /// Key: 'auto_topup_threshold'
+  static const String autoTopupThreshold = 'auto_top_up_threshold';
+
+  /// Version key inside pax_wallet_config JSON.
+  /// Key: 'version'
+  static const String paxWalletVersion = 'version';
+
+  /// Chain id key inside pax_wallet_config JSON.
+  /// Key: 'chain_id'
+  static const String chainId = 'chain_id';
+
+  /// RPC URL key inside pax_wallet_config JSON.
+  /// Key: 'rpc_url'
+  static const String rpcUrl = 'rpc_url';
 
   /// Whether the miniapps feature is enabled for V2 users.
   /// Key: 'are_miniapps_available'

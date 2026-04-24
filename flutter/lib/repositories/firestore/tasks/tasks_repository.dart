@@ -40,25 +40,57 @@ class TasksRepository {
       return snapshot.docs.map((doc) => Task.fromFirestore(doc)).toList();
     });
 
-    // Get all task completions for this participant
-    Stream<List<TaskCompletion>> completionsStream = _taskCompletionsCollection
-        .where('participantId', isEqualTo: participantId)
-        .snapshots()
-        .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => TaskCompletion.fromFirestore(doc))
-              .toList();
+    // Get task completions only for currently available tasks.
+    // Uses chunked whereIn queries (Firestore limit is 10 values).
+    Stream<List<TaskCompletion>> completionsStream = availableTasksStream
+        .switchMap((availableTasks) {
+          final taskIds =
+              availableTasks
+                  .map((task) => task.id)
+                  .whereType<String>()
+                  .toSet()
+                  .toList();
+
+          if (taskIds.isEmpty) {
+            return Stream.value(<TaskCompletion>[]);
+          }
+
+          final completionQueryStreams = <Stream<List<TaskCompletion>>>[];
+          for (int i = 0; i < taskIds.length; i += 10) {
+            final end = (i + 10 < taskIds.length) ? i + 10 : taskIds.length;
+            final taskIdChunk = taskIds.sublist(i, end);
+            completionQueryStreams.add(
+              _taskCompletionsCollection
+                  .where('taskId', whereIn: taskIdChunk)
+                  .snapshots()
+                  .map((snapshot) {
+                    return snapshot.docs
+                        .map((doc) => TaskCompletion.fromFirestore(doc))
+                        .toList();
+                  }),
+            );
+          }
+
+          return Rx.combineLatestList<List<TaskCompletion>>(
+            completionQueryStreams,
+          ).map((chunkedCompletions) {
+            return chunkedCompletions
+                .expand((completionsForChunk) => completionsForChunk)
+                .toList();
+          });
         });
 
     // Get all screenings to check for task capacity and participant screenings
     Stream<Map<String, dynamic>> screeningsStream = _screeningsCollection
         .snapshots()
         .map((snapshot) {
-          // 1. Count screenings per taskId
-          Map<String, int> taskScreeningCounts = {};
-          // 2. Track which tasks each participant has been screened for
+          // 1. Track screening timestamps per taskId for expiration checks
+          Map<String, List<DateTime>> taskScreeningTimesByTask = {};
+          // 2. Count screenings missing timestamp (treated as active)
+          Map<String, int> taskScreeningsWithoutTimestamp = {};
+          // 3. Track which tasks each participant has been screened for
           Set<String> participantScreenedTaskIds = {};
-          // 3. Track screening times for tasks
+          // 4. Track screening times for the current participant
           Map<String, DateTime> participantScreeningTimes = {};
 
           for (var doc in snapshot.docs) {
@@ -69,9 +101,13 @@ class TasksRepository {
             String screenedParticipantId = data['participantId'] as String;
             Timestamp? timeCreated = data['timeCreated'] as Timestamp?;
 
-            // Count all screenings for this task
-            taskScreeningCounts[taskId] =
-                (taskScreeningCounts[taskId] ?? 0) + 1;
+            if (timeCreated != null) {
+              taskScreeningTimesByTask.putIfAbsent(taskId, () => []);
+              taskScreeningTimesByTask[taskId]!.add(timeCreated.toDate());
+            } else {
+              taskScreeningsWithoutTimestamp[taskId] =
+                  (taskScreeningsWithoutTimestamp[taskId] ?? 0) + 1;
+            }
 
             // Track which tasks this specific participant has been screened for
             if (screenedParticipantId == participantId && timeCreated != null) {
@@ -81,7 +117,8 @@ class TasksRepository {
           }
 
           return {
-            'taskScreeningCounts': taskScreeningCounts,
+            'taskScreeningTimesByTask': taskScreeningTimesByTask,
+            'taskScreeningsWithoutTimestamp': taskScreeningsWithoutTimestamp,
             'participantScreenedTaskIds': participantScreenedTaskIds,
             'participantScreeningTimes': participantScreeningTimes,
           };
@@ -106,27 +143,63 @@ class TasksRepository {
       screeningsData,
       nowUtc,
     ) {
-      // Separate completions into those with timeCompleted (fully completed)
-      // and those without (in progress)
+      // Separate completions into valid fully completed and in-progress.
       final fullyCompletedTaskIds =
           completions
-              .where((c) => c.timeCompleted != null)
+              .where(
+                (c) =>
+                    c.participantId == participantId &&
+                    c.timeCompleted != null &&
+                    c.isValid != false,
+              )
               .map((c) => c.taskId)
               .toSet();
 
       final inProgressTaskIds =
           completions
-              .where((c) => c.timeCompleted == null)
+              .where(
+                (c) =>
+                    c.participantId == participantId && c.timeCompleted == null,
+              )
               .map((c) => c.taskId)
               .toSet();
 
+      final validCompletedCountsByTask = <String, int>{};
+      for (final completion in completions) {
+        if (completion.timeCompleted == null || completion.isValid == false) {
+          continue;
+        }
+        final taskId = completion.taskId;
+        if (taskId == null) continue;
+        validCompletedCountsByTask[taskId] =
+            (validCompletedCountsByTask[taskId] ?? 0) + 1;
+      }
+
       // Get the screening data
-      final taskScreeningCounts =
-          screeningsData['taskScreeningCounts'] as Map<String, int>;
+      final taskScreeningTimesByTask =
+          screeningsData['taskScreeningTimesByTask'] as Map<String, List<DateTime>>;
+      final taskScreeningsWithoutTimestamp =
+          screeningsData['taskScreeningsWithoutTimestamp'] as Map<String, int>;
       final participantScreenedTaskIds =
           screeningsData['participantScreenedTaskIds'] as Set<String>;
       final participantScreeningTimes =
           screeningsData['participantScreeningTimes'] as Map<String, DateTime>;
+
+      final activeScreeningCountsByTask = <String, int>{};
+      taskScreeningTimesByTask.forEach((taskId, screeningTimes) {
+        final activeTimedScreenings =
+            screeningTimes.where((screeningTime) {
+              final elapsedMinutes = nowUtc
+                  .difference(screeningTime.toUtc())
+                  .inMinutes;
+              return elapsedMinutes < taskTimerDurationMinutes;
+            }).length;
+        activeScreeningCountsByTask[taskId] =
+            activeTimedScreenings + (taskScreeningsWithoutTimestamp[taskId] ?? 0);
+      });
+      taskScreeningsWithoutTimestamp.forEach((taskId, countWithoutTimestamp) {
+        activeScreeningCountsByTask.putIfAbsent(taskId, () => countWithoutTimestamp);
+      });
 
       // Filter tasks based on the updated criteria
       return availableTasks.where((task) {
@@ -186,9 +259,11 @@ class TasksRepository {
 
         // For tasks neither completed, in progress, nor screened by this participant,
         // check if they're full
-        int currentScreenings = taskScreeningCounts[task.id] ?? 0;
+        final activeScreenings = activeScreeningCountsByTask[task.id] ?? 0;
+        final validCompletedCount = validCompletedCountsByTask[task.id] ?? 0;
+        final effectiveOccupancy = activeScreenings + validCompletedCount;
         bool isFull =
-            currentScreenings >= (task.targetNumberOfParticipants ?? 1);
+            effectiveOccupancy >= (task.targetNumberOfParticipants ?? 1);
 
         // Only include tasks that are not full
         return !isFull;

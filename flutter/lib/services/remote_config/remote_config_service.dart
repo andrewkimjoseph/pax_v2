@@ -112,6 +112,12 @@ class RemoteConfigService {
         RemoteConfigKeys.achievementAmounts: json.encode(
           AchievementConstants.defaultAchievementAmounts,
         ),
+        RemoteConfigKeys.paxWalletConfig: json.encode({
+          RemoteConfigKeys.paxWalletVersion: '1',
+          RemoteConfigKeys.autoTopupThreshold: 0.01875,
+          RemoteConfigKeys.chainId: 42220,
+          RemoteConfigKeys.rpcUrl: 'https://forno.celo.org',
+        }),
       });
 
       try {
@@ -575,6 +581,55 @@ class RemoteConfigService {
         );
       }
       return Map<String, int>.from(defaults);
+    }
+  }
+
+  Future<Map<String, dynamic>> getPaxWalletConfig() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    if (_lastFetchTime == null ||
+        DateTime.now().difference(_lastFetchTime!) > _refreshInterval) {
+      await refreshConfig();
+    }
+
+    final defaults = <String, dynamic>{
+      RemoteConfigKeys.paxWalletVersion: '1',
+      RemoteConfigKeys.autoTopupThreshold: 0.01875,
+      RemoteConfigKeys.chainId: 42220,
+      RemoteConfigKeys.rpcUrl: 'https://forno.celo.org',
+    };
+
+    try {
+      final jsonString = _remoteConfig.getString(
+        RemoteConfigKeys.paxWalletConfig,
+      );
+      if (kDebugMode) {
+        debugPrint(
+          'Remote Config Service: Raw pax wallet config string: $jsonString',
+        );
+      }
+
+      if (jsonString.isEmpty) {
+        return Map<String, dynamic>.from(defaults);
+      }
+
+      final decoded = json.decode(jsonString);
+      if (decoded is! Map<String, dynamic>) {
+        return Map<String, dynamic>.from(defaults);
+      }
+
+      final merged = Map<String, dynamic>.from(defaults);
+      merged.addAll(decoded);
+      return merged;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'Remote Config Service: Error getting pax wallet config: $e',
+        );
+      }
+      return Map<String, dynamic>.from(defaults);
     }
   }
 

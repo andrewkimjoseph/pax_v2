@@ -40,6 +40,11 @@ final achievementAmountsProvider = FutureProvider<Map<String, int>>((
   return service.getAchievementAmounts();
 });
 
+final paxWalletConfigProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+  final service = ref.watch(remoteConfigServiceProvider);
+  return service.getPaxWalletConfig();
+});
+
 final remoteConfigUpdateProvider = StreamProvider<RemoteConfigUpdate>((ref) {
   final service = ref.watch(remoteConfigServiceProvider);
   return service.onConfigUpdated;
