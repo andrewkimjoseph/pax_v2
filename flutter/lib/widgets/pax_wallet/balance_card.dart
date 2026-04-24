@@ -10,7 +10,9 @@ import 'package:pax/extensions/tooltip.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
+import 'package:pax/utils/remote_config_constants.dart';
 import 'package:pax/widgets/pax_wallet/address_exchange_row.dart';
 import 'package:pax/widgets/pax_wallet/balance_rows.dart';
 import 'package:pax/widgets/pax_wallet/card_header.dart';
@@ -46,8 +48,24 @@ class PaxWalletBalanceCard extends ConsumerStatefulWidget {
 
 class _PaxWalletBalanceCardState extends ConsumerState<PaxWalletBalanceCard>
     with SingleTickerProviderStateMixin {
+  static const double _defaultAutoTopUpThresholdCelo = 0.01875;
   late final FlipCardController _controller;
   bool _isRefillingGas = false;
+
+  double _readAutoTopUpThresholdCelo() {
+    final config = ref.read(paxWalletConfigProvider).maybeWhen(
+      data: (data) => data,
+      orElse: () => const <String, dynamic>{},
+    );
+    final rawThreshold = config[RemoteConfigKeys.autoTopupThreshold];
+    if (rawThreshold is num) {
+      return rawThreshold.toDouble();
+    }
+    if (rawThreshold is String) {
+      return double.tryParse(rawThreshold) ?? _defaultAutoTopUpThresholdCelo;
+    }
+    return _defaultAutoTopUpThresholdCelo;
+  }
 
   @override
   void initState() {
@@ -69,11 +87,12 @@ class _PaxWalletBalanceCardState extends ConsumerState<PaxWalletBalanceCard>
   Future<void> _triggerGasRefill() async {
     if (_isRefillingGas) return;
     final nativeCeloBalance = ref.read(paxWalletProvider).nativeCeloBalance;
+    final thresholdCelo = _readAutoTopUpThresholdCelo();
     ref.read(analyticsProvider).refillGasTapped({
       'source': 'pax_wallet_balance_card',
       'hasAddress': widget.address != null && widget.address!.isNotEmpty,
       if (nativeCeloBalance != null) 'nativeCeloBalance': nativeCeloBalance,
-      'thresholdCelo': PaxWalletNotifier.autoTopUpThresholdCelo,
+      'thresholdCelo': thresholdCelo,
     });
     if (mounted) {
       setState(() => _isRefillingGas = true);
@@ -123,11 +142,24 @@ class _PaxWalletBalanceCardState extends ConsumerState<PaxWalletBalanceCard>
   @override
   Widget build(BuildContext context) {
     final nativeCeloBalance = ref.watch(paxWalletProvider).nativeCeloBalance;
+    final thresholdCelo = ref.watch(paxWalletConfigProvider).maybeWhen(
+      data: (config) {
+        final rawThreshold = config[RemoteConfigKeys.autoTopupThreshold];
+        if (rawThreshold is num) {
+          return rawThreshold.toDouble();
+        }
+        if (rawThreshold is String) {
+          return double.tryParse(rawThreshold) ?? _defaultAutoTopUpThresholdCelo;
+        }
+        return _defaultAutoTopUpThresholdCelo;
+      },
+      orElse: () => _defaultAutoTopUpThresholdCelo,
+    );
     final isLoading = widget.viewState.state == PaxWalletViewState.loading;
     final shouldShowRefillGas =
         kDebugMode ||
         (nativeCeloBalance != null &&
-            nativeCeloBalance < PaxWalletNotifier.autoTopUpThresholdCelo);
+            nativeCeloBalance < thresholdCelo);
 
     return AspectRatio(
       aspectRatio: 1.58,

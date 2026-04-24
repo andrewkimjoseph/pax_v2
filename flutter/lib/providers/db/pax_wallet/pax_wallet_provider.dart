@@ -22,6 +22,7 @@ import 'package:pax/repositories/firestore/pax_wallet/pax_wallet_repository.dart
 import 'package:pax/services/blockchain/blockchain_service.dart';
 import 'package:pax/services/wallet/gooddollar_identity_service.dart';
 import 'package:pax/services/wallet/wallet_registry_service.dart';
+import 'package:pax/utils/remote_config_constants.dart';
 
 enum PaxWalletState { initial, loading, loaded, creating, error }
 
@@ -78,9 +79,24 @@ class PaxWalletStateModel {
 
 class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   PaxWalletRepository get _repository => ref.read(paxWalletRepositoryProvider);
-  static const double _autoTopUpThresholdCelo = 0.01875;
-  static double get autoTopUpThresholdCelo => _autoTopUpThresholdCelo;
+  static const double _defaultAutoTopUpThresholdCelo = 0.028125;
   static const Duration _fetchWalletTimeout = Duration(seconds: 15);
+  double _autoTopUpThresholdCelo() {
+    final config = ref
+        .read(paxWalletConfigProvider)
+        .maybeWhen(
+          data: (data) => data,
+          orElse: () => const <String, dynamic>{},
+        );
+    final rawThreshold = config[RemoteConfigKeys.autoTopupThreshold];
+    if (rawThreshold is num) {
+      return rawThreshold.toDouble();
+    }
+    if (rawThreshold is String) {
+      return double.tryParse(rawThreshold) ?? _defaultAutoTopUpThresholdCelo;
+    }
+    return _defaultAutoTopUpThresholdCelo;
+  }
 
   /// EOA we have already requested gas sponsorship for this session; avoids duplicate sponsorWalletGas calls.
   String? _gasSponsorshipRequestedForEoAddress;
@@ -875,7 +891,7 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         eoAddress,
       );
       state = state.copyWith(nativeCeloBalance: celoBalance);
-      if (celoBalance >= _autoTopUpThresholdCelo) {
+      if (celoBalance >= _autoTopUpThresholdCelo()) {
         if (kDebugMode) {
           debugPrint(
             '[PaxWalletNotifier] topUpGasIfNeeded skipped: CELO balance sufficient '

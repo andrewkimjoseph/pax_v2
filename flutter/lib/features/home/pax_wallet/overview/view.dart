@@ -100,11 +100,6 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
               },
               canRefresh: viewState.state != PaxWalletViewState.loading,
               refreshTooltip: 'Refresh balances',
-              onBeforeOpenConverter: (gdBalance) {
-                ref.read(analyticsProvider).gdConverterOpened({
-                  'gd_balance': gdBalance,
-                });
-              },
             ),
             // Sticky: "Recent transactions" + refresh (when wallet present)
             if (eoAddress != null)
