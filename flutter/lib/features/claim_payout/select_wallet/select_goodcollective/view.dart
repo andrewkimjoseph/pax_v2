@@ -6,7 +6,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/models/remote_config/goodcollective_config.dart';
-import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/local/claim_payout_context_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
@@ -38,11 +37,6 @@ class ClaimSelectGoodCollectiveView extends ConsumerWidget {
             children: [
               InkWell(
                 onTap: () {
-                  ref
-                      .read(analyticsProvider)
-                      .claimSelectGoodcollectiveBackTapped({
-                        "claimKind": claimContext?.claimKind.name,
-                      });
                   context.pop();
                 },
                 child: const FaIcon(
@@ -59,11 +53,6 @@ class ClaimSelectGoodCollectiveView extends ConsumerWidget {
               const Spacer(),
               InkWell(
                 onTap: () {
-                  ref
-                      .read(analyticsProvider)
-                      .claimSelectGoodcollectiveInfoTapped({
-                        "claimKind": claimContext?.claimKind.name,
-                      });
                   _showAboutGoodCollectiveDialog(context, ref);
                 },
                 child: const FaIcon(
@@ -183,14 +172,6 @@ class ClaimSelectGoodCollectiveView extends ConsumerWidget {
                         selected == null
                             ? null
                             : () {
-                              ref
-                                  .read(analyticsProvider)
-                                  .claimSelectGoodcollectiveContinueTapped({
-                                    "claimKind": claimContext?.claimKind.name,
-                                    "selectedDonationContract":
-                                        selected.donationContract,
-                                    "selectedCollectiveName": selected.name,
-                                  });
                               context.push(
                                 '/claim-reward/claim-payout/select-wallet/select-goodcollective/impact-review-summary',
                               );
@@ -224,12 +205,6 @@ class _GoodCollectiveTile extends StatelessWidget {
   final String? claimKind;
 
   void _toggleSelection(WidgetRef ref, bool isSelected) {
-    ref.read(analyticsProvider).claimSelectGoodcollectiveOptionTapped({
-      "claimKind": claimKind,
-      "collectiveName": collective.name,
-      "collectiveDonationContract": collective.donationContract,
-      "selected": !isSelected,
-    });
     if (isSelected) {
       ref
           .read(claimPayoutContextProvider.notifier)

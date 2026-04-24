@@ -50,10 +50,6 @@ class _ClaimSelectWalletViewState
             children: [
               InkWell(
                 onTap: () {
-                  ref.read(analyticsProvider).claimSelectWalletBackTapped({
-                    "claimKind": claimContext?.claimKind.name,
-                    "isDonation": claimContext?.isDonation,
-                  });
                   context.pop();
                 },
                 child: FaIcon(FontAwesomeIcons.arrowLeftLong,

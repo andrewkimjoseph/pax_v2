@@ -50,12 +50,6 @@ class _ClaimImpactReviewSummaryViewState
       _isProcessing = true;
     });
 
-    ref.read(analyticsProvider).claimImpactReviewSubmitTapped({
-      "claimKind": claimContext.claimKind.name,
-      "selectedPaymentMethodId": withdrawalMethod.id,
-      "selectedDonationContract": collective.donationContract,
-    });
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -99,6 +93,11 @@ class _ClaimImpactReviewSummaryViewState
                 donationBasisPoints: donationBasisPoints,
               );
           txnHash = rewardResult.txnHash;
+          ref.read(analyticsProvider).claimRewardComplete({
+            "taskCompletionId": claimContext.taskCompletionId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+            "selectedDonationContract": collective.donationContract,
+          });
           break;
         case ClaimKind.referral:
           txnHash = await ref
@@ -109,6 +108,11 @@ class _ClaimImpactReviewSummaryViewState
                 donationContractAddress: donationContractAddress,
                 donationBasisPoints: donationBasisPoints,
               );
+          ref.read(analyticsProvider).referralRewardClaimSucceeded({
+            "referralId": claimContext.referralId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+            "selectedDonationContract": collective.donationContract,
+          });
           break;
         case ClaimKind.achievement:
           final achievements = ref.read(achievementsProvider).achievements;
@@ -123,6 +127,11 @@ class _ClaimImpactReviewSummaryViewState
                 donationContractAddress: donationContractAddress,
                 donationBasisPoints: donationBasisPoints,
               );
+          ref.read(analyticsProvider).claimAchievementComplete({
+            "achievementId": claimContext.achievementId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+            "selectedDonationContract": collective.donationContract,
+          });
           break;
       }
 
@@ -152,6 +161,29 @@ class _ClaimImpactReviewSummaryViewState
       context.pop();
       _showSuccessDialog();
     } catch (e) {
+      switch (claimContext.claimKind) {
+        case ClaimKind.task:
+          ref.read(analyticsProvider).claimRewardFailed({
+            "taskCompletionId": claimContext.taskCompletionId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+            "selectedDonationContract": collective.donationContract,
+          });
+          break;
+        case ClaimKind.referral:
+          ref.read(analyticsProvider).referralRewardClaimFailed({
+            "referralId": claimContext.referralId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+            "selectedDonationContract": collective.donationContract,
+          });
+          break;
+        case ClaimKind.achievement:
+          ref.read(analyticsProvider).claimAchievementFailed({
+            "achievementId": claimContext.achievementId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+            "selectedDonationContract": collective.donationContract,
+          });
+          break;
+      }
       if (!mounted) return;
       context.pop();
       _showErrorDialog(
@@ -224,11 +256,6 @@ class _ClaimImpactReviewSummaryViewState
                   child: PrimaryButton(
                     child: const Text('OK'),
                     onPressed: () {
-                      ref
-                          .read(analyticsProvider)
-                          .claimImpactReviewSuccessOkTapped({
-                            "claimKind": claimContext?.claimKind.name,
-                          });
                       ref.read(claimPayoutContextProvider.notifier).clear();
                       context.go('/home');
                     },
@@ -270,9 +297,6 @@ class _ClaimImpactReviewSummaryViewState
               actions: [
                 OutlineButton(
                   onPressed: () {
-                    ref
-                        .read(analyticsProvider)
-                        .claimImpactReviewErrorOkTapped();
                     context.go('/home');
                   },
                   child: Text('OK'),
@@ -311,9 +335,6 @@ class _ClaimImpactReviewSummaryViewState
             children: [
               InkWell(
                 onTap: () {
-                  ref.read(analyticsProvider).claimImpactReviewBackTapped({
-                    "claimKind": claimContext?.claimKind.name,
-                  });
                   if (context.canPop()) {
                     context.pop();
                   } else {
@@ -413,12 +434,6 @@ class _ClaimImpactReviewSummaryViewState
                         ChangeWithdrawalMethodCard(
                           paymentMethod,
                           onChangeTap: () {
-                            ref
-                                .read(analyticsProvider)
-                                .claimImpactReviewChangeWalletTapped({
-                                  "claimKind": claimContext?.claimKind.name,
-                                  "selectedPaymentMethodId": paymentMethod.id,
-                                });
                             // Return to the existing wallet selector in-stack:
                             // impact-review -> select-goodcollective -> select-wallet.
                             if (context.canPop()) {

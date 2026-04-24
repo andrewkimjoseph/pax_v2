@@ -46,10 +46,6 @@ class _ClaimReviewSummaryViewState
       _isProcessing = true;
     });
 
-    ref.read(analyticsProvider).claimReviewSummarySubmitTapped({
-      "claimKind": claimContext.claimKind.name,
-      "selectedPaymentMethodId": withdrawalMethod.id,
-    });
     ref.read(analyticsProvider).reviewSummaryWithdrawTapped();
 
     showDialog(
@@ -137,6 +133,26 @@ class _ClaimReviewSummaryViewState
       context.pop();
       _showSuccessDialog();
     } catch (e) {
+      switch (claimContext.claimKind) {
+        case ClaimKind.task:
+          ref.read(analyticsProvider).claimRewardFailed({
+            "taskCompletionId": claimContext.taskCompletionId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+          });
+          break;
+        case ClaimKind.referral:
+          ref.read(analyticsProvider).referralRewardClaimFailed({
+            "referralId": claimContext.referralId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+          });
+          break;
+        case ClaimKind.achievement:
+          ref.read(analyticsProvider).claimAchievementFailed({
+            "achievementId": claimContext.achievementId,
+            "selectedPaymentMethodId": withdrawalMethod.id,
+          });
+          break;
+      }
       if (!mounted) return;
       context.pop();
       _showErrorDialog(
@@ -153,7 +169,6 @@ class _ClaimReviewSummaryViewState
 
   void _showSuccessDialog() {
     final claimContext = ref.read(claimPayoutContextProvider);
-    final analytics = ref.read(analyticsProvider);
     final claimPayoutNotifier = ref.read(claimPayoutContextProvider.notifier);
     final amount = claimContext?.amount ?? 0;
     final tokenId = claimContext?.tokenId ?? 0;
@@ -226,9 +241,6 @@ class _ClaimReviewSummaryViewState
                       child: PrimaryButton(
                         child: const Text('OK'),
                         onPressed: () {
-                          analytics.claimReviewSummarySuccessOkTapped({
-                            "claimKind": claimContext?.claimKind.name,
-                          });
                           claimPayoutNotifier.clear();
                           context.go("/home");
                         },
@@ -245,7 +257,6 @@ class _ClaimReviewSummaryViewState
   }
 
   void _showErrorDialog(String errorMessage) {
-    final analytics = ref.read(analyticsProvider);
     showDialog(
       barrierDismissible: false,
       context: context,
@@ -273,7 +284,6 @@ class _ClaimReviewSummaryViewState
             actions: [
               OutlineButton(
                 onPressed: () {
-                  analytics.claimReviewSummaryErrorOkTapped();
                   context.go("/home");
                 },
                 child: Text('OK'),
@@ -309,9 +319,6 @@ class _ClaimReviewSummaryViewState
             children: [
               InkWell(
                 onTap: () {
-                  ref.read(analyticsProvider).claimReviewSummaryBackTapped({
-                    "claimKind": claimContext?.claimKind.name,
-                  });
                   if (context.canPop()) {
                     context.pop();
                   } else {

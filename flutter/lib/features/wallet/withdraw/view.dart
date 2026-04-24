@@ -135,7 +135,11 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
             children: [
               InkWell(
                 onTap: () {
-                  context.pop();
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/wallet');
+                  }
                 },
                 child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
               ),

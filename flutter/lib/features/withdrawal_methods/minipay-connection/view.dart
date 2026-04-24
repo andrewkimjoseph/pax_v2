@@ -345,295 +345,284 @@ class _MiniPayConnectionViewState extends ConsumerState<MiniPayConnectionView> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SvgPicture.asset(
-                        'lib/assets/svgs/minipay.svg',
-                        height: 50,
-                      ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SvgPicture.asset(
+                      'lib/assets/svgs/minipay.svg',
+                      height: 50,
                     ),
-                    const Text(
-                      "Paste MiniPay Wallet Address",
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ).withPadding(vertical: 20),
+                  ),
+                  const Text(
+                    "Paste MiniPay Wallet Address",
+                    textAlign: TextAlign.left,
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ).withPadding(vertical: 20),
 
-                    if (checkWhitelist)
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        width: MediaQuery.of(context).size.width,
-                        decoration: BoxDecoration(
-                          color: PaxColors.otherOrange.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: PaxColors.otherOrange,
-                            width: 2,
-                          ),
+                  if (checkWhitelist)
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      width: MediaQuery.of(context).size.width,
+                      decoration: BoxDecoration(
+                        color: PaxColors.otherOrange.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: PaxColors.otherOrange,
+                          width: 2,
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.start,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              FaIcon(
+                                FontAwesomeIcons.triangleExclamation,
+                                color: PaxColors.otherOrange,
+                                size: 25,
+                              ).withPadding(right: 4),
+                              // SvgPicture.asset(
+                              //   'lib/assets/svgs/verification_required.svg',
+                              // ).withPadding(right: 8),
+                            ],
+                          ),
+
+                          Expanded(
+                            child: Column(
                               children: [
-                                FaIcon(
-                                  FontAwesomeIcons.triangleExclamation,
-                                  color: PaxColors.otherOrange,
-                                  size: 25,
-                                ).withPadding(right: 4),
-                                // SvgPicture.asset(
-                                //   'lib/assets/svgs/verification_required.svg',
-                                // ).withPadding(right: 8),
+                                InkWell(
+                                  // onTap:
+                                  //     () => UrlHandler.launchInAppWebView(
+                                  //       context,
+                                  //       'https://www.gooddollar.org/blog-posts/face-verification-challenge-identity',
+                                  //     ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+
+                                    children: [
+                                      SvgPicture.asset(
+                                        'lib/assets/svgs/currencies/good_dollar.svg',
+                                        height: 30,
+                                      ),
+
+                                      const Text(
+                                        " Face Verification Required",
+                                        style: TextStyle(
+                                          color: PaxColors.deepPurple,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      // .withPadding(right: 8),
+
+                                      // SvgPicture.asset(
+                                      //   'lib/assets/svgs/redirect_window.svg',
+                                      //   height: 15,
+                                      // ),
+                                    ],
+                                  ),
+                                ),
+                                // ),
                               ],
                             ),
-
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  InkWell(
-                                    // onTap:
-                                    //     () => UrlHandler.launchInAppWebView(
-                                    //       context,
-                                    //       'https://www.gooddollar.org/blog-posts/face-verification-challenge-identity',
-                                    //     ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-
-                                      children: [
-                                        SvgPicture.asset(
-                                          'lib/assets/svgs/currencies/good_dollar.svg',
-                                          height: 30,
-                                        ),
-
-                                        const Text(
-                                          " Face Verification Required",
-                                          style: TextStyle(
-                                            color: PaxColors.deepPurple,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        // .withPadding(right: 8),
-
-                                        // SvgPicture.asset(
-                                        //   'lib/assets/svgs/redirect_window.svg',
-                                        //   height: 15,
-                                        // ),
-                                      ],
-                                    ),
-                                  ),
-                                  // ),
-                                ],
-                              ),
-                            ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ).withPadding(bottom: 20),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Wallet address (0x..)",
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.normal,
                         ),
                       ).withPadding(bottom: 20),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Wallet address (0x..)",
-                          textAlign: TextAlign.left,
+                      TextField(
+                        controller: _walletAddressController,
+                        onChanged: (value) {
+                          // Reset error message when user types
+                          if (connectionState.state ==
+                              WithdrawalMethodConnectionState.error) {
+                            ref
+                                .read(withdrawalConnectionProvider.notifier)
+                                .resetState();
+                          }
+                          // Force UI update
+                          setState(() {});
+                        },
+                        onSubmitted: (_) {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                        },
+                        textInputAction: TextInputAction.done,
+                        scrollPhysics: const ClampingScrollPhysics(),
+                        enabled: !connectionState.isConnecting,
+                        keyboardType: TextInputType.text,
+                        placeholder: const Text(
+                          "Paste address here",
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.normal,
+                            color: PaxColors.black,
+                            fontSize: 14,
                           ),
-                        ).withPadding(bottom: 20),
-                        TextField(
-                          controller: _walletAddressController,
-                          onChanged: (value) {
-                            // Reset error message when user types
-                            if (connectionState.state ==
-                                WithdrawalMethodConnectionState.error) {
-                              ref
-                                  .read(withdrawalConnectionProvider.notifier)
-                                  .resetState();
-                            }
-                            // Force UI update
-                            setState(() {});
-                          },
-                          onSubmitted: (_) {
-                            FocusManager.instance.primaryFocus?.unfocus();
-                          },
-                          textInputAction: TextInputAction.done,
-                          scrollPhysics: const ClampingScrollPhysics(),
-                          enabled: !connectionState.isConnecting,
-                          keyboardType: TextInputType.text,
-                          placeholder: const Text(
-                            "Paste address here",
-                            style: TextStyle(
-                              color: PaxColors.black,
-                              fontSize: 14,
-                            ),
-                          ),
-                          decoration: BoxDecoration(
-                            color: PaxColors.lightLilac,
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          features: [
-                            InputFeature.leading(
-                              FaIcon(FontAwesomeIcons.wallet),
+                        ),
+                        decoration: BoxDecoration(
+                          color: PaxColors.lightLilac,
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        features: [
+                          InputFeature.leading(FaIcon(FontAwesomeIcons.wallet)),
+                        ],
+                      ),
+                    ],
+                  ).withPadding(bottom: 20),
+
+                  Row(
+                    children: [
+                      const Text(
+                        "Don't have a wallet address?",
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          color: PaxColors.black,
+                          fontSize: 13,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ).withPadding(right: 2),
+                      InkWell(
+                        onTap: () {
+                          ref
+                              .read(analyticsProvider)
+                              .setUpWithdrawalMethodTapped({
+                                "method": "MiniPay",
+                                "inviteCode": minipayInviteCode,
+                              });
+                          UrlHandler.launchInExternalBrowser(minipayInviteLink);
+                        },
+                        child: Row(
+                          children: [
+                            const Text(
+                              "Download MiniPay.",
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                color: PaxColors.black,
+                                fontSize: 13,
+                                fontWeight: FontWeight.normal,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ).withPadding(vertical: 4, right: 4),
+                            // SvgPicture.asset(
+                            //   'lib/assets/svgs/redirect_window.svg',
+                            // ),
+                            FaIcon(
+                              FontAwesomeIcons.globe,
+                              size: 10,
+                              color: PaxColors.deepPurple,
                             ),
                           ],
                         ),
-                      ],
-                    ).withPadding(bottom: 20),
+                      ),
+                    ],
+                  ).withPadding(bottom: 8),
 
+                  Row(
+                    children: [
+                      const Text(
+                        "Want to copy your wallet address?",
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          color: PaxColors.black,
+                          fontSize: 13,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ).withPadding(right: 2),
+                      InkWell(
+                        onTap: () {
+                          context.push(
+                            "/withdrawal-methods/minipay-connection/copy-wallet-address",
+                          );
+                        },
+                        child: Row(
+                          children: [
+                            const Text(
+                              "Check out these steps.",
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                color: PaxColors.black,
+                                fontSize: 13,
+                                fontWeight: FontWeight.normal,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ).withPadding(vertical: 4, right: 4),
+                            // SvgPicture.asset(
+                            //   'lib/assets/svgs/redirect_window.svg',
+                            // ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider().withPadding(vertical: 8),
+
+                  if (checkWhitelist)
                     Row(
                       children: [
                         const Text(
-                          "Don't have a wallet address?",
+                          "How to complete ",
                           textAlign: TextAlign.left,
                           style: TextStyle(
-                            color: PaxColors.black,
-                            fontSize: 13,
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ).withPadding(right: 2),
-                        InkWell(
-                          onTap: () {
-                            ref
-                                .read(analyticsProvider)
-                                .setUpWithdrawalMethodTapped({
-                                  "method": "MiniPay",
-                                  "inviteCode": minipayInviteCode,
-                                });
-                            UrlHandler.launchInExternalBrowser(
-                              minipayInviteLink,
-                            );
-                          },
-                          child: Row(
-                            children: [
-                              const Text(
-                                "Download MiniPay.",
-                                textAlign: TextAlign.left,
-                                style: TextStyle(
-                                  color: PaxColors.black,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.normal,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ).withPadding(vertical: 4, right: 4),
-                              // SvgPicture.asset(
-                              //   'lib/assets/svgs/redirect_window.svg',
-                              // ),
-                              FaIcon(
-                                FontAwesomeIcons.globe,
-                                size: 10,
-                                color: PaxColors.deepPurple,
-                              ),
-                            ],
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                      ],
-                    ).withPadding(bottom: 8),
 
-                    Row(
-                      children: [
+                        SvgPicture.asset(
+                          'lib/assets/svgs/currencies/good_dollar.svg',
+                          height: 20,
+                        ),
                         const Text(
-                          "Want to copy your wallet address?",
+                          " Face Verification:",
                           textAlign: TextAlign.left,
                           style: TextStyle(
-                            color: PaxColors.black,
-                            fontSize: 13,
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ).withPadding(right: 2),
-                        InkWell(
-                          onTap: () {
-                            ref
-                                .read(analyticsProvider)
-                                .checkOutCopyWalletAddressStepsTapped({
-                                  "wallet": "MiniPay",
-                                });
-                            context.push(
-                              "/withdrawal-methods/minipay-connection/copy-wallet-address",
-                            );
-                          },
-                          child: Row(
-                            children: [
-                              const Text(
-                                "Check out these steps.",
-                                textAlign: TextAlign.left,
-                                style: TextStyle(
-                                  color: PaxColors.black,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.normal,
-                                  decoration: TextDecoration.underline,
-                                ),
-                              ).withPadding(vertical: 4, right: 4),
-                              // SvgPicture.asset(
-                              //   'lib/assets/svgs/redirect_window.svg',
-                              // ),
-                            ],
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                       ],
                     ),
-                    const Divider().withPadding(vertical: 8),
 
-                    if (checkWhitelist)
-                      Row(
-                        children: [
-                          const Text(
-                            "How to complete ",
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                            ),
+                  if (!checkWhitelist)
+                    Row(
+                      children: [
+                        const Text(
+                          "How to connect ",
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
                           ),
+                        ),
 
-                          SvgPicture.asset(
-                            'lib/assets/svgs/currencies/good_dollar.svg',
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: SvgPicture.asset(
+                            'lib/assets/svgs/minipay.svg',
                             height: 20,
                           ),
-                          const Text(
-                            " Face Verification:",
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    ),
 
-                    if (!checkWhitelist)
-                      Row(
-                        children: [
-                          const Text(
-                            "How to connect ",
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: SvgPicture.asset(
-                              'lib/assets/svgs/minipay.svg',
-                              height: 20,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                    if (checkWhitelist)
-                      const MiniPayLinkingStepsWithFaceVerification()
-                          .withPadding(vertical: 8),
-                    if (!checkWhitelist)
-                      const MiniPayLinkingStepsWithoutFaceVerification()
-                          .withPadding(vertical: 8),
-                  ],
-                ).withPadding(all: 16),
+                  if (checkWhitelist)
+                    const MiniPayLinkingStepsWithFaceVerification().withPadding(
+                      vertical: 8,
+                    ),
+                  if (!checkWhitelist)
+                    const MiniPayLinkingStepsWithoutFaceVerification()
+                        .withPadding(vertical: 8),
+                ],
+              ).withPadding(all: 16),
             ],
           ),
         ),
