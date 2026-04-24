@@ -25,8 +25,10 @@ import 'package:pax/widgets/image_step_photo_view/image_step_photo_view.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
+import 'package:pax/providers/local/withdraw_context_provider.dart';
 import 'package:pax/providers/route/route_notifier_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
+import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/features/onboarding/onboarding_questionnaire/view.dart';
 import 'package:pax/features/referral/view.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -114,10 +116,28 @@ final routerProvider = Provider((ref) {
       final isOnboardingRoute = state.matchedLocation == Routes.onboarding;
       final isOnQuestionnaireRoute =
           state.matchedLocation == Routes.onboardingQuestionnaire;
+      final isOnWithdrawFlow =
+          state.matchedLocation == '/wallet/withdraw' ||
+          state.matchedLocation.startsWith('/wallet/withdraw/');
       if (kDebugMode) {
         debugPrint(
           '[Router] redirect: matchedLocation=${state.matchedLocation}, authState=$authState',
         );
+      }
+
+      if (authState == AuthState.authenticated && isOnWithdrawFlow) {
+        final withdrawContext = ref.read(withdrawContextProvider);
+        final tokenId = withdrawContext?.tokenId ?? 1;
+        final normalizedBalance =
+            withdrawContext == null
+                ? 0
+                : TokenBalanceUtil.normalizeWithdrawableBalance(
+                  withdrawContext.balance,
+                  tokenId: tokenId,
+                );
+        if (normalizedBalance <= 0) {
+          return '/wallet';
+        }
       }
 
       // While auth state is still resolving, stay on a neutral loading route

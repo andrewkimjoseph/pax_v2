@@ -122,7 +122,17 @@ class ReferralProgramCard extends ConsumerWidget {
                             color: PaxColors.white,
                           ),
                           children: [
-                            const TextSpan(text: 'Earn up to 1000 '),
+                            const TextSpan(text: 'Earn between 100 '),
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Image.asset(
+                                'lib/assets/images/good_dollar.png',
+                                height: 16,
+                                width: 16,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            const TextSpan(text: ' and 1000 '),
                             WidgetSpan(
                               alignment: PlaceholderAlignment.middle,
                               child: Image.asset(

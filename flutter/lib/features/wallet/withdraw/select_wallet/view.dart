@@ -39,9 +39,17 @@ class _SelectWalletViewState extends ConsumerState<SelectWalletView> {
             children: [
               InkWell(
                 onTap: () {
-                  context.pop();
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/wallet/withdraw');
+                  }
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               const Spacer(),
               const Text(

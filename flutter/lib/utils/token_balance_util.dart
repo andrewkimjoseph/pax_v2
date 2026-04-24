@@ -4,6 +4,8 @@ import 'package:pax/models/local/token_info_model.dart';
 import 'package:pax/utils/currency_symbol.dart';
 
 class TokenBalanceUtil {
+  static const int _withdrawUiPrecisionCap = 6;
+
   /// Maps token IDs to their corresponding currency names
   static final Map<int, String> _tokenToCurrency = {
     1: 'good_dollar',
@@ -188,6 +190,22 @@ class TokenBalanceUtil {
     final formattedNumber = formatter.format(amount);
 
     return formattedNumber;
+  }
+
+  /// Precision used by withdraw UI/routing checks for a token.
+  static int getWithdrawUiPrecision(int tokenId) {
+    final tokenDecimals = getTokenDecimals(tokenId);
+    return tokenDecimals < _withdrawUiPrecisionCap
+        ? tokenDecimals
+        : _withdrawUiPrecisionCap;
+  }
+
+  /// Treat tiny floating-point dust as zero for withdraw flow checks.
+  static num normalizeWithdrawableBalance(num amount, {required int tokenId}) {
+    if (amount == 0) return 0;
+    final precision = getWithdrawUiPrecision(tokenId);
+    final threshold = 1 / pow10(precision);
+    return amount.abs() < threshold ? 0 : amount;
   }
 
   /// Formats [amount] with exactly two decimal places (e.g. 0.00, 0.10).

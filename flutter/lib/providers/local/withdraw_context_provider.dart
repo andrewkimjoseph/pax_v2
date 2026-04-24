@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pax/models/firestore/payment_method/payment_method.dart';
+import 'package:pax/utils/token_balance_util.dart';
 
 // A class to hold the withdraw context with amount and selected payment method
 class WithdrawContext {
@@ -42,7 +43,11 @@ class WithdrawContextNotifier extends Notifier<WithdrawContext?> {
 
   // Set the withdraw context
   void setWithdrawContext(int tokenId, num balance) {
-    state = WithdrawContext(tokenId: tokenId, balance: balance);
+    final normalizedBalance = TokenBalanceUtil.normalizeWithdrawableBalance(
+      balance,
+      tokenId: tokenId,
+    );
+    state = WithdrawContext(tokenId: tokenId, balance: normalizedBalance);
   }
 
   // Set the amount to withdraw

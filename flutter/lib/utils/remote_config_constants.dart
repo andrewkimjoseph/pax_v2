@@ -51,6 +51,18 @@ class RemoteConfigKeys {
   static const String isVoteForCanvassingAvailable =
       'is_vote_for_canvassing_available';
 
+  /// Controls whether new users can create a V2 wallet during onboarding.
+  /// When false, users are forced into the V1 onboarding path.
+  /// Key: 'is_v2_wallet_creation_available'
+  static const String isV2WalletCreationAvailable =
+      'is_v2_wallet_creation_available';
+
+  /// Controls whether the current balance card is shown in dashboard/account views.
+  /// When false, the card is hidden (unless in debug mode).
+  /// Key: 'is_current_balance_card_available'
+  static const String isCurrentBalanceCardAvailable =
+      'is_current_balance_card_available';
+
   // App version config keys
   /// The minimum version of the app that users must have installed.
   /// Users with versions below this will be prompted to update.

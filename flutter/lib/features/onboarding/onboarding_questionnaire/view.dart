@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
+import 'package:pax/utils/remote_config_constants.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class OnboardingQuestionnaireView extends ConsumerStatefulWidget {
@@ -51,14 +53,21 @@ class _OnboardingQuestionnaireViewState
   Future<void> _onContinue() async {
     if (!_isComplete) return;
 
-    final onboardingType = _computeOnboardingType();
+    bool isV2WalletCreationAvailable = false;
+    try {
+      final featureFlags = await ref.read(featureFlagsProvider.future);
+      isV2WalletCreationAvailable =
+          featureFlags[RemoteConfigKeys.isV2WalletCreationAvailable] ?? false;
+    } catch (_) {
+      // Keep V1 fallback behavior if remote config cannot be fetched.
+    }
+    final onboardingType =
+        isV2WalletCreationAvailable ? _computeOnboardingType() : 'v1_legacy';
 
     final participantNotifier = ref.read(participantProvider.notifier);
     final analytics = ref.read(analyticsProvider);
 
-    await participantNotifier.updateProfile({
-      'onboardingType': onboardingType,
-    });
+    await participantNotifier.updateProfile({'onboardingType': onboardingType});
 
     await analytics.onboardingQuestionnaireCompleted({
       'onboardingType': onboardingType,

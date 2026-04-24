@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show InkWell;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
@@ -10,6 +11,7 @@ import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/local/activity_providers.dart';
 import 'package:pax/theming/colors.dart';
+import 'package:pax/utils/remote_config_constants.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/widgets/current_balance_card.dart';
 import 'package:pax/widgets/face_verification_prompt_banner.dart';
@@ -18,6 +20,7 @@ import 'package:pax/widgets/published_reports_card.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:pax/widgets/socials/social_links_carousel.dart'
     show SocialLinksRow;
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/widgets/v2_availability_banner.dart';
 import 'package:pax/widgets/vote_for_canvassing_banner.dart';
 import 'package:pax/widgets/withdrawal_method_prompt_banner.dart';
@@ -63,9 +66,24 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
 
             const ProfileCompletionPromptBanner(),
 
-            const CurrentBalanceCard(
-              nextLocation: '/wallet',
-            ).withPadding(bottom: 8),
+            ref
+                .watch(featureFlagsProvider)
+                .when(
+                  data: (flags) {
+                    final isCurrentBalanceCardAvailable =
+                        kDebugMode ||
+                        flags[RemoteConfigKeys.isCurrentBalanceCardAvailable] ==
+                            true;
+                    if (!isCurrentBalanceCardAvailable) {
+                      return const SizedBox.shrink();
+                    }
+                    return const CurrentBalanceCard(
+                      nextLocation: '/wallet',
+                    ).withPadding(bottom: 8);
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
 
             const SocialLinksRow().withPadding(bottom: 8),
 

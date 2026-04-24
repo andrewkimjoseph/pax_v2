@@ -118,6 +118,10 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
         ref.watch(rewardCurrencyContextProvider).selectedCurrency;
     final tokenId = TokenBalanceUtil.getTokenIdForCurrency(selectedCurrency);
     final currentBalance = paxAccount.balances[tokenId];
+    final normalizedCurrentBalance = TokenBalanceUtil.normalizeWithdrawableBalance(
+      currentBalance ?? 0,
+      tokenId: tokenId ?? 1,
+    );
     final isGoodDollarSelected = selectedCurrency == "good_dollar";
 
     final isFetching =
@@ -285,7 +289,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                       .read(withdrawContextProvider.notifier)
                                       .setWithdrawContext(
                                         tokenId ?? 1,
-                                        currentBalance ?? 0,
+                                        normalizedCurrentBalance,
                                       );
                                 }
                               },
@@ -336,8 +340,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                 }
 
                                 final actionEnabled =
-                                    currentBalance != null &&
-                                    currentBalance > 0;
+                                    normalizedCurrentBalance > 0;
 
                                 final withdrawButton = Button(
                                   style:
@@ -367,7 +370,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                                 )
                                                 .setWithdrawContext(
                                                   tokenId ?? 1,
-                                                  currentBalance,
+                                                  normalizedCurrentBalance,
                                                 );
 
                                             if (widget.nextLocation ==

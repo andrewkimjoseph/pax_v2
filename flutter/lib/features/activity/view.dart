@@ -182,10 +182,10 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                 density: ButtonDensity.icon,
                 icon:
                     _isRefreshingReferrals
-                        ? const CircularProgressIndicator(size: 20)
+                        ? const CircularProgressIndicator(size: 16)
                         : const FaIcon(
                           FontAwesomeIcons.arrowsRotate,
-                          size: 18,
+                          size: 16,
                           color: PaxColors.deepPurple,
                         ),
               ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' show InkWell;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -5,11 +6,13 @@ import 'package:go_router/go_router.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/widgets/current_balance_card.dart';
 import 'package:pax/widgets/payment_method_cards/minipay_payment_method_card.dart';
 import 'package:pax/widgets/payment_method_cards/good_wallet_withdrawal_method_card.dart';
 import 'package:pax/widgets/payment_method_cards/pax_wallet_payment_method_card.dart';
 import 'package:pax/routing/routes.dart';
+import 'package:pax/utils/remote_config_constants.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../../theming/colors.dart' show PaxColors;
@@ -93,12 +96,7 @@ class _WalletViewViewState extends ConsumerState<WalletView> {
       },
     );
 
-    final cardChildren =
-        isV2
-            ? [
-              paxWalletCard,
-            ]
-            : [minipayCard, goodWalletCard];
+    final cardChildren = isV2 ? [paxWalletCard] : [minipayCard, goodWalletCard];
 
     return Scaffold(
       headers: [
@@ -139,9 +137,24 @@ class _WalletViewViewState extends ConsumerState<WalletView> {
       child: SingleChildScrollView(
         child: Column(
           children: [
-            const CurrentBalanceCard(
-              nextLocation: '/wallet/withdraw',
-            ).withPadding(bottom: 8),
+            ref
+                .watch(featureFlagsProvider)
+                .when(
+                  data: (flags) {
+                    final isCurrentBalanceCardAvailable =
+                        kDebugMode ||
+                        flags[RemoteConfigKeys.isCurrentBalanceCardAvailable] ==
+                            true;
+                    if (!isCurrentBalanceCardAvailable) {
+                      return const SizedBox.shrink();
+                    }
+                    return const CurrentBalanceCard(
+                      nextLocation: '/wallet/withdraw',
+                    ).withPadding(bottom: 8);
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                ),
 
             Container(
               padding: EdgeInsets.all(12),

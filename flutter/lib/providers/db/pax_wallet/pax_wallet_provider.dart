@@ -8,6 +8,7 @@ import 'package:pax/models/auth/auth_state_model.dart';
 import 'package:pax/models/firestore/pax_wallet/pax_wallet_model.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
+import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/providers/referral_existence_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
@@ -29,6 +30,13 @@ enum WalletRegistryLogStatus {
   loggedNow,
   alreadyLoggedOnChain,
   missingWalletData,
+  failed,
+}
+
+enum WalletDocumentBackfillStatus {
+  skippedMissingPrerequisites,
+  alreadyExists,
+  createdNow,
   failed,
 }
 
@@ -79,22 +87,102 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   int _fetchWalletRequestId = 0;
   String? _loadingWalletParticipantId;
 
+  Future<void> _fetchWalletAndEnsureBackfill(String participantId) async {
+    if (kDebugMode) {
+      debugPrint(
+        '[PaxWalletNotifier] _fetchWalletAndEnsureBackfill start '
+        '(participantId=$participantId)',
+      );
+    }
+    await fetchWallet(participantId);
+    if (kDebugMode) {
+      debugPrint(
+        '[PaxWalletNotifier] _fetchWalletAndEnsureBackfill end '
+        '(participantId=$participantId)',
+      );
+    }
+  }
+
   @override
   PaxWalletStateModel build() {
     ref.listen(authProvider, (previous, next) {
       if (previous?.state != next.state) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] auth state changed '
+            '(from=${previous?.state}, to=${next.state}, uid=${next.user.uid})',
+          );
+        }
         if (next.state == AuthState.authenticated) {
-          fetchWallet(next.user.uid);
+          if (kDebugMode) {
+            debugPrint(
+              '[PaxWalletNotifier] auth listener triggering wallet fetch/backfill '
+              '(participantId=${next.user.uid})',
+            );
+          }
+          _fetchWalletAndEnsureBackfill(next.user.uid);
         } else if (next.state == AuthState.unauthenticated) {
+          if (kDebugMode) {
+            debugPrint(
+              '[PaxWalletNotifier] auth listener clearing wallet and credentials',
+            );
+          }
           clearWallet();
           ref.read(walletCredentialsProvider.notifier).clearCredentials();
         }
       }
     });
 
+    ref.listen<WalletCredentialsState>(walletCredentialsProvider, (
+      previous,
+      next,
+    ) {
+      final didLoadCredentials =
+          previous?.status != WalletCredentialsStatus.loaded &&
+          next.status == WalletCredentialsStatus.loaded;
+      if (!didLoadCredentials) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] wallet credentials listener ignored '
+            '(prev=${previous?.status}, next=${next.status})',
+          );
+        }
+        return;
+      }
+
+      final authState = ref.read(authProvider);
+      final participantId = authState.user.uid;
+      if (authState.state != AuthState.authenticated || participantId.isEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] wallet credentials listener skipped: '
+            'auth not ready (authState=${authState.state}, participantId=$participantId)',
+          );
+        }
+        return;
+      }
+      if (state.wallet?.participantId == participantId &&
+          state.wallet != null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] wallet credentials listener skipped: '
+            'wallet already loaded for participantId=$participantId',
+          );
+        }
+        return;
+      }
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] wallet credentials listener triggering wallet fetch/backfill '
+          '(participantId=$participantId)',
+        );
+      }
+      unawaited(_fetchWalletAndEnsureBackfill(participantId));
+    });
+
     final authState = ref.read(authProvider);
     if (authState.state == AuthState.authenticated) {
-      Future.microtask(() => fetchWallet(authState.user.uid));
+      Future.microtask(() => _fetchWalletAndEnsureBackfill(authState.user.uid));
     }
 
     return PaxWalletStateModel.initial();
@@ -162,6 +250,61 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         );
       }
       await refreshNativeCeloBalance();
+
+      if (wallet == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] fetchWallet found no wallet; attempting backfill '
+            '(participantId=$participantId, requestId=$requestId)',
+          );
+        }
+        final backfillStatus = await ensureWalletDocumentExistsForCurrentUser();
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] fetchWallet backfill result '
+            '(participantId=$participantId, requestId=$requestId, status=$backfillStatus)',
+          );
+        }
+        if (backfillStatus == WalletDocumentBackfillStatus.createdNow ||
+            backfillStatus == WalletDocumentBackfillStatus.alreadyExists) {
+          if (kDebugMode) {
+            debugPrint(
+              '[PaxWalletNotifier] fetchWallet refetching wallet after backfill '
+              '(participantId=$participantId, requestId=$requestId)',
+            );
+          }
+          final refetchedWallet = await _repository.getWalletByParticipantId(
+            participantId,
+          );
+          final latestAuthState = ref.read(authProvider);
+          final stillCurrentRequest = requestId == _fetchWalletRequestId;
+          final stillCurrentUser =
+              latestAuthState.state == AuthState.authenticated &&
+              latestAuthState.user.uid == participantId;
+          if (stillCurrentRequest &&
+              stillCurrentUser &&
+              refetchedWallet != null) {
+            state = state.copyWith(
+              wallet: refetchedWallet,
+              state: PaxWalletState.loaded,
+            );
+            await refreshNativeCeloBalance();
+            if (kDebugMode) {
+              debugPrint(
+                '[PaxWalletNotifier] fetchWallet updated state from refetched wallet '
+                '(participantId=$participantId, requestId=$requestId, walletId=${refetchedWallet.id})',
+              );
+            }
+          } else if (kDebugMode) {
+            debugPrint(
+              '[PaxWalletNotifier] fetchWallet skipped applying refetched wallet '
+              '(participantId=$participantId, requestId=$requestId, '
+              'stillCurrentRequest=$stillCurrentRequest, stillCurrentUser=$stillCurrentUser, '
+              'refetchedWalletNull=${refetchedWallet == null})',
+            );
+          }
+        }
+      }
     } on TimeoutException catch (e) {
       if (kDebugMode) {
         debugPrint(
@@ -291,6 +434,104 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         state: PaxWalletState.error,
         errorMessage: e.toString(),
       );
+    }
+  }
+
+  /// Ensures there is a `pax_wallets` record for the authenticated user.
+  /// Idempotent and safe for repeated calls in app lifecycle / verification flows.
+  Future<WalletDocumentBackfillStatus>
+  ensureWalletDocumentExistsForCurrentUser() async {
+    final authState = ref.read(authProvider);
+    if (authState.state != AuthState.authenticated) {
+      return WalletDocumentBackfillStatus.skippedMissingPrerequisites;
+    }
+    final participantId = authState.user.uid;
+    if (participantId.isEmpty) {
+      return WalletDocumentBackfillStatus.skippedMissingPrerequisites;
+    }
+
+    final credsState = ref.read(walletCredentialsProvider);
+    final paxAccountState = ref.read(paxAccountProvider);
+    final walletEoAddress = state.wallet?.eoAddress;
+    final credsEoAddress = credsState.eoAddress;
+    final paxAccountEoAddress = paxAccountState.account?.eoWalletAddress;
+    final eoAddress =
+        (state.wallet?.eoAddress?.isNotEmpty ?? false)
+            ? state.wallet!.eoAddress!
+            : ((credsState.eoAddress?.isNotEmpty ?? false)
+                ? credsState.eoAddress
+                : paxAccountState.account?.eoWalletAddress);
+    if (kDebugMode) {
+      final source =
+          (walletEoAddress?.isNotEmpty ?? false)
+              ? 'wallet_state'
+              : ((credsEoAddress?.isNotEmpty ?? false)
+                  ? 'wallet_credentials'
+                  : 'pax_account');
+      debugPrint(
+        '[PaxWalletNotifier] ensureWalletDocumentExistsForCurrentUser EOA resolution '
+        '(participantId=$participantId, source=$source, '
+        'walletStateHasEo=${walletEoAddress?.isNotEmpty ?? false}, '
+        'credentialsHasEo=${credsEoAddress?.isNotEmpty ?? false}, '
+        'paxAccountHasEo=${paxAccountEoAddress?.isNotEmpty ?? false})',
+      );
+    }
+    if (eoAddress == null || eoAddress.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] ensureWalletDocumentExistsForCurrentUser skipped: missing eoAddress',
+        );
+      }
+      return WalletDocumentBackfillStatus.skippedMissingPrerequisites;
+    }
+
+    try {
+      final existingWallet =
+          state.wallet?.participantId == participantId && state.wallet != null
+              ? state.wallet
+              : await _repository.getWalletByParticipantId(participantId);
+      if (existingWallet != null) {
+        if (state.wallet?.id != existingWallet.id) {
+          state = state.copyWith(
+            wallet: existingWallet,
+            state: PaxWalletState.loaded,
+          );
+        }
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] ensureWalletDocumentExistsForCurrentUser: wallet already exists',
+          );
+        }
+        return WalletDocumentBackfillStatus.alreadyExists;
+      }
+
+      final createdWallet = await createWalletDocument(
+        participantId: participantId,
+        eoAddress: eoAddress,
+      );
+
+      if (createdWallet == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] ensureWalletDocumentExistsForCurrentUser failed: createWalletDocument returned null',
+          );
+        }
+        return WalletDocumentBackfillStatus.failed;
+      }
+
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] ensureWalletDocumentExistsForCurrentUser: wallet created',
+        );
+      }
+      return WalletDocumentBackfillStatus.createdNow;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] ensureWalletDocumentExistsForCurrentUser failed: $e',
+        );
+      }
+      return WalletDocumentBackfillStatus.failed;
     }
   }
 
@@ -427,6 +668,14 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   /// Verified Human achievement, referral record, and gas sponsorship.
   /// Individual steps swallow errors so this method does not throw.
   Future<void> registerPaxWalletAfterFaceVerification() async {
+    final walletBackfillStatus =
+        await ensureWalletDocumentExistsForCurrentUser();
+    if (walletBackfillStatus == WalletDocumentBackfillStatus.failed ||
+        walletBackfillStatus ==
+            WalletDocumentBackfillStatus.skippedMissingPrerequisites) {
+      return;
+    }
+
     final wallet = state.wallet;
     final participantId = ref.read(authProvider).user.uid;
     if (wallet == null ||
@@ -458,6 +707,14 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   /// Backfill pass for users who already completed face verification earlier.
   /// Runs idempotent/non-blocking post-verification side effects again.
   Future<void> backfillPostVerificationSideEffects() async {
+    final walletBackfillStatus =
+        await ensureWalletDocumentExistsForCurrentUser();
+    if (walletBackfillStatus == WalletDocumentBackfillStatus.failed ||
+        walletBackfillStatus ==
+            WalletDocumentBackfillStatus.skippedMissingPrerequisites) {
+      return;
+    }
+
     final wallet = state.wallet;
     final participantId = ref.read(authProvider).user.uid;
     if (wallet == null ||
@@ -567,11 +824,6 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
                 'referringParticipantId': referringParticipantId,
                 'referredParticipantId': participantId,
               });
-          ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
-            'referringParticipantId_present': true,
-            'referredParticipantId': participantId,
-            'status': 'success',
-          });
           ref.invalidate(referralExistsForReferredParticipantProvider);
         } catch (e) {
           if (kDebugMode) {
@@ -579,12 +831,6 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
               '[PaxWalletNotifier] createReferral failed (non-blocking): $e',
             );
           }
-          ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
-            'referringParticipantId_present': true,
-            'referredParticipantId': participantId,
-            'status': 'error',
-            'error': e.toString(),
-          });
         }
       } else {
         if (kDebugMode) {
@@ -593,11 +839,6 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
             '(no valid referringParticipantId in Branch params)',
           );
         }
-        ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
-          'referringParticipantId_present': false,
-          'referredParticipantId': participantId,
-          'status': 'skipped',
-        });
       }
     } catch (e) {
       if (kDebugMode) {
@@ -605,12 +846,6 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
           '[PaxWalletNotifier] error while preparing referral record params (non-blocking): $e',
         );
       }
-      ref.read(analyticsProvider).v2ReferralRecordCreatedAttempt({
-        'failure_phase': 'merge_branch_params',
-        'referredParticipantId': participantId,
-        'status': 'error_branch_merge',
-        'error': e.toString(),
-      });
     }
   }
 
@@ -740,6 +975,30 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
   Future<void> _createVerifiedHumanAfterV2FaceVerification(
     String participantId,
   ) async {
+    final eoAddress = state.wallet?.eoAddress;
+    if (eoAddress == null || eoAddress.isEmpty) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] skipping Verified Human create: missing wallet eoAddress '
+          '(participantId=$participantId)',
+        );
+      }
+      return;
+    }
+
+    final isWhitelisted = await GoodDollarIdentityService.isWhitelisted(
+      eoAddress,
+    );
+    if (!isWhitelisted) {
+      if (kDebugMode) {
+        debugPrint(
+          '[PaxWalletNotifier] skipping Verified Human create: user not face-verified/whitelisted '
+          '(participantId=$participantId, eoAddress=$eoAddress)',
+        );
+      }
+      return;
+    }
+
     final achievementAmounts = ref
         .read(achievementAmountsProvider)
         .maybeWhen(

@@ -426,17 +426,17 @@ class AnalyticsProvider {
       _logEvent('gd_converter_opened', properties: properties);
 
   // Notification permission (after sign-in)
-  Future<void> notificationPermissionRequested([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('notification_permission_requested', properties: properties);
+  //   Future<void> notificationPermissionRequested([
+  //     Map<String, dynamic>? properties,
+  //   ]) => _logEvent('notification_permission_requested', properties: properties);
 
-  Future<void> notificationPermissionGranted([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('notification_permission_granted', properties: properties);
+  //   Future<void> notificationPermissionGranted([
+  //     Map<String, dynamic>? properties,
+  //   ]) => _logEvent('notification_permission_granted', properties: properties);
 
-  Future<void> notificationPermissionDenied([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('notification_permission_denied', properties: properties);
+  //   Future<void> notificationPermissionDenied([
+  //     Map<String, dynamic>? properties,
+  //   ]) => _logEvent('notification_permission_denied', properties: properties);
 
   // Future<void> goodWalletWithdrawalMethodCardTapped([
   //   Map<String, dynamic>? properties,
@@ -530,10 +530,6 @@ class AnalyticsProvider {
 
   Future<void> voteForCanvassingTapped([Map<String, dynamic>? properties]) =>
       _logEvent('vote_for_canvassing_tapped', properties: properties);
-
-  Future<void> v2ReferralRecordCreatedAttempt([
-    Map<String, dynamic>? properties,
-  ]) => _logEvent('v2_referral_record_created_attempt', properties: properties);
 
   Future<void> referralsTapped([Map<String, dynamic>? properties]) =>
       _logEvent('referrals_tapped', properties: properties);

@@ -371,6 +371,17 @@ class FaceVerificationWebViewState
     }
   }
 
+  bool? _parseVerificationBool(String rawValue) {
+    final normalized = rawValue.trim().toLowerCase();
+    if (normalized == 'true' || normalized == '1') {
+      return true;
+    }
+    if (normalized == 'false' || normalized == '0') {
+      return false;
+    }
+    return null;
+  }
+
   ({bool verified, String chain})? _parseVerifiedAndChainParams(
     String? urlString,
   ) {
@@ -381,10 +392,26 @@ class FaceVerificationWebViewState
       final verifiedRaw = queryParams['verified'];
       final chainRaw = queryParams['chain'];
       if (verifiedRaw == null || chainRaw == null) return null;
-      final verifiedStr = _decodeBase64Param(verifiedRaw) ?? verifiedRaw;
-      final chainStr = _decodeBase64Param(chainRaw) ?? chainRaw;
-      final verified = verifiedStr.toLowerCase() == 'true';
-      return (verified: verified, chain: chainStr);
+      final verifiedStr = (_decodeBase64Param(verifiedRaw) ?? verifiedRaw).trim();
+      final chainStr = (_decodeBase64Param(chainRaw) ?? chainRaw).trim();
+      final parsedVerified = _parseVerificationBool(verifiedStr);
+      if (parsedVerified == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[FaceVerificationWebView] unrecognized verified param value: "$verifiedStr"',
+          );
+        }
+        return null;
+      }
+      if (chainStr.isEmpty) {
+        if (kDebugMode) {
+          debugPrint(
+            '[FaceVerificationWebView] missing/empty chain param in verification callback',
+          );
+        }
+        return null;
+      }
+      return (verified: parsedVerified, chain: chainStr);
     } catch (_) {
       return null;
     }

@@ -96,9 +96,13 @@ class RemoteConfigService {
           RemoteConfigKeys.areAchievementsAvailable: true,
           RemoteConfigKeys.areTasksAvailable: true,
           RemoteConfigKeys.areTasksCompletionsAvailable: true,
+          RemoteConfigKeys.isWithdrawalMethodConnectionAvailable: true,
+          RemoteConfigKeys.isV2UpgradeAvailable: false,
+          RemoteConfigKeys.isV2WalletCreationAvailable: false,
           RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
           RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
           RemoteConfigKeys.isVoteForCanvassingAvailable: false,
+          RemoteConfigKeys.isCurrentBalanceCardAvailable: false,
         }),
         RemoteConfigKeys.miniappsConfig: await _loadMiniappsConfigDefault(),
         RemoteConfigKeys.goodcollectiveConfig: json.encode({
@@ -371,9 +375,11 @@ class RemoteConfigService {
           RemoteConfigKeys.areTasksCompletionsAvailable: true,
           RemoteConfigKeys.isWithdrawalMethodConnectionAvailable: true,
           RemoteConfigKeys.isV2UpgradeAvailable: false,
+          RemoteConfigKeys.isV2WalletCreationAvailable: false,
           RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
           RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
           RemoteConfigKeys.isVoteForCanvassingAvailable: false,
+          RemoteConfigKeys.isCurrentBalanceCardAvailable: false,
         };
       }
 
@@ -398,6 +404,8 @@ class RemoteConfigService {
             true,
         RemoteConfigKeys.isV2UpgradeAvailable:
             configMap[RemoteConfigKeys.isV2UpgradeAvailable] ?? false,
+        RemoteConfigKeys.isV2WalletCreationAvailable:
+            configMap[RemoteConfigKeys.isV2WalletCreationAvailable] ?? false,
         RemoteConfigKeys.isCustomAppAccessFeatureAvailable:
             configMap[RemoteConfigKeys.isCustomAppAccessFeatureAvailable] ??
             false,
@@ -405,6 +413,8 @@ class RemoteConfigService {
             configMap[RemoteConfigKeys.isV2ReferralFeatureAvailable] ?? false,
         RemoteConfigKeys.isVoteForCanvassingAvailable:
             configMap[RemoteConfigKeys.isVoteForCanvassingAvailable] ?? false,
+        RemoteConfigKeys.isCurrentBalanceCardAvailable:
+            configMap[RemoteConfigKeys.isCurrentBalanceCardAvailable] ?? false,
       };
     } catch (e) {
       if (kDebugMode) {
@@ -420,9 +430,11 @@ class RemoteConfigService {
         RemoteConfigKeys.areTasksCompletionsAvailable: true,
         RemoteConfigKeys.isWithdrawalMethodConnectionAvailable: true,
         RemoteConfigKeys.isV2UpgradeAvailable: false,
+        RemoteConfigKeys.isV2WalletCreationAvailable: false,
         RemoteConfigKeys.isCustomAppAccessFeatureAvailable: false,
         RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
         RemoteConfigKeys.isVoteForCanvassingAvailable: false,
+        RemoteConfigKeys.isCurrentBalanceCardAvailable: false,
       };
     }
   }

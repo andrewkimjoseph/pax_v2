@@ -1,8 +1,6 @@
 // providers/fcm/fcm_provider.dart - Enhanced version with Notifier
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pax/models/auth/auth_state_model.dart';
-import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/repositories/firestore/fcm_token/fcm_token_repository.dart';
 import 'package:pax/services/notifications/notification_service.dart';
@@ -108,13 +106,17 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
       if (previous?.state != current.state) {
         if (current.state == AuthState.authenticated) {
           if (kDebugMode) {
-            debugPrint('[FCM] FCM Provider: Auth state changed to authenticated');
+            debugPrint(
+              '[FCM] FCM Provider: Auth state changed to authenticated',
+            );
           }
 
           _requestPermissionAndSaveTokenForCurrentUser(current.user.uid);
         } else if (current.state == AuthState.unauthenticated) {
           if (kDebugMode) {
-            debugPrint('[FCM] FCM Provider: Auth state changed to unauthenticated');
+            debugPrint(
+              '[FCM] FCM Provider: Auth state changed to unauthenticated',
+            );
           }
 
           // Stop listening when user signs out
@@ -125,7 +127,9 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
   }
 
   /// Requests notification permission (after login) then saves FCM token for the user.
-  Future<void> _requestPermissionAndSaveTokenForCurrentUser(String userId) async {
+  Future<void> _requestPermissionAndSaveTokenForCurrentUser(
+    String userId,
+  ) async {
     if (state.isSavingToken) {
       if (kDebugMode) {
         debugPrint(
@@ -138,22 +142,22 @@ class FcmInitNotifier extends Notifier<FcmInitState> {
     try {
       state = state.copyWith(isSavingToken: true);
 
-      ref.read(analyticsProvider).notificationPermissionRequested();
+      // ref.read(analyticsProvider).notificationPermissionRequested();
 
       // Request notification permission and obtain FCM token (after sign-in)
-      final status =
-          await _notificationService.requestPermissionAndEnsureFcmToken();
+      // final status =
+      await _notificationService.requestPermissionAndEnsureFcmToken();
 
-      if (status != null) {
-        if (status == AuthorizationStatus.authorized ||
-            status == AuthorizationStatus.provisional) {
-          ref.read(analyticsProvider).notificationPermissionGranted();
-        } else {
-          ref.read(analyticsProvider).notificationPermissionDenied({
-            'authorization_status': status.name,
-          });
-        }
-      }
+      // if (status != null) {
+      //   if (status == AuthorizationStatus.authorized ||
+      //       status == AuthorizationStatus.provisional) {
+      //     // ref.read(analyticsProvider).notificationPermissionGranted();
+      //   } else {
+      //     // ref.read(analyticsProvider).notificationPermissionDenied({
+      //     //   'authorization_status': status.name,
+      //     // });
+      //   }
+      // }
 
       // Save token and start listening for refreshes
       await _notificationService.saveTokenForParticipant(userId);

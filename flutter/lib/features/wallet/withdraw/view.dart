@@ -24,6 +24,18 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
   final _withdrawalAmountKey = const TextFieldKey(#amount);
   late final TextEditingController _amountController;
   num? _lastAmountToWithdraw;
+  bool _didScheduleGuardRedirect = false;
+
+  String _formatAmountForInput(num amount, int tokenId) {
+    if (amount == amount.toInt()) {
+      return amount.toInt().toString();
+    }
+    final precision = TokenBalanceUtil.getWithdrawUiPrecision(tokenId);
+    final fixed = amount.toStringAsFixed(precision);
+    return fixed
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
+  }
 
   @override
   void initState() {
@@ -42,17 +54,39 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
     final withdrawContext = ref.watch(withdrawContextProvider);
     final balance = withdrawContext?.balance ?? 0;
     final tokenId = withdrawContext?.tokenId ?? 0;
+    final effectiveTokenId = tokenId == 0 ? 1 : tokenId;
+    final normalizedBalance = TokenBalanceUtil.normalizeWithdrawableBalance(
+      balance,
+      tokenId: effectiveTokenId,
+    );
+
+    if (withdrawContext == null || normalizedBalance <= 0) {
+      if (!_didScheduleGuardRedirect) {
+        _didScheduleGuardRedirect = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          context.go('/wallet');
+        });
+      }
+
+      return Scaffold(
+        backgroundColor: PaxColors.deepPurple,
+        child: const SizedBox.shrink(),
+      );
+    }
+    _didScheduleGuardRedirect = false;
 
     // Update the controller if the balance changes
-    if (withdrawContext != null && balance != _lastAmountToWithdraw) {
-      if (balance == 0) {
+    if (normalizedBalance != _lastAmountToWithdraw) {
+      if (normalizedBalance == 0) {
         _amountController.text = '';
-      } else if (balance % 1 == 0) {
-        _amountController.text = balance.toInt().toString();
       } else {
-        _amountController.text = balance.toString();
+        _amountController.text = _formatAmountForInput(
+          normalizedBalance,
+          effectiveTokenId,
+        );
       }
-      _lastAmountToWithdraw = balance;
+      _lastAmountToWithdraw = normalizedBalance;
     }
 
     // Create a proper validator using ValidatorBuilder
@@ -85,7 +119,7 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
         final amount = double.parse(value);
 
         // Valid if: amount > 0 AND amount <= balance
-        return amount > 0 && amount <= balance;
+        return amount > 0 && amount <= normalizedBalance;
       } catch (e) {
         return false; // Invalid: not a number
       }
@@ -196,7 +230,7 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                   ).withPadding(right: 4),
 
                   Text(
-                    TokenBalanceUtil.getLocaleFormattedAmount(balance),
+                    TokenBalanceUtil.getLocaleFormattedAmount(normalizedBalance),
                     style: const TextStyle(
                       fontSize: 16,
                       color: PaxColors.white,
@@ -205,7 +239,7 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                   ),
 
                   SvgPicture.asset(
-                    'lib/assets/svgs/currencies/${CurrencySymbolUtil.getNameForCurrency(tokenId)}.svg',
+                    'lib/assets/svgs/currencies/${CurrencySymbolUtil.getNameForCurrency(effectiveTokenId)}.svg',
                     height: 25,
                   ).withPadding(left: 4),
                 ],

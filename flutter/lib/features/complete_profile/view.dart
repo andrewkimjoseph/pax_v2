@@ -24,12 +24,23 @@ class _CompleteProfileViewState extends ConsumerState<CompleteProfileView> {
   String? genderValue;
   String? selectedCountry;
 
+  DateTime _minimumAllowedDateOfBirth() {
+    final now = DateTime.now();
+    return DateTime(now.year - 18, now.month, now.day);
+  }
+
   Future<void> _saveProfile() async {
     if (selectedCountry == null || genderValue == null || dateTime == null) {
       return;
     }
 
     final viewModel = ref.read(completeProfileProvider.notifier);
+    final minimumDateOfBirth = _minimumAllowedDateOfBirth();
+    if (dateTime!.isAfter(minimumDateOfBirth)) {
+      viewModel.setError('You must be at least 18 years old');
+      return;
+    }
+
     viewModel.setSaving();
 
     try {
@@ -284,6 +295,13 @@ class _CompleteProfileViewState extends ConsumerState<CompleteProfileView> {
                       value: dateTime,
                       mode: PromptMode.dialog,
                       placeholder: const Text('Select date'),
+                      stateBuilder: (date) {
+                        final minimumDateOfBirth = _minimumAllowedDateOfBirth();
+                        if (date.isAfter(minimumDateOfBirth)) {
+                          return DateState.disabled;
+                        }
+                        return DateState.enabled;
+                      },
                       onChanged: (value) {
                         setState(() => dateTime = value);
                       },
