@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
-import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
@@ -37,7 +36,6 @@ class V2AvailabilityBanner extends ConsumerWidget {
 
         return InkWell(
           onTap: () {
-            ref.read(analyticsProvider).v2UpgradeEligibilityChecked();
             context.push(Routes.checkV2Eligibility);
           },
           child: Container(
