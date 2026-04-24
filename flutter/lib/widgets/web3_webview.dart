@@ -6,13 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:wallet/wallet.dart';
-import 'package:web3dart/web3dart.dart';
-import 'package:http/http.dart' as http;
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
+import 'package:pax/providers/local/web3_miniapp_service_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
 import 'package:pax/providers/local/wallet_transactions_provider.dart';
+import 'package:pax/services/web3/web3_miniapp_service.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:web3dart/web3dart.dart';
 
 class Web3WebView extends ConsumerStatefulWidget {
   final String url;
@@ -40,12 +41,9 @@ class Web3WebView extends ConsumerStatefulWidget {
 }
 
 class _Web3WebViewState extends ConsumerState<Web3WebView> {
-  late Web3Client _web3Client;
-  late Credentials _credentials;
+  Web3MiniAppService? _web3Service;
   String? _currentAddress;
   String? _currentChainId;
-  late String _rpcUrl;
-  http.Client? _httpClient;
   String? _providerJavaScript;
   String? _lastPopupUrl;
   bool _isPopupShowing = false;
@@ -53,6 +51,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
   bool _canGoBack = false;
   bool _canGoForward = false;
   bool _isPageLoading = true;
+  double _pageProgress = 0;
 
   @override
   void initState() {
@@ -80,31 +79,13 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     _providerJavaScript = await rootBundle.loadString(
       'lib/assets/scripts/ethereum_provider.js',
     );
-
-    _rpcUrl = "https://forno.celo.org";
-    _httpClient = http.Client();
-    _web3Client = Web3Client(_rpcUrl, _httpClient!);
-
-    _credentials = widget.credentials;
-    final address = _credentials.address;
-    try {
-      final chainId = await _web3Client.getChainId();
-      if (mounted) {
-        setState(() {
-          _currentAddress = address.with0x;
-          _currentChainId = chainId.toString();
-        });
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[Web3WebView] Web3WebView: Failed to fetch chainId: $e');
-      }
-      if (mounted) {
-        setState(() {
-          _currentAddress = address.with0x;
-          _currentChainId = '42220';
-        });
-      }
+    _web3Service = ref.read(web3MiniAppServiceProvider(widget.credentials));
+    await _web3Service!.initialize();
+    if (mounted) {
+      setState(() {
+        _currentAddress = _web3Service?.currentAddress;
+        _currentChainId = _web3Service?.currentChainId;
+      });
     }
   }
 
@@ -252,354 +233,24 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     return completer.future;
   }
 
-  Future<Map<String, dynamic>> _handleWeb3Request(
-    Map<String, dynamic> request,
-  ) async {
-    final method = request['method'] as String;
-    final params = request['params'] as List? ?? [];
-
-    try {
-      switch (method) {
-        case 'eth_requestAccounts':
-        case 'eth_accounts':
-          return {
-            'id': request['id'],
-            'result': [_currentAddress],
-          };
-
-        case 'eth_chainId':
-          return {
-            'id': request['id'],
-            'result': '0x${int.parse(_currentChainId!).toRadixString(16)}',
-          };
-
-        case 'eth_blockNumber':
-        case 'eth_gasPrice':
-          return await _rpcPassthrough(request['id'], method, []);
-
-        case 'eth_getBalance':
-          final address = EthereumAddress.fromHex(params[0] as String);
-          final balance = await _web3Client.getBalance(address);
-          return {
-            'id': request['id'],
-            'result': '0x${balance.getInWei.toRadixString(16)}',
-          };
-
-        case 'eth_getCode':
-        case 'eth_getTransactionCount':
-          final address = params[0] as String;
-          final blockTag = params.length > 1 ? params[1] as String? : 'latest';
-          return await _rpcPassthrough(request['id'], method, [
-            address,
-            blockTag ?? 'latest',
-          ]);
-
-        case 'eth_estimateGas':
-          final txParams = params[0] as Map<String, dynamic>;
-          final blockTag = params.length > 1 ? params[1] as String? : 'latest';
-          return await _rpcPassthrough(request['id'], method, [
-            txParams,
-            blockTag ?? 'latest',
-          ]);
-
-        case 'eth_call':
-          final callParams = params[0] as Map<String, dynamic>;
-          final blockTag = params.length > 1 ? params[1] as String? : 'latest';
-          return await _rpcPassthrough(request['id'], method, [
-            callParams,
-            blockTag ?? 'latest',
-          ]);
-
-        case 'eth_getTransactionReceipt':
-        case 'eth_getTransactionByHash':
-          final txHash = params[0] as String;
-          return await _rpcPassthrough(request['id'], method, [txHash]);
-
-        case 'eth_sendTransaction':
-          return await _handleSendTransaction(
-            request['id'],
-            params[0] as Map<String, dynamic>,
-          );
-
-        case 'eth_signTransaction':
-          return await _handleSignTransaction(
-            request['id'],
-            params[0] as Map<String, dynamic>,
-          );
-
-        case 'personal_sign':
-        case 'eth_sign':
-          return await _handleSign(request['id'], params);
-
-        case 'eth_signTypedData':
-        case 'eth_signTypedData_v4':
-          return {
-            'id': request['id'],
-            'error': 'SignTypedData not fully implemented',
-          };
-
-        case 'wallet_switchEthereumChain':
-          return {'id': request['id'], 'result': null};
-
-        default:
-          return {'id': request['id'], 'error': 'Method $method not supported'};
-      }
-    } catch (e) {
-      return {'id': request['id'], 'error': e.toString()};
-    }
-  }
-
-  Future<Map<String, dynamic>> _rpcPassthrough(
-    dynamic id,
-    String method,
-    List<dynamic> params,
-  ) async {
-    final rpcRequest = {
-      'jsonrpc': '2.0',
-      'method': method,
-      'params': params,
-      'id': 1,
-    };
-    final response = await _httpClient!.post(
-      Uri.parse(_rpcUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(rpcRequest),
+  void _onTransactionSent(String eoAddress) {
+    if (!mounted) return;
+    ref
+        .read(paxWalletViewProvider.notifier)
+        .fetchBalance(eoAddress, forceRefresh: true);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      ref.read(walletTransactionsProvider.notifier).refresh(eoAddress);
+    });
+    // Non-blocking, preconditioned sponsorship check after successful tx.
+    // Uses existing PaxWalletNotifier safeguards before calling sponsorWalletGas.
+    unawaited(
+      ref
+          .read(paxWalletProvider.notifier)
+          .topUpGasIfNeeded()
+          .catchError((_) => false),
     );
-    final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-    if (responseData.containsKey('error')) {
-      return {'id': id, 'error': responseData['error']};
-    }
-    return {'id': id, 'result': responseData['result']};
-  }
-
-  Future<String> _sendRawTransaction(Uint8List signedTransaction) async {
-    final hexTx = bytesToHex(signedTransaction, include0x: true);
-
-    if (kDebugMode) {
-      debugPrint('[Web3WebView]: ==== TRANSACTION DEBUG ====');
-      debugPrint('[Web3WebView]: Sending to: $_rpcUrl');
-      debugPrint(
-        '[Web3WebView]: Raw TX length: ${signedTransaction.length} bytes',
-      );
-
-      // Check transaction type from first byte
-      final txType = signedTransaction[0];
-      if (txType == 0x02) {
-        debugPrint(
-          '[Web3WebView]: ⚠️ Transaction type: EIP-1559 (Type 2) - This may not work on Celo!',
-        );
-      } else if (txType >= 0xc0) {
-        debugPrint('[Web3WebView]: ✓ Transaction type: Legacy (RLP encoded)');
-      } else {
-        debugPrint(
-          '[Web3WebView]: Transaction type byte: 0x${txType.toRadixString(16)}',
-        );
-      }
-
-      debugPrint('[Web3WebView]: Full signed TX: $hexTx');
-    }
-
-    final rpcRequest = {
-      'jsonrpc': '2.0',
-      'method': 'eth_sendRawTransaction',
-      'params': [hexTx],
-      'id': 1,
-    };
-
-    final response = await _httpClient!.post(
-      Uri.parse(_rpcUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(rpcRequest),
-    );
-
-    if (kDebugMode) {
-      debugPrint('[Web3WebView]: RPC response status: ${response.statusCode}');
-      debugPrint('[Web3WebView]: RPC response body: ${response.body}');
-    }
-
-    final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-
-    if (responseData.containsKey('error')) {
-      final error = responseData['error'];
-      final errorMessage =
-          error is Map
-              ? (error['message'] ?? error.toString())
-              : error.toString();
-
-      if (kDebugMode) {
-        debugPrint('[Web3WebView]: ❌ RPC error: $errorMessage');
-      }
-
-      throw Exception('RPC Error: $errorMessage');
-    }
-
-    final txHash = responseData['result'] as String;
-
-    if (kDebugMode) {
-      debugPrint('[Web3WebView]: ✓ TX hash: $txHash');
-      debugPrint('[Web3WebView]: Check: https://celoscan.io/tx/$txHash');
-      debugPrint('[Web3WebView] Web3WebView: ==========================');
-    }
-
-    return txHash;
-  }
-
-  Future<Map<String, dynamic>> _handleSendTransaction(
-    dynamic id,
-    Map<String, dynamic> txParams,
-  ) async {
-    try {
-      // Check CELO balance
-      final celoBalance = await _web3Client.getBalance(_credentials.address);
-      if (celoBalance.getInWei < BigInt.from(10000000000000000)) {
-        return {
-          'id': id,
-          'error':
-              'Insufficient CELO balance. Need ~0.01 CELO to process transactions.',
-        };
-      }
-
-      // Get nonce
-      final nonce = await _web3Client.getTransactionCount(
-        _credentials.address,
-        atBlock: const BlockNum.pending(),
-      );
-
-      // Get gas price - don't bump it too high
-      final baseGasPrice = await _web3Client.getGasPrice();
-      final gasPrice = EtherAmount.inWei(
-        (baseGasPrice.getInWei * BigInt.from(110)) ~/
-            BigInt.from(100), // Only 10% bump
-      );
-
-      // Parse value
-      final value =
-          txParams['value'] != null
-              ? EtherAmount.fromBigInt(
-                EtherUnit.wei,
-                BigInt.parse(
-                  (txParams['value'] as String).replaceFirst('0x', ''),
-                  radix: 16,
-                ),
-              )
-              : EtherAmount.zero();
-
-      // Parse data
-      final data =
-          txParams['data'] != null
-              ? Uint8List.fromList(hexToBytes(txParams['data'] as String))
-              : null;
-
-      // Get gas limit
-      int? maxGas;
-      if (txParams['gas'] != null) {
-        maxGas = int.parse(
-          (txParams['gas'] as String).replaceFirst('0x', ''),
-          radix: 16,
-        );
-      }
-
-      final transaction = Transaction(
-        to: EthereumAddress.fromHex(txParams['to'] as String),
-        from: _credentials.address,
-        value: value,
-        data: data,
-        maxGas: maxGas,
-        gasPrice: gasPrice,
-        nonce: nonce,
-      );
-
-      if (kDebugMode) {
-        debugPrint('[Web3WebView]: Creating transaction:');
-        debugPrint('[Web3WebView]: Nonce: $nonce');
-        debugPrint('[Web3WebView]: Gas: $maxGas');
-        debugPrint('[Web3WebView]: Gas Price: ${gasPrice.getInWei}');
-      }
-
-      // Sign transaction
-      final signedTx = await _web3Client.signTransaction(
-        _credentials,
-        transaction,
-        chainId: int.parse(_currentChainId!),
-      );
-
-      // Send transaction
-      final txHash = await _sendRawTransaction(signedTx);
-
-      // Refresh wallet balances and transactions. Use parent callback when set so
-      // refresh runs with the correct ref; also refresh both providers here so
-      // transactions always update after a send. Balance refreshes immediately;
-      // transaction refresh is delayed so the chain/indexer can include the new tx.
-      final eoAddress = _credentials.address.with0x;
-      if (mounted) {
-        ref
-            .read(paxWalletViewProvider.notifier)
-            .fetchBalance(eoAddress, forceRefresh: true);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) return;
-          ref.read(walletTransactionsProvider.notifier).refresh(eoAddress);
-        });
-        if (widget.onTransactionSent != null) {
-          widget.onTransactionSent!(eoAddress);
-        }
-      }
-
-      return {'id': id, 'result': txHash};
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('[Web3WebView] Web3WebView: Transaction error: $e');
-      }
-      return {'id': id, 'error': e.toString()};
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleSignTransaction(
-    dynamic id,
-    Map<String, dynamic> txParams,
-  ) async {
-    try {
-      final transaction = Transaction(
-        to: EthereumAddress.fromHex(txParams['to'] as String),
-        from: _credentials.address,
-        value:
-            txParams['value'] != null
-                ? EtherAmount.fromBigInt(
-                  EtherUnit.wei,
-                  BigInt.parse(
-                    (txParams['value'] as String).replaceFirst('0x', ''),
-                    radix: 16,
-                  ),
-                )
-                : EtherAmount.zero(),
-        data:
-            txParams['data'] != null
-                ? Uint8List.fromList(hexToBytes(txParams['data'] as String))
-                : null,
-      );
-
-      final signed = await _web3Client.signTransaction(
-        _credentials,
-        transaction,
-      );
-      return {'id': id, 'result': bytesToHex(signed, include0x: true)};
-    } catch (e) {
-      return {'id': id, 'error': e.toString()};
-    }
-  }
-
-  Future<Map<String, dynamic>> _handleSign(dynamic id, List params) async {
-    try {
-      final message = params[0] as String;
-      final messageBytes = Uint8List.fromList(hexToBytes(message));
-
-      final signature = (_credentials as EthPrivateKey)
-          .signPersonalMessageToUint8List(messageBytes);
-      final signatureHex = bytesToHex(signature.toList(), include0x: true);
-
-      return {'id': id, 'result': signatureHex};
-    } catch (e) {
-      return {'id': id, 'error': e.toString()};
-    }
+    widget.onTransactionSent?.call(eoAddress);
   }
 
   Future<void> _injectWeb3Provider(InAppWebViewController controller) async {
@@ -705,7 +356,8 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
   void dispose() {
     _controller?.dispose();
     _controller = null;
-    _httpClient?.close();
+    _web3Service?.dispose();
+    _web3Service = null;
     super.dispose();
   }
 
@@ -755,7 +407,14 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
                 }
 
                 if (responseToSend == null) {
-                  final response = await _handleWeb3Request(request);
+                  final service = _web3Service;
+                  if (service == null) {
+                    throw StateError('Web3 service is not initialized');
+                  }
+                  final response = await service.handleRequest(
+                    request,
+                    onTransactionSent: _onTransactionSent,
+                  );
                   responseToSend = Map<String, dynamic>.from(response);
                 }
               } catch (e) {
@@ -787,16 +446,35 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
           _updateNavigationState();
         },
         onLoadStart: (controller, url) async {
-          if (mounted) setState(() => _isPageLoading = true);
+          if (mounted) {
+            setState(() {
+              _isPageLoading = true;
+              _pageProgress = 0;
+            });
+          }
           _checkUrlForVerificationParams(url?.toString());
           await _injectWeb3Provider(controller);
           _updateNavigationState();
+        },
+        onProgressChanged: (controller, progress) {
+          if (!mounted) return;
+          setState(() {
+            _pageProgress = (progress.clamp(0, 100)) / 100.0;
+            if (progress >= 100) {
+              _isPageLoading = false;
+            }
+          });
         },
         onLoadStop: (controller, url) async {
           _checkUrlForVerificationParams(url?.toString());
           await _injectWeb3Provider(controller);
           _updateNavigationState();
-          if (mounted) setState(() => _isPageLoading = false);
+          if (mounted) {
+            setState(() {
+              _isPageLoading = false;
+              _pageProgress = 1;
+            });
+          }
         },
       );
 
@@ -822,6 +500,17 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
       child: Column(
         children: [
           Expanded(child: content),
+          SizedBox(
+            width: MediaQuery.of(context).size.width,
+            height: _isPageLoading ? 8 : 0,
+            child:
+                _isPageLoading
+                    ? LinearProgressIndicator(
+                      value: _pageProgress,
+                      borderRadius: BorderRadius.zero,
+                    )
+                    : const SizedBox.shrink(),
+          ),
           const Divider(height: 1).withPadding(bottom: 8),
 
           Container(
