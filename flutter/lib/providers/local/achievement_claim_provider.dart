@@ -8,6 +8,7 @@ import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
+import 'package:pax/providers/local/activity_providers.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/providers/withdrawal_method_connection/withdrawal_method_connection_provider.dart';
 import 'package:pax/repositories/firestore/achievement/achievement_repository.dart';
@@ -215,6 +216,8 @@ class AchievementNotifier extends Notifier<AchievementStateModel> {
 
       // Update balances
       await ref.read(paxAccountProvider.notifier).syncBalancesFromBlockchain();
+      // Refresh activities to show the new withdrawal.
+      ref.invalidate(activityRepositoryProvider);
 
       // Clear claiming state for this achievement
       final finalClaimingStates = Map<String, bool>.from(state.claimingStates);

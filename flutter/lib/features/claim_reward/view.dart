@@ -129,22 +129,6 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
     final isReferral = claimContext.isReferral == true;
     final isAchievement = claimContext.isAchievement == true;
 
-    if (isAchievement) {
-      ref.read(analyticsProvider).claimAchievementTapped({
-        "achievementId": claimContext.achievementId,
-      });
-    } else if (isReferral) {
-      ref.read(analyticsProvider).referralRewardClaimStarted({
-        "referralId": claimContext.referralId,
-      });
-    } else {
-      ref.read(analyticsProvider).claimRewardTapped({
-        "taskId": claimContext.taskId,
-        "screeningId": claimContext.screeningId,
-        "taskCompletionId": claimContext.taskCompletionId,
-      });
-    }
-
     ref
         .read(claimPayoutContextProvider.notifier)
         .setContext(
@@ -184,7 +168,6 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
             actions: [
               OutlineButton(
                 onPressed: () {
-                  ref.read(analyticsProvider).claimErrorDialogOkTapped();
                   dialogContext.go("/home");
                 },
                 child: Text('OK'),
@@ -314,17 +297,6 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         isClaiming
                             ? null
                             : () {
-                              ref
-                                  .read(analyticsProvider)
-                                  .claimDonationCtaTapped({
-                                    "claimKind":
-                                        isAchievement
-                                            ? "achievement"
-                                            : isReferral
-                                            ? "referral"
-                                            : "task",
-                                    "isDonation": true,
-                                  });
                               _navigateToClaimPayout(context, isDonation: true);
                             },
                     child: Text(
@@ -348,19 +320,6 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                                   ? null
                                   : () {
                                     if (isClaiming) return;
-                                    ref
-                                        .read(analyticsProvider)
-                                        .claimPrimaryCtaTapped({
-                                          "claimKind":
-                                              isAchievement
-                                                  ? "achievement"
-                                                  : isReferral
-                                                  ? "referral"
-                                                  : "task",
-                                          "isDonation": false,
-                                          "taskIsCompleted": taskIsCompleted,
-                                        });
-
                                     if (taskIsCompleted == false) {
                                       _goHome(context);
                                     } else {
@@ -387,19 +346,6 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                                   ? null
                                   : () {
                                     if (isClaiming) return;
-                                    ref
-                                        .read(analyticsProvider)
-                                        .claimPrimaryCtaTapped({
-                                          "claimKind":
-                                              isAchievement
-                                                  ? "achievement"
-                                                  : isReferral
-                                                  ? "referral"
-                                                  : "task",
-                                          "isDonation": false,
-                                          "taskIsCompleted": taskIsCompleted,
-                                        });
-
                                     if (taskIsCompleted == false) {
                                       _goHome(context);
                                     } else {
@@ -500,11 +446,6 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ).withPadding(right: 8),
                         InkWell(
                           onTap: () async {
-                            ref
-                                .read(analyticsProvider)
-                                .claimReferralIdCopyTapped({
-                                  "referralId": referralId,
-                                });
                             await Clipboard.setData(
                               ClipboardData(text: referralId),
                             );
@@ -562,11 +503,6 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ).withPadding(right: 8),
                         InkWell(
                           onTap: () async {
-                            ref
-                                .read(analyticsProvider)
-                                .claimTaskCompletionIdCopyTapped({
-                                  "taskCompletionId": taskCompletionId,
-                                });
                             await Clipboard.setData(
                               ClipboardData(text: taskCompletionId),
                             );
@@ -790,11 +726,6 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                                 ).withPadding(right: 8),
                                 InkWell(
                                   onTap: () async {
-                                    ref
-                                        .read(analyticsProvider)
-                                        .claimTaskCompletionIdCopyTapped({
-                                          "taskCompletionId": taskCompletionId,
-                                        });
                                     await Clipboard.setData(
                                       ClipboardData(text: taskCompletionId),
                                     );

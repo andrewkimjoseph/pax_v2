@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart' show InkWell;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/local/claim_reward_context_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/gradient_border.dart';
@@ -276,11 +275,6 @@ class _AchievementCardState extends ConsumerState<AchievementCard> {
   }
 
   void _handleClaim() {
-    ref.read(analyticsProvider).claimAchievementTapped({
-      'achievementId': widget.achievement.id,
-      'achievementName': widget.achievement.name,
-    });
-
     ref
         .read(claimRewardContextProvider.notifier)
         .setContext(
