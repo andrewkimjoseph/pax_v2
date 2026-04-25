@@ -334,6 +334,7 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
 
   // Error dialog
   void _showErrorDialog(BuildContext context, String errorMessage) {
+    final rootContext = this.context;
     showDialog(
       barrierDismissible: false,
       context: context,
@@ -350,8 +351,17 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
             actions: [
               OutlineButton(
                 onPressed: () {
-                  context.pop();
-                  context.pop();
+                  final router = GoRouter.maybeOf(rootContext);
+                  if (router == null) return;
+
+                  // First pop closes the error dialog route.
+                  router.pop();
+
+                  // Second pop exits task summary when possible.
+                  if (!rootContext.mounted) return;
+                  if (router.canPop()) {
+                    router.pop();
+                  }
                 },
                 child: Text('OK'),
               ),

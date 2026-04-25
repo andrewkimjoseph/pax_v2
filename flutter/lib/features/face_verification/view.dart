@@ -49,12 +49,16 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
     required bool verified,
     required String chain,
   }) async {
+    if (!mounted) return;
     if (kDebugMode) {
       debugPrint(
         'FaceVerificationView: _onVerificationResult called (verified=$verified, chain=$chain)',
       );
     }
-    final viewModel = ref.read(faceVerificationProvider.notifier);
+    final faceVerificationNotifier = ref.read(faceVerificationProvider.notifier);
+    final analytics = ref.read(analyticsProvider);
+    final participantNotifier = ref.read(participantProvider.notifier);
+    final paxWalletNotifier = ref.read(paxWalletProvider.notifier);
     if (verified) {
       if (_postVerificationSideEffectsStarted) {
         if (kDebugMode) {
@@ -62,22 +66,20 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
             'FaceVerificationView: skipping duplicate post-verification flow',
           );
         }
-        viewModel.setSuccess(chain);
+        faceVerificationNotifier.setSuccess(chain);
         if (!mounted) return;
         _showResultDialog(verified: true, chain: chain);
         return;
       }
       _postVerificationSideEffectsStarted = true;
-      viewModel.setSuccess(chain);
-      ref.read(analyticsProvider).v2FaceVerificationSuccess({'chain': chain});
-      ref.read(analyticsProvider).identifyUser({
+      faceVerificationNotifier.setSuccess(chain);
+      analytics.v2FaceVerificationSuccess({'chain': chain});
+      analytics.identifyUser({
         UserPropertyConstants.goodDollarIdentityTimeLastAuthenticated:
             DateTime.now().toIso8601String(),
       });
       try {
-        await ref
-            .read(participantProvider.notifier)
-            .updateGoodDollarLastAuthTime(Timestamp.now());
+        await participantNotifier.updateGoodDollarLastAuthTime(Timestamp.now());
       } catch (e) {
         if (kDebugMode) {
           debugPrint(
@@ -85,14 +87,12 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
           );
         }
       }
-      await ref
-          .read(paxWalletProvider.notifier)
-          .registerPaxWalletAfterFaceVerification();
+      await paxWalletNotifier.registerPaxWalletAfterFaceVerification();
       if (!mounted) return;
       _showResultDialog(verified: true, chain: chain);
     } else {
-      viewModel.setFailed();
-      ref.read(analyticsProvider).v2FaceVerificationFailed();
+      faceVerificationNotifier.setFailed();
+      analytics.v2FaceVerificationFailed();
       _showResultDialog(verified: false, chain: chain);
     }
   }
