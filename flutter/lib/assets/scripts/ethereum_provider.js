@@ -1,7 +1,7 @@
 (function() {
   // Prevent overwriting by other scripts (either ethereum or PaxWallet already set)
   if ((window.ethereum && window.ethereum.isFlutterWeb3) ||
-      (window.PaxWallet && window.PaxWallet.isFlutterWeb3)) {
+      (window.paxWallet && window.paxWallet.isFlutterWeb3)) {
     return; // Already injected
   }
   
@@ -145,9 +145,9 @@
   
   // Expose as PaxWallet for explicit use in web3 operations; ethereum for dApp compatibility
   try {
-    window.PaxWallet = ethereumProvider;
+    window.paxWallet = ethereumProvider;
   } catch (e) {
-    window.PaxWallet = ethereumProvider;
+    window.paxWallet = ethereumProvider;
   }
   
   // Legacy: some dApps expect window.ethereum
@@ -165,11 +165,11 @@
   // Also set web3 for legacy support (use PaxWallet as the provider)
   if (!window.web3) {
     window.web3 = {
-      currentProvider: window.PaxWallet || ethereumProvider,
+      currentProvider: window.paxWallet || ethereumProvider,
       eth: {
         accounts: [],
         getAccounts: function(callback) {
-          (window.PaxWallet || ethereumProvider).request({ method: 'eth_accounts' })
+          (window.paxWallet || ethereumProvider).request({ method: 'eth_accounts' })
             .then(accounts => callback(null, accounts))
             .catch(error => callback(error, null));
         }
@@ -199,7 +199,7 @@
   };
   
   // Dispatch connect event immediately if address is set
-  const provider = window.PaxWallet || ethereumProvider;
+  const provider = window.paxWallet || ethereumProvider;
   if (provider.selectedAddress) {
     setTimeout(() => {
       provider._emit('connect', { chainId: provider.chainId });

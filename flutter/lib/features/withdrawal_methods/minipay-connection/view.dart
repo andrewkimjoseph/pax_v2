@@ -5,13 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pax/models/remote_config/links_config.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 
 import 'package:pax/providers/auth/auth_provider.dart';
 import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/providers/withdrawal_method_connection/withdrawal_method_connection_provider.dart';
 import 'package:pax/theming/colors.dart';
-import 'package:pax/utils/secret_constants.dart';
 import 'package:pax/widgets/withdrawal_method_guides/minipay/with_face_verification/steps.dart';
 import 'package:pax/services/notifications/notification_service.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
@@ -282,6 +283,9 @@ class _MiniPayConnectionViewState extends ConsumerState<MiniPayConnectionView> {
     final connectionState = ref.watch(withdrawalConnectionProvider);
     final checkWhitelist =
         ref.watch(withdrawalMethodsProvider).withdrawalMethods.isEmpty;
+    final linksConfig = ref
+        .watch(linksConfigProvider)
+        .maybeWhen(data: (value) => value, orElse: LinksConfig.defaults);
 
     // Reset _isConnecting flag if not connecting
     if (connectionState.state == WithdrawalMethodConnectionState.initial ||
@@ -496,9 +500,14 @@ class _MiniPayConnectionViewState extends ConsumerState<MiniPayConnectionView> {
                               .read(analyticsProvider)
                               .setUpWithdrawalMethodTapped({
                                 "method": "MiniPay",
-                                "inviteCode": minipayInviteCode,
+                                "inviteCode": linksConfig.minipayInviteCode,
                               });
-                          UrlHandler.launchInExternalBrowser(minipayInviteLink);
+                          if (linksConfig.minipayInviteLink.trim().isEmpty) {
+                            return;
+                          }
+                          UrlHandler.launchInExternalBrowser(
+                            linksConfig.minipayInviteLink,
+                          );
                         },
                         child: Row(
                           children: [

@@ -333,7 +333,7 @@ class FaceVerificationWebViewState
             setTimeout(() => {
               window.ethereum._emit('connect', { chainId: '$chainIdHex' });
             }, 100);
-            window.PaxWallet = window.ethereum;
+            window.paxWallet = window.ethereum;
             try {
               Object.defineProperty(window, 'ethereum', {
                 value: window.ethereum,
@@ -347,7 +347,9 @@ class FaceVerificationWebViewState
     } catch (e) {
       if (mounted) {
         if (kDebugMode) {
-          debugPrint('[FaceVerificationWebView] FaceVerificationWebView: Error injecting provider: $e');
+          debugPrint(
+            '[FaceVerificationWebView] FaceVerificationWebView: Error injecting provider: $e',
+          );
         }
       }
     }
@@ -392,7 +394,8 @@ class FaceVerificationWebViewState
       final verifiedRaw = queryParams['verified'];
       final chainRaw = queryParams['chain'];
       if (verifiedRaw == null || chainRaw == null) return null;
-      final verifiedStr = (_decodeBase64Param(verifiedRaw) ?? verifiedRaw).trim();
+      final verifiedStr =
+          (_decodeBase64Param(verifiedRaw) ?? verifiedRaw).trim();
       final chainStr = (_decodeBase64Param(chainRaw) ?? chainRaw).trim();
       final parsedVerified = _parseVerificationBool(verifiedStr);
       if (parsedVerified == null) {
@@ -596,7 +599,7 @@ class FaceVerificationWebViewState
                 if (!window.ethereum || !window.ethereum.isFlutterWeb3) {
                   return false;
                 }
-                window.PaxWallet = window.ethereum;
+                window.paxWallet = window.ethereum;
                 return true;
               })();
             ''',

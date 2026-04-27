@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pax/models/remote_config/app_version_config.dart';
 import 'package:pax/models/remote_config/goodcollective_config.dart';
+import 'package:pax/models/remote_config/links_config.dart';
 import 'package:pax/models/remote_config/maintenance_config.dart';
 import 'package:pax/models/remote_config/miniapps_config.dart';
 import 'package:pax/utils/achievement_constants.dart';
@@ -118,6 +119,7 @@ class RemoteConfigService {
           RemoteConfigKeys.chainId: 42220,
           RemoteConfigKeys.rpcUrl: 'https://forno.celo.org',
         }),
+        RemoteConfigKeys.linksConfig: json.encode(LinksConfig.defaults().toJson()),
       });
 
       try {
@@ -630,6 +632,42 @@ class RemoteConfigService {
         );
       }
       return Map<String, dynamic>.from(defaults);
+    }
+  }
+
+  Future<LinksConfig> getLinksConfig() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    if (_lastFetchTime == null ||
+        DateTime.now().difference(_lastFetchTime!) > _refreshInterval) {
+      await refreshConfig();
+    }
+
+    final defaults = LinksConfig.defaults();
+
+    try {
+      final jsonString = _remoteConfig.getString(RemoteConfigKeys.linksConfig);
+      if (kDebugMode) {
+        debugPrint('Remote Config Service: Raw links config string: $jsonString');
+      }
+
+      if (jsonString.isEmpty) {
+        return defaults;
+      }
+
+      final decoded = json.decode(jsonString);
+      if (decoded is! Map<String, dynamic>) {
+        return defaults;
+      }
+
+      return LinksConfig.fromJson(decoded);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Remote Config Service: Error getting links config: $e');
+      }
+      return defaults;
     }
   }
 

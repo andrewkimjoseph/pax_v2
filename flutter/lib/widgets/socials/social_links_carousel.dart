@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:pax/models/remote_config/links_config.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
-import 'package:pax/utils/secret_constants.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:flutter/material.dart' show InkWell;
@@ -33,6 +34,9 @@ class SocialLinksRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final linksConfig = ref
+        .watch(linksConfigProvider)
+        .maybeWhen(data: (value) => value, orElse: LinksConfig.defaults);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -73,7 +77,7 @@ class SocialLinksRow extends ConsumerWidget {
                   icon: social.icon,
                   color: social.color,
                   name: social.name,
-                  url: _resolveUrl(social.name, social.url),
+                  url: _resolveUrl(linksConfig, social.name, social.url),
                 ).withPadding(right: 10)
                 : _socialButton(
                   context,
@@ -81,7 +85,7 @@ class SocialLinksRow extends ConsumerWidget {
                   icon: social.icon,
                   color: social.color,
                   name: social.name,
-                  url: _resolveUrl(social.name, social.url),
+                  url: _resolveUrl(linksConfig, social.name, social.url),
                 ),
           ],
         ],
@@ -89,10 +93,10 @@ class SocialLinksRow extends ConsumerWidget {
     );
   }
 
-  String _resolveUrl(String name, String? url) {
+  String _resolveUrl(LinksConfig linksConfig, String name, String? url) {
     if (url != null) return url;
-    if (name == 'WhatsApp') return whatsappChannelLink;
-    if (name == 'Telegram') return telegramChannelLink;
+    if (name == 'WhatsApp') return linksConfig.whatsappChannelLink;
+    if (name == 'Telegram') return linksConfig.telegramChannelLink;
     return '';
   }
 
@@ -106,6 +110,7 @@ class SocialLinksRow extends ConsumerWidget {
   }) {
     return InkWell(
       onTap: () {
+        if (url.trim().isEmpty) return;
         ref.read(analyticsProvider).joinTribeTapped({'social': name});
         UrlHandler.launchCustomTab(context, url);
       },

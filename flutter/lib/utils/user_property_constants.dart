@@ -86,6 +86,10 @@ class UserPropertyConstants {
   /// Value: 'pax_smart_address'
   static const String smartAccountWalletAddress = 'pax_smart_address';
 
+  /// The PaxWallet EO address
+  /// Value: 'pax_wallet_address'
+  static const String paxWalletAddress = 'pax_wallet_address';
+
   // ============================================================================
   // PAXACCOUNT INFORMATION
   // ============================================================================

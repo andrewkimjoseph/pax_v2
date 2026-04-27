@@ -5,15 +5,16 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/models/firestore/screening/screening_model.dart';
 import 'package:pax/models/firestore/task/task_model.dart';
+import 'package:pax/models/remote_config/links_config.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/local/task_context/task_context_provider.dart';
 import 'package:pax/providers/local/screening_context/screening_context_provider.dart';
 import 'package:pax/providers/local/task_master_provider.dart';
 import 'package:pax/providers/local/task_master_server_id_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/currency_symbol.dart';
-import 'package:pax/utils/secret_constants.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:pax/widgets/task_timer.dart';
@@ -28,6 +29,9 @@ class TaskCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final linksConfig = ref
+        .watch(linksConfigProvider)
+        .maybeWhen(data: (value) => value, orElse: LinksConfig.defaults);
     // Calculate days remaining if deadline exists
     String daysRemaining = '-- days';
     if (task.deadline != null) {
@@ -280,7 +284,12 @@ class TaskCard extends ConsumerWidget {
                 });
 
                 if (kIsWeb && task.type == "fillAForm") {
-                  await UrlHandler.launchInExternalBrowser(paxAppLinkFromSite);
+                  if (linksConfig.paxAppLinkFromSite.trim().isEmpty) {
+                    return;
+                  }
+                  await UrlHandler.launchInExternalBrowser(
+                    linksConfig.paxAppLinkFromSite,
+                  );
                   return;
                 }
 

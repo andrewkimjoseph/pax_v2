@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:pax/env/env.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:pax/utils/remote_config_constants.dart';
+import 'package:pax/utils/secret_constants.dart';
 import 'package:wallet/wallet.dart';
 import 'package:web3dart/web3dart.dart';
 
@@ -16,13 +18,16 @@ import 'package:web3dart/web3dart.dart';
 /// This class acts as the "wallet backend" for JavaScript requests coming from
 /// the mini-app WebView bridge.
 class Web3MiniAppService {
+  static final String _rpcUrl =
+      'https://lb.drpc.live/celo/${Env.drpcRpcApiKey}';
+
   Web3MiniAppService({
     required Credentials credentials,
     required Map<String, dynamic> paxWalletConfig,
-    String rpcUrl = 'https://forno.celo.org',
+    String? rpcUrl,
   }) : _credentials = credentials,
        _paxWalletConfig = paxWalletConfig,
-       _defaultRpcUrl = rpcUrl;
+       _defaultRpcUrl = rpcUrl ?? _rpcUrl;
 
   final Credentials _credentials;
   final Map<String, dynamic> _paxWalletConfig;
@@ -76,6 +81,9 @@ class Web3MiniAppService {
 
   /// Reads `rpc_url` from `pax_wallet_config`; defaults to constructor RPC URL.
   String _resolveRpcUrl(Map<String, dynamic> config) {
+    if (kDebugMode && web3MiniAppDebugRpcUrlOverride.trim().isNotEmpty) {
+      return web3MiniAppDebugRpcUrlOverride.trim();
+    }
     final dynamic rawRpcUrl = config[RemoteConfigKeys.rpcUrl];
     if (rawRpcUrl is String && rawRpcUrl.trim().isNotEmpty) {
       return rawRpcUrl.trim();
@@ -93,9 +101,13 @@ class Web3MiniAppService {
   }) async {
     // Recover automatically if the service was disposed or not fully initialized
     // when a dApp request arrives.
-    if (_web3Client == null || _currentAddress == null || _currentChainId == null) {
+    if (_web3Client == null ||
+        _currentAddress == null ||
+        _currentChainId == null) {
       await initialize();
-      if (_web3Client == null || _currentAddress == null || _currentChainId == null) {
+      if (_web3Client == null ||
+          _currentAddress == null ||
+          _currentChainId == null) {
         return {
           'id': request['id'],
           'error': 'Wallet provider is still initializing. Please try again.',
@@ -150,7 +162,10 @@ class Web3MiniAppService {
 
         case 'eth_estimateGas':
           if (params.isEmpty) {
-            return {'id': request['id'], 'error': 'Missing transaction parameter'};
+            return {
+              'id': request['id'],
+              'error': 'Missing transaction parameter',
+            };
           }
           final txParams = Map<String, dynamic>.from(params[0] as Map);
           final blockTag = params.length > 1 ? params[1] as String? : 'latest';
@@ -180,7 +195,10 @@ class Web3MiniAppService {
 
         case 'eth_sendTransaction':
           if (params.isEmpty) {
-            return {'id': request['id'], 'error': 'Missing transaction parameter'};
+            return {
+              'id': request['id'],
+              'error': 'Missing transaction parameter',
+            };
           }
           return _handleSendTransaction(
             request['id'],
@@ -190,7 +208,10 @@ class Web3MiniAppService {
 
         case 'eth_signTransaction':
           if (params.isEmpty) {
-            return {'id': request['id'], 'error': 'Missing transaction parameter'};
+            return {
+              'id': request['id'],
+              'error': 'Missing transaction parameter',
+            };
           }
           return _handleSignTransaction(
             request['id'],
@@ -211,6 +232,9 @@ class Web3MiniAppService {
         case 'wallet_switchEthereumChain':
           // Not switching yet; we only expose Celo mainnet currently.
           return {'id': request['id'], 'result': null};
+
+        case 'net_version':
+          return {'id': request['id'], 'result': _currentChainId};
 
         case 'eth_getBlockByNumber':
           final blockTag =
@@ -311,20 +335,16 @@ class Web3MiniAppService {
     void Function(String eoAddress)? onTransactionSent,
   }) async {
     try {
-      final celoBalance = await _web3Client!.getBalance(_credentials.address);
-      if (celoBalance.getInWei < BigInt.from(10000000000000000)) {
-        return {
-          'id': id,
-          'error':
-              'Insufficient CELO balance. Need ~0.01 CELO to process transactions.',
-        };
-      }
-
       final nonce = await _web3Client!.getTransactionCount(
         _credentials.address,
         atBlock: const BlockNum.pending(),
       );
 
+      final valueWei = _parseHexBigInt(txParams['value']) ?? BigInt.zero;
+      final value = EtherAmount.fromBigInt(EtherUnit.wei, valueWei);
+
+      final dataHex =
+          txParams['data'] != null ? txParams['data'] as String : null;
       // We normalize all fee knobs to wei BigInt for deterministic math.
       final networkGasPriceWei = (await _web3Client!.getGasPrice()).getInWei;
       final requestedGasPriceWei =
@@ -362,17 +382,9 @@ class Web3MiniAppService {
       );
       final maxFeePerGasWei = _maxBigInt(candidateGasPriceWei, minRequiredWei);
 
-      final value =
-          txParams['value'] != null
-              ? EtherAmount.fromBigInt(
-                EtherUnit.wei,
-                _parseHexBigInt(txParams['value']) ?? BigInt.zero,
-              )
-              : EtherAmount.zero();
-
       final data =
-          txParams['data'] != null
-              ? Uint8List.fromList(hexToBytes(txParams['data'] as String))
+          dataHex != null
+              ? Uint8List.fromList(hexToBytes(dataHex))
               : null;
 
       int gasLimit = 100000;
@@ -381,6 +393,45 @@ class Web3MiniAppService {
           (txParams['gas'] as String).replaceFirst('0x', ''),
           radix: 16,
         );
+      } else {
+        try {
+          final estimateParams = <String, dynamic>{
+            'from': _credentials.address.with0x,
+            'to': txParams['to'],
+            'value': _toRpcHex(valueWei),
+          };
+          if (dataHex != null && dataHex.trim().isNotEmpty) {
+            estimateParams['data'] = dataHex;
+          }
+          final estimateResponse = await _rpcPassthrough(
+            1,
+            'eth_estimateGas',
+            [estimateParams, 'latest'],
+          );
+          final estimatedGas = _parseHexBigInt(estimateResponse['result']);
+          if (estimatedGas != null && estimatedGas > BigInt.zero) {
+            // Add a small buffer so slight execution-path variance does not fail tx.
+            gasLimit = ((estimatedGas.toInt() * 12) / 10).ceil();
+          }
+        } catch (_) {
+          // Keep fallback gas when estimate endpoint is unavailable.
+        }
+      }
+
+      final celoBalance = await _web3Client!.getBalance(_credentials.address);
+      final estimatedGasFeeWei = maxFeePerGasWei * BigInt.from(gasLimit);
+      final estimatedTotalCostWei = valueWei + estimatedGasFeeWei;
+      if (celoBalance.getInWei < estimatedTotalCostWei) {
+        final shortfallWei = estimatedTotalCostWei - celoBalance.getInWei;
+        return {
+          'id': id,
+          'error':
+              'Insufficient CELO balance for this transaction. '
+              'Need about ${_formatWeiToCelo(estimatedTotalCostWei)} CELO '
+              '(value ${_formatWeiToCelo(valueWei)} + estimated gas ${_formatWeiToCelo(estimatedGasFeeWei)}), '
+              'but wallet has ${_formatWeiToCelo(celoBalance.getInWei)} CELO '
+              '(short by ${_formatWeiToCelo(shortfallWei)} CELO).',
+        };
       }
 
       if (kDebugMode) {
@@ -574,6 +625,8 @@ class Web3MiniAppService {
 
   BigInt _maxBigInt(BigInt a, BigInt b) => a >= b ? a : b;
 
+  String _toRpcHex(BigInt value) => '0x${value.toRadixString(16)}';
+
   BigInt? _parseHexBigInt(dynamic raw) {
     if (raw == null) return null;
     final normalized = raw.toString().trim().toLowerCase();
@@ -581,6 +634,24 @@ class Web3MiniAppService {
     final hex = normalized.replaceFirst(RegExp(r'^0x'), '');
     if (hex.isEmpty) return BigInt.zero;
     return BigInt.parse(hex, radix: 16);
+  }
+
+  String _formatWeiToCelo(BigInt wei, {int fractionDigits = 6}) {
+    const base = '1000000000000000000';
+    final baseInt = BigInt.parse(base);
+    final whole = wei ~/ baseInt;
+    final remainder = wei.remainder(baseInt);
+    if (fractionDigits <= 0 || remainder == BigInt.zero) {
+      return whole.toString();
+    }
+
+    final fraction = remainder
+        .toString()
+        .padLeft(18, '0')
+        .substring(0, fractionDigits)
+        .replaceFirst(RegExp(r'0+$'), '');
+    if (fraction.isEmpty) return whole.toString();
+    return '${whole.toString()}.$fraction';
   }
 
   /// Release transport resources.

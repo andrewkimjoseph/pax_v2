@@ -165,6 +165,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
         ref.invalidate(appVersionConfigProvider);
         ref.invalidate(maintenanceConfigProvider);
         ref.invalidate(featureFlagsProvider);
+        ref.invalidate(linksConfigProvider);
       }
     });
 

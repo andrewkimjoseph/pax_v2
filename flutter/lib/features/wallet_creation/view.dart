@@ -14,6 +14,7 @@ import 'package:pax/services/wallet/gooddollar_identity_service.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/theming/colors.dart';
+import 'package:pax/utils/user_property_constants.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class WalletCreationView extends ConsumerStatefulWidget {
@@ -136,6 +137,10 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
 
       await participantNotifier.updateProfile({'accountType': 'v2'});
       if (!mounted) return;
+
+      analytics.identifyUser({
+        UserPropertyConstants.paxWalletAddress: eoAddress,
+      });
 
       viewModel.setStep(WalletCreationStep.success);
       analytics.v2WalletCreationSuccess({'eoAddress': eoAddress});

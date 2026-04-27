@@ -7,11 +7,12 @@ import 'package:go_router/go_router.dart';
 import 'package:pax/features/home/achievements/view.dart';
 import 'package:pax/features/home/dashboard/view.dart';
 import 'package:pax/features/home/tasks/view.dart';
+import 'package:pax/models/remote_config/links_config.dart';
 import 'package:pax/features/onboarding/view_model.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
-import 'package:pax/utils/secret_constants.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:pax/widgets/account/account_option_card.dart';
 import 'package:pax/widgets/contact_support_card.dart';
@@ -37,6 +38,9 @@ class _ContactSupportViewState extends ConsumerState<ContactSupportView> {
   @override
   Widget build(BuildContext context) {
     final participant = ref.read(participantProvider).participant;
+    final linksConfig = ref
+        .watch(linksConfigProvider)
+        .maybeWhen(data: (value) => value, orElse: LinksConfig.defaults);
     return Scaffold(
       headers: [
         AppBar(
@@ -118,7 +122,11 @@ class _ContactSupportViewState extends ConsumerState<ContactSupportView> {
                   InkWell(
                     onTap: () {
                       ref.read(analyticsProvider).whatsappTapped();
-                      UrlHandler.launchCustomTab(context, whatsappChannelLink);
+                      if (linksConfig.whatsappChannelLink.trim().isEmpty) return;
+                      UrlHandler.launchCustomTab(
+                        context,
+                        linksConfig.whatsappChannelLink,
+                      );
                     },
                     child: ContactSupportCard('WhatsApp', 'whatsapp'),
                   ),
@@ -126,7 +134,11 @@ class _ContactSupportViewState extends ConsumerState<ContactSupportView> {
                   InkWell(
                     onTap: () {
                       ref.read(analyticsProvider).telegramTapped();
-                      UrlHandler.launchCustomTab(context, telegramChannelLink);
+                      if (linksConfig.telegramChannelLink.trim().isEmpty) return;
+                      UrlHandler.launchCustomTab(
+                        context,
+                        linksConfig.telegramChannelLink,
+                      );
                     },
                     child: ContactSupportCard('Telegram', 'telegram'),
                   ),

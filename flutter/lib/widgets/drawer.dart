@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart' show InkWell;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pax/models/remote_config/links_config.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
-import 'package:pax/utils/secret_constants.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:pax/widgets/option_card.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -36,12 +37,19 @@ class Drawer extends ConsumerStatefulWidget {
               ),
               InkWell(
                 onTap: () {
+                  final linksConfig = ref
+                      .read(linksConfigProvider)
+                      .maybeWhen(
+                        data: (value) => value,
+                        orElse: LinksConfig.defaults,
+                      );
                   ref.read(analyticsProvider).goodWalletTapped({
-                    "inviteCode": goodWalletInviteCode,
+                    "inviteCode": linksConfig.goodWalletInviteCode,
                   });
+                  if (linksConfig.goodWalletInviteLink.trim().isEmpty) return;
                   UrlHandler.launchCustomTab(
                     drawerContext,
-                    goodWalletInviteLink,
+                    linksConfig.goodWalletInviteLink,
                   );
                   // closeDrawer(drawerContext);
                 },

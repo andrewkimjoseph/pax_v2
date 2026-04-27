@@ -132,6 +132,11 @@ class RemoteConfigKeys {
   /// Key: 'pax_wallet_config'
   static const String paxWalletConfig = 'pax_wallet_config';
 
+  /// The name of the remote config parameter containing external links config.
+  /// Contains social/invite URLs and invite codes as JSON.
+  /// Key: 'links_config'
+  static const String linksConfig = 'links_config';
+
   /// Auto top-up threshold key inside pax_wallet_config JSON.
   /// Key: 'auto_topup_threshold'
   static const String autoTopupThreshold = 'auto_top_up_threshold';
@@ -147,6 +152,18 @@ class RemoteConfigKeys {
   /// RPC URL key inside pax_wallet_config JSON.
   /// Key: 'rpc_url'
   static const String rpcUrl = 'rpc_url';
+
+  // links_config keys
+  static const String telegramChannelLink = 'telegram_channel_link';
+  static const String whatsappChannelLink = 'whatsapp_channel_link';
+  static const String minipayInviteLink = 'minipay_invite_link';
+  static const String minipayInviteCode = 'minipay_invite_code';
+  static const String goodWalletInviteLink = 'goodwallet_invite_link';
+  static const String goodWalletInviteCode = 'goodwallet_invite_code';
+  static const String goodPaxAppLink = 'good_pax_app_link';
+  static const String drpcReferralLink = 'drpc_referral_link';
+  static const String paxAppLinkFromSite = 'pax_app_link_from_site';
+  static const String esiRegistrationLink = 'esi_registration_link';
 
   /// Whether the miniapps feature is enabled for V2 users.
   /// Key: 'are_miniapps_available'
