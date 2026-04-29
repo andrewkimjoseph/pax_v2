@@ -165,6 +165,15 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
         }
         return;
       }
+      if (next.isDebugOverride) {
+        if (kDebugMode) {
+          debugPrint(
+            '[PaxWalletNotifier] wallet credentials listener skipped: '
+            'debug override credentials loaded (no fetch/backfill)',
+          );
+        }
+        return;
+      }
 
       final authState = ref.read(authProvider);
       final participantId = authState.user.uid;

@@ -109,12 +109,35 @@ Future<void> restoreWalletIfNeeded(
     final walletAfterRestore = container.read(paxWalletProvider);
     final walletEoAddress = walletAfterRestore.wallet?.eoAddress;
     final credEoAddress = credAfterRestore.eoAddress;
+    final isDebugOverride = credAfterRestore.isDebugOverride;
+
+    if (isDebugOverride) {
+      if (kDebugMode) {
+        debugPrint(
+          '[WalletRestoreHelper] debug override credentials active; '
+          'skipping eoAddress mismatch retry and wallet/account backfills',
+        );
+      }
+      return;
+    }
 
     if (credAfterRestore.status == WalletCredentialsStatus.loaded &&
         walletEoAddress != null &&
         walletEoAddress.isNotEmpty &&
         credEoAddress != null &&
         !_eoAddressMatches(credEoAddress, walletEoAddress)) {
+      if (!silentOnly) {
+        if (kDebugMode) {
+          debugPrint(
+            '[WalletRestoreHelper] eoAddress mismatch after interactive restore; '
+            'stopping retries to avoid loop',
+          );
+        }
+        walletCredNotifier.setError(
+          'Please sign in with the same Google account you used when creating your wallet.',
+        );
+        return;
+      }
       if (kDebugMode) {
         debugPrint(
           '[WalletRestoreHelper] eoAddress mismatch after restore, '

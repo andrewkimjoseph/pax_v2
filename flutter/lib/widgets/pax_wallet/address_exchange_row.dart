@@ -11,47 +11,56 @@ class PaxWalletAddressAndExchangeRow extends ConsumerWidget {
     super.key,
     required this.address,
     this.gasBalanceText,
+    this.debugWalletAddress,
   });
 
   final String address;
   final String? gasBalanceText;
+  final String? debugWalletAddress;
+
+  String _truncateAddress(String value) {
+    return value.length > 14
+        ? '${value.substring(0, 14)}...${value.substring(value.length - 4)}'
+        : value;
+  }
+
+  Widget _buildCopyableAddress({required String value}) {
+    return InkWell(
+      onTap: () => Clipboard.setData(ClipboardData(text: value)),
+      borderRadius: BorderRadius.circular(8),
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(
+              _truncateAddress(value),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: PaxColors.white.withValues(alpha: 0.75),
+                fontFamily: 'monospace',
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          FaIcon(
+            FontAwesomeIcons.copy,
+            size: 12,
+            color: PaxColors.white.withValues(alpha: 0.6),
+          ).withPadding(left: 8),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final truncated =
-        address.length > 14
-            ? '${address.substring(0, 14)}...${address.substring(address.length - 4)}'
-            : address;
+    final useDebugAddress =
+        debugWalletAddress != null && debugWalletAddress!.isNotEmpty;
+    final displayAddress = useDebugAddress ? debugWalletAddress! : address;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Expanded(
-          child: InkWell(
-            onTap: () => Clipboard.setData(ClipboardData(text: address)),
-            borderRadius: BorderRadius.circular(8),
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    truncated,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: PaxColors.white.withValues(alpha: 0.75),
-                      fontFamily: 'monospace',
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                FaIcon(
-                  FontAwesomeIcons.copy,
-                  size: 12,
-                  color: PaxColors.white.withValues(alpha: 0.6),
-                ).withPadding(left: 8),
-              ],
-            ),
-          ),
-        ),
+        Expanded(child: _buildCopyableAddress(value: displayAddress)),
         if (gasBalanceText != null)
           Text(
             gasBalanceText!,

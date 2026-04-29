@@ -370,11 +370,12 @@ class Web3MiniAppService {
         // If this fails we still proceed using network gas price.
       }
 
-      // Conservative floor:
-      // maxFee >= 2*baseFee + tip to stay valid over short base-fee spikes.
+      // Protocol-valid floor:
+      // maxFee must cover current baseFee + tip. Using 2x baseFee can reject
+      // low-balance wallets even when the tx would execute right now.
       final minRequiredWei =
           baseFeeWei > BigInt.zero
-              ? (baseFeeWei * BigInt.from(2) + requestedPriorityWei)
+              ? (baseFeeWei + requestedPriorityWei)
               : BigInt.zero;
       final candidateGasPriceWei = _maxBigInt(
         networkGasPriceWei,
@@ -383,9 +384,7 @@ class Web3MiniAppService {
       final maxFeePerGasWei = _maxBigInt(candidateGasPriceWei, minRequiredWei);
 
       final data =
-          dataHex != null
-              ? Uint8List.fromList(hexToBytes(dataHex))
-              : null;
+          dataHex != null ? Uint8List.fromList(hexToBytes(dataHex)) : null;
 
       int gasLimit = 100000;
       if (txParams['gas'] != null) {
@@ -403,34 +402,69 @@ class Web3MiniAppService {
           if (dataHex != null && dataHex.trim().isNotEmpty) {
             estimateParams['data'] = dataHex;
           }
-          final estimateResponse = await _rpcPassthrough(
-            1,
-            'eth_estimateGas',
-            [estimateParams, 'latest'],
-          );
+          final estimateResponse = await _rpcPassthrough(1, 'eth_estimateGas', [
+            estimateParams,
+            'latest',
+          ]);
           final estimatedGas = _parseHexBigInt(estimateResponse['result']);
           if (estimatedGas != null && estimatedGas > BigInt.zero) {
-            // Add a small buffer so slight execution-path variance does not fail tx.
-            gasLimit = ((estimatedGas.toInt() * 12) / 10).ceil();
+            // Keep a modest safety buffer to avoid overestimating affordability.
+            gasLimit = ((estimatedGas.toInt() * 11) / 10).ceil();
           }
         } catch (_) {
           // Keep fallback gas when estimate endpoint is unavailable.
         }
       }
 
+      // Use a realistic live gas price for affordability checks (clamped by
+      // maxFeePerGas). This avoids false negatives from max-fee ceiling math.
+      final likelyEffectiveGasPriceWei = _minBigInt(
+        maxFeePerGasWei,
+        _maxBigInt(networkGasPriceWei, requestedPriorityWei),
+      );
       final celoBalance = await _web3Client!.getBalance(_credentials.address);
-      final estimatedGasFeeWei = maxFeePerGasWei * BigInt.from(gasLimit);
+      final gasLimitWei = BigInt.from(gasLimit);
+
+      // Nodes validate sender affordability against the max-fee envelope:
+      // value + (gasLimit * maxFeePerGas). Cap maxFee when possible so valid
+      // transactions are not rejected just because the initial ceiling is high.
+      BigInt finalMaxFeePerGasWei = maxFeePerGasWei;
+      final spendableForGasWei = celoBalance.getInWei - valueWei;
+      if (spendableForGasWei > BigInt.zero && gasLimitWei > BigInt.zero) {
+        final affordableMaxFeePerGasWei = spendableForGasWei ~/ gasLimitWei;
+        final protocolMinMaxFeeWei = _maxBigInt(minRequiredWei, requestedPriorityWei);
+        if (finalMaxFeePerGasWei > affordableMaxFeePerGasWei &&
+            affordableMaxFeePerGasWei >= protocolMinMaxFeeWei) {
+          finalMaxFeePerGasWei = affordableMaxFeePerGasWei;
+          if (kDebugMode) {
+            debugPrint(
+              '[Web3MiniAppService] Capped MaxFeePerGas to affordable value: '
+              '$finalMaxFeePerGasWei',
+            );
+          }
+        }
+      }
+
+      final estimatedGasFeeWei =
+          likelyEffectiveGasPriceWei * gasLimitWei;
       final estimatedTotalCostWei = valueWei + estimatedGasFeeWei;
-      if (celoBalance.getInWei < estimatedTotalCostWei) {
-        final shortfallWei = estimatedTotalCostWei - celoBalance.getInWei;
+      final maxEnvelopeCostWei = valueWei + (finalMaxFeePerGasWei * gasLimitWei);
+      if (celoBalance.getInWei < estimatedTotalCostWei ||
+          celoBalance.getInWei < maxEnvelopeCostWei) {
+        final requiredWei = _maxBigInt(estimatedTotalCostWei, maxEnvelopeCostWei);
+        final shortfallWei = requiredWei - celoBalance.getInWei;
+        final envelopeGasWei = finalMaxFeePerGasWei * gasLimitWei;
+        if (kDebugMode) {
+          debugPrint(
+            '[Web3MiniAppService] Insufficient GAS details: '
+            'requiredWei=$requiredWei, balanceWei=${celoBalance.getInWei}, '
+            'valueWei=$valueWei, estimatedGasFeeWei=$estimatedGasFeeWei, '
+            'envelopeGasWei=$envelopeGasWei, shortfallWei=$shortfallWei',
+          );
+        }
         return {
           'id': id,
-          'error':
-              'Insufficient CELO balance for this transaction. '
-              'Need about ${_formatWeiToCelo(estimatedTotalCostWei)} CELO '
-              '(value ${_formatWeiToCelo(valueWei)} + estimated gas ${_formatWeiToCelo(estimatedGasFeeWei)}), '
-              'but wallet has ${_formatWeiToCelo(celoBalance.getInWei)} CELO '
-              '(short by ${_formatWeiToCelo(shortfallWei)} CELO).',
+          'error': 'Not enough GAS units to complete this transaction.',
         };
       }
 
@@ -440,13 +474,19 @@ class Web3MiniAppService {
         debugPrint('[Web3MiniAppService] BaseFee: $baseFeeWei');
         debugPrint('[Web3MiniAppService] MaxFeePerGas: $maxFeePerGasWei');
         debugPrint(
+          '[Web3MiniAppService] FinalMaxFeePerGas: $finalMaxFeePerGasWei',
+        );
+        debugPrint(
+          '[Web3MiniAppService] LikelyEffectiveGasPrice: $likelyEffectiveGasPriceWei',
+        );
+        debugPrint(
           '[Web3MiniAppService] MaxPriorityFeePerGas: $requestedPriorityWei',
         );
       }
 
       final signedTx = await _signEip1559Transaction(
         nonce: nonce,
-        maxFeePerGas: maxFeePerGasWei,
+        maxFeePerGas: finalMaxFeePerGasWei,
         maxPriorityFeePerGas: requestedPriorityWei,
         chainId: int.parse(_currentChainId!),
         to: EthereumAddress.fromHex(txParams['to'] as String),
@@ -625,6 +665,8 @@ class Web3MiniAppService {
 
   BigInt _maxBigInt(BigInt a, BigInt b) => a >= b ? a : b;
 
+  BigInt _minBigInt(BigInt a, BigInt b) => a <= b ? a : b;
+
   String _toRpcHex(BigInt value) => '0x${value.toRadixString(16)}';
 
   BigInt? _parseHexBigInt(dynamic raw) {
@@ -634,24 +676,6 @@ class Web3MiniAppService {
     final hex = normalized.replaceFirst(RegExp(r'^0x'), '');
     if (hex.isEmpty) return BigInt.zero;
     return BigInt.parse(hex, radix: 16);
-  }
-
-  String _formatWeiToCelo(BigInt wei, {int fractionDigits = 6}) {
-    const base = '1000000000000000000';
-    final baseInt = BigInt.parse(base);
-    final whole = wei ~/ baseInt;
-    final remainder = wei.remainder(baseInt);
-    if (fractionDigits <= 0 || remainder == BigInt.zero) {
-      return whole.toString();
-    }
-
-    final fraction = remainder
-        .toString()
-        .padLeft(18, '0')
-        .substring(0, fractionDigits)
-        .replaceFirst(RegExp(r'0+$'), '');
-    if (fraction.isEmpty) return whole.toString();
-    return '${whole.toString()}.$fraction';
   }
 
   /// Release transport resources.

@@ -67,7 +67,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                 ),
               ),
 
-              if (!isV2)
+              if (kDebugMode || !isV2)
                 IconButton(
                   // style: ButtonStyle.primary(
                   //   density: ButtonDensity.icon,
@@ -164,10 +164,16 @@ class _HomeViewState extends ConsumerState<HomeView> {
                                       achievementState.achievements
                                           .where(
                                             (a) =>
-                                                achievementStatusName(a.status) ==
-                                                    AchievementStatusNames.earned ||
-                                                achievementStatusName(a.status) ==
-                                                    AchievementStatusNames.inProgress,
+                                                achievementStatusName(
+                                                      a.status,
+                                                    ) ==
+                                                    AchievementStatusNames
+                                                        .earned ||
+                                                achievementStatusName(
+                                                      a.status,
+                                                    ) ==
+                                                    AchievementStatusNames
+                                                        .inProgress,
                                           )
                                           .length;
                                   return _homeTabButton(

@@ -5,6 +5,7 @@ import 'package:pax/services/wallet/wallet_service.dart';
 import 'package:pax/services/wallet/wallet_encryption.dart';
 import 'package:pax/services/wallet/drive_service.dart';
 import 'package:pax/services/wallet/local_wallet_cache.dart';
+import 'package:pax/utils/secret_constants.dart' as secret_constants;
 
 enum WalletCredentialsStatus { initial, loading, loaded, error }
 
@@ -14,6 +15,7 @@ class WalletCredentialsState {
   final String? mnemonic;
   final String? eoAddress;
   final String? errorMessage;
+  final bool isDebugOverride;
 
   WalletCredentialsState({
     this.status = WalletCredentialsStatus.initial,
@@ -21,6 +23,7 @@ class WalletCredentialsState {
     this.mnemonic,
     this.eoAddress,
     this.errorMessage,
+    this.isDebugOverride = false,
   });
 
   factory WalletCredentialsState.initial() {
@@ -33,6 +36,7 @@ class WalletCredentialsState {
     String? mnemonic,
     String? eoAddress,
     String? errorMessage,
+    bool? isDebugOverride,
   }) {
     return WalletCredentialsState(
       status: status ?? this.status,
@@ -40,6 +44,7 @@ class WalletCredentialsState {
       mnemonic: mnemonic ?? this.mnemonic,
       eoAddress: eoAddress ?? this.eoAddress,
       errorMessage: errorMessage ?? this.errorMessage,
+      isDebugOverride: isDebugOverride ?? this.isDebugOverride,
     );
   }
 
@@ -91,6 +96,8 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
         credentials: result.credentials,
         mnemonic: result.mnemonic,
         eoAddress: result.credentials.address.with0x,
+        errorMessage: null,
+        isDebugOverride: false,
       );
     } catch (e) {
       drive.close();
@@ -118,6 +125,34 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
     final localCache = LocalWalletCache();
 
     try {
+      final debugPrivateKeyOverride =
+          secret_constants.debugWalletPrivateKeyOverride.trim();
+      if (kDebugMode && debugPrivateKeyOverride.isNotEmpty) {
+        final normalizedHex = debugPrivateKeyOverride.startsWith('0x')
+            ? debugPrivateKeyOverride.substring(2)
+            : debugPrivateKeyOverride;
+        if (!RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(normalizedHex)) {
+          throw ArgumentError(
+            'Invalid debugWalletPrivateKeyOverride. Expected 64 hex chars, optionally prefixed with 0x.',
+          );
+        }
+        final credentials = EthPrivateKey.fromHex(debugPrivateKeyOverride);
+        if (kDebugMode) {
+          debugPrint(
+            '[WalletCredentials] WalletCredentials: using debug private key override; skipping cache/Drive restore',
+          );
+        }
+        state = state.copyWith(
+          status: WalletCredentialsStatus.loaded,
+          credentials: credentials,
+          mnemonic: null,
+          eoAddress: credentials.address.with0x,
+          errorMessage: null,
+          isDebugOverride: true,
+        );
+        return;
+      }
+
       // Try local cache first
       if (kDebugMode) {
         debugPrint('[WalletCredentials] WalletCredentials: trying local cache...');
@@ -139,6 +174,8 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
           credentials: credentials,
           mnemonic: cachedMnemonic,
           eoAddress: credentials.address.with0x,
+          errorMessage: null,
+          isDebugOverride: false,
         );
         return;
       }
@@ -168,6 +205,8 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
             credentials: credentials,
             mnemonic: mnemonic,
             eoAddress: credentials.address.with0x,
+            errorMessage: null,
+            isDebugOverride: false,
           );
           return;
         }
@@ -202,6 +241,7 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
     state = state.copyWith(
       status: WalletCredentialsStatus.error,
       errorMessage: message,
+      isDebugOverride: false,
     );
   }
 }

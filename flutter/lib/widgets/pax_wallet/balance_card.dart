@@ -11,6 +11,7 @@ import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
+import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/remote_config_constants.dart';
 import 'package:pax/widgets/pax_wallet/address_exchange_row.dart';
@@ -142,6 +143,9 @@ class _PaxWalletBalanceCardState extends ConsumerState<PaxWalletBalanceCard>
   @override
   Widget build(BuildContext context) {
     final nativeCeloBalance = ref.watch(paxWalletProvider).nativeCeloBalance;
+    final walletCreds = ref.watch(walletCredentialsProvider);
+    final debugWalletAddress =
+        walletCreds.isDebugOverride ? walletCreds.eoAddress : null;
     final thresholdCelo = ref.watch(paxWalletConfigProvider).maybeWhen(
       data: (config) {
         final rawThreshold = config[RemoteConfigKeys.autoTopupThreshold];
@@ -241,6 +245,7 @@ class _PaxWalletBalanceCardState extends ConsumerState<PaxWalletBalanceCard>
                           if (widget.address != null)
                             PaxWalletAddressAndExchangeRow(
                               address: widget.address!,
+                              debugWalletAddress: debugWalletAddress,
                               gasBalanceText:
                                   nativeCeloBalance != null
                                       ? _formatNativeCeloBalance(
