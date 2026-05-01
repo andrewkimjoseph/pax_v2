@@ -209,6 +209,7 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
         await _handleBack();
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         headers: [
           AppBar(
             padding: const EdgeInsets.all(8),

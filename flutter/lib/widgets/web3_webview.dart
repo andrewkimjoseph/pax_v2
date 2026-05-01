@@ -12,7 +12,7 @@ import 'package:pax/theming/colors.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
 import 'package:pax/providers/local/wallet_transactions_provider.dart';
 import 'package:pax/services/web3/web3_miniapp_service.dart';
-import 'package:pax/widgets/toast.dart';
+// import 'package:pax/widgets/toast.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:web3dart/web3dart.dart';
 
@@ -254,19 +254,19 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     widget.onTransactionSent?.call(eoAddress);
   }
 
-  void _showWeb3ErrorToast(String message) {
-    if (!mounted) return;
-    showToast(
-      context: context,
-      location: ToastLocation.topCenter,
-      builder:
-          (context, overlay) => Toast(
-            toastColor: PaxColors.deepPurple,
-            text: message,
-            trailingIcon: FontAwesomeIcons.circleExclamation,
-          ),
-    );
-  }
+  // void _showWeb3ErrorToast(String message) {
+  //   if (!mounted) return;
+  //   showToast(
+  //     context: context,
+  //     location: ToastLocation.topCenter,
+  //     builder:
+  //         (context, overlay) => Toast(
+  //           toastColor: PaxColors.deepPurple,
+  //           text: message,
+  //           trailingIcon: FontAwesomeIcons.circleExclamation,
+  //         ),
+  //   );
+  // }
 
   Future<void> _injectWeb3Provider(InAppWebViewController controller) async {
     if (_currentAddress == null ||
@@ -446,9 +446,9 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
                   final errorMessage = rawError?.toString();
                   if (errorMessage != null && errorMessage.isNotEmpty) {
                     if (errorMessage == 'User rejected the request') {
-                      _showWeb3ErrorToast('Transaction request was cancelled.');
+                      // _showWeb3ErrorToast('Transaction request was cancelled.');
                     } else {
-                      _showWeb3ErrorToast(errorMessage);
+                      // _showWeb3ErrorToast(errorMessage);
                     }
                   }
                   try {

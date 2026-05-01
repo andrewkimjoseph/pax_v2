@@ -18,6 +18,7 @@ import 'package:web3dart/web3dart.dart';
 /// This class acts as the "wallet backend" for JavaScript requests coming from
 /// the mini-app WebView bridge.
 class Web3MiniAppService {
+  /// Default public RPC endpoint used when remote config does not supply one.
   static final String _rpcUrl =
       'https://lb.drpc.live/celo/${Env.drpcRpcApiKey}';
 
@@ -29,14 +30,22 @@ class Web3MiniAppService {
        _paxWalletConfig = paxWalletConfig,
        _defaultRpcUrl = rpcUrl ?? _rpcUrl;
 
+  /// Active signing key for all wallet-authorized operations.
   final Credentials _credentials;
+  /// Remote-config payload used to tune chain/rpc behavior.
   final Map<String, dynamic> _paxWalletConfig;
+  /// Constructor-provided fallback RPC URL.
   final String _defaultRpcUrl;
+  /// Effective RPC URL chosen during [initialize].
   String? _resolvedRpcUrl;
 
+  /// Shared HTTP transport reused by all JSON-RPC calls.
   http.Client? _httpClient;
+  /// web3dart facade used for convenience chain/wallet helpers.
   Web3Client? _web3Client;
+  /// Cached account exposed to injected provider.
   String? _currentAddress;
+  /// Cached decimal chain id exposed through provider methods.
   String? _currentChainId;
 
   /// Current EOA exposed to the dApp provider.
@@ -72,6 +81,7 @@ class Web3MiniAppService {
 
   /// Reads `chain_id` from `pax_wallet_config`; defaults to Celo mainnet.
   int _resolveFallbackChainId(Map<String, dynamic> config) {
+    // Remote config can deserialize numbers with varying runtime types.
     final dynamic rawChainId = config[RemoteConfigKeys.chainId];
     if (rawChainId is int) return rawChainId;
     if (rawChainId is num) return rawChainId.toInt();
@@ -81,6 +91,7 @@ class Web3MiniAppService {
 
   /// Reads `rpc_url` from `pax_wallet_config`; defaults to constructor RPC URL.
   String _resolveRpcUrl(Map<String, dynamic> config) {
+    // Debug override always wins to simplify local troubleshooting.
     if (kDebugMode && web3MiniAppDebugRpcUrlOverride.trim().isNotEmpty) {
       return web3MiniAppDebugRpcUrlOverride.trim();
     }
@@ -122,12 +133,14 @@ class Web3MiniAppService {
       switch (method) {
         case 'eth_requestAccounts':
         case 'eth_accounts':
+          // Single-account embedded wallet behavior.
           return {
             'id': request['id'],
             'result': [_currentAddress],
           };
 
         case 'eth_chainId':
+          // EIP-1193 expects chain id in hex quantity format.
           return {
             'id': request['id'],
             'result': '0x${int.parse(_currentChainId!).toRadixString(16)}',
@@ -135,6 +148,7 @@ class Web3MiniAppService {
 
         case 'eth_blockNumber':
         case 'eth_gasPrice':
+          // Pure node reads are forwarded unchanged.
           return _rpcPassthrough(request['id'], method, []);
 
         case 'eth_getBalance':
@@ -145,6 +159,7 @@ class Web3MiniAppService {
           final balance = await _web3Client!.getBalance(address);
           return {
             'id': request['id'],
+            // JS callers expect hex quantities for wei amounts.
             'result': '0x${balance.getInWei.toRadixString(16)}',
           };
 
@@ -200,6 +215,7 @@ class Web3MiniAppService {
               'error': 'Missing transaction parameter',
             };
           }
+          // Signs locally, then broadcasts raw transaction bytes.
           return _handleSendTransaction(
             request['id'],
             Map<String, dynamic>.from(params[0] as Map),
@@ -213,6 +229,7 @@ class Web3MiniAppService {
               'error': 'Missing transaction parameter',
             };
           }
+          // Signs transaction payload only (no broadcast).
           return _handleSignTransaction(
             request['id'],
             Map<String, dynamic>.from(params[0] as Map),
@@ -220,18 +237,22 @@ class Web3MiniAppService {
 
         case 'personal_sign':
         case 'eth_sign':
+          // Message-signing methods that use the currently loaded key.
           return _handleSign(request['id'], params);
 
         case 'eth_signTypedData':
         case 'eth_signTypedData_v4':
-          return {
-            'id': request['id'],
-            'error': 'SignTypedData not fully implemented',
-          };
+          // Structured-data signatures for EIP-712 flows.
+          return _handleSignTypedData(request['id'], params, method);
 
         case 'wallet_switchEthereumChain':
           // Not switching yet; we only expose Celo mainnet currently.
           return {'id': request['id'], 'result': null};
+
+        case 'wallet_getCapabilities':
+        case 'getCapabilities':
+          // Capability discovery call used by some wallet SDKs.
+          return _handleGetCapabilities(request['id']);
 
         case 'net_version':
           return {'id': request['id'], 'result': _currentChainId};
@@ -254,6 +275,16 @@ class Web3MiniAppService {
     }
   }
 
+  Future<Map<String, dynamic>> _handleGetCapabilities(dynamic id) async {
+    final chainId = _currentChainId ?? '42220';
+    final chainIdHex = '0x${int.parse(chainId).toRadixString(16)}';
+    // Basic EIP-1193 capability surface; extensions can be added later.
+    return {
+      'id': id,
+      'result': {chainIdHex: <String, dynamic>{}},
+    };
+  }
+
   /// Forwards simple RPC methods to the upstream node.
   ///
   /// This keeps method support broad without re-implementing every RPC.
@@ -262,6 +293,7 @@ class Web3MiniAppService {
     String method,
     List<dynamic> params,
   ) async {
+    // Wrapper `id` is managed by caller response; inner node id is arbitrary.
     final rpcRequest = {
       'jsonrpc': '2.0',
       'method': method,
@@ -275,6 +307,7 @@ class Web3MiniAppService {
     );
     final responseData = jsonDecode(response.body) as Map<String, dynamic>;
     if (responseData.containsKey('error')) {
+      // Keep original node error object so UI/dApp can inspect code/data.
       return {'id': id, 'error': responseData['error']};
     }
     return {'id': id, 'result': responseData['result']};
@@ -335,6 +368,15 @@ class Web3MiniAppService {
     void Function(String eoAddress)? onTransactionSent,
   }) async {
     try {
+      // High-level flow for a dApp "send transaction" request:
+      // 1) Resolve nonce/value/data/gas + fees.
+      // 2) Validate the user can actually afford the tx envelope.
+      // 3) Build and sign a type-2 transaction locally.
+      // 4) Submit via `eth_sendRawTransaction`.
+      //
+      // We do this manually (instead of web3dart default helpers) so behavior is
+      // deterministic across different dApp payload styles.
+      // Use pending nonce so parallel approvals don't reuse mined-only nonce.
       final nonce = await _web3Client!.getTransactionCount(
         _credentials.address,
         atBlock: const BlockNum.pending(),
@@ -355,6 +397,7 @@ class Web3MiniAppService {
           BigInt.from(2000000000); // 2 gwei fallback
 
       // Query current block base fee so maxFee never falls below protocol floor.
+      // Example: if baseFee = 3 gwei and tip = 2 gwei, maxFee must be >= 5 gwei.
       BigInt baseFeeWei = BigInt.zero;
       try {
         final latestBlock = await _rpcPassthrough(1, 'eth_getBlockByNumber', [
@@ -388,12 +431,14 @@ class Web3MiniAppService {
 
       int gasLimit = 100000;
       if (txParams['gas'] != null) {
+        // Respect explicit dApp-provided gas limit.
         gasLimit = int.parse(
           (txParams['gas'] as String).replaceFirst('0x', ''),
           radix: 16,
         );
       } else {
         try {
+          // Otherwise, ask RPC node for an estimate against latest state.
           final estimateParams = <String, dynamic>{
             'from': _credentials.address.with0x,
             'to': txParams['to'],
@@ -418,6 +463,11 @@ class Web3MiniAppService {
 
       // Use a realistic live gas price for affordability checks (clamped by
       // maxFeePerGas). This avoids false negatives from max-fee ceiling math.
+      //
+      // Why both checks:
+      // - "estimatedTotalCostWei" approximates what user will likely pay.
+      // - "maxEnvelopeCostWei" is what node may require the sender to afford
+      //   up front because maxFeePerGas is a ceiling.
       final likelyEffectiveGasPriceWei = _minBigInt(
         maxFeePerGasWei,
         _maxBigInt(networkGasPriceWei, requestedPriorityWei),
@@ -432,7 +482,10 @@ class Web3MiniAppService {
       final spendableForGasWei = celoBalance.getInWei - valueWei;
       if (spendableForGasWei > BigInt.zero && gasLimitWei > BigInt.zero) {
         final affordableMaxFeePerGasWei = spendableForGasWei ~/ gasLimitWei;
-        final protocolMinMaxFeeWei = _maxBigInt(minRequiredWei, requestedPriorityWei);
+        final protocolMinMaxFeeWei = _maxBigInt(
+          minRequiredWei,
+          requestedPriorityWei,
+        );
         if (finalMaxFeePerGasWei > affordableMaxFeePerGasWei &&
             affordableMaxFeePerGasWei >= protocolMinMaxFeeWei) {
           finalMaxFeePerGasWei = affordableMaxFeePerGasWei;
@@ -445,13 +498,16 @@ class Web3MiniAppService {
         }
       }
 
-      final estimatedGasFeeWei =
-          likelyEffectiveGasPriceWei * gasLimitWei;
+      final estimatedGasFeeWei = likelyEffectiveGasPriceWei * gasLimitWei;
       final estimatedTotalCostWei = valueWei + estimatedGasFeeWei;
-      final maxEnvelopeCostWei = valueWei + (finalMaxFeePerGasWei * gasLimitWei);
+      final maxEnvelopeCostWei =
+          valueWei + (finalMaxFeePerGasWei * gasLimitWei);
       if (celoBalance.getInWei < estimatedTotalCostWei ||
           celoBalance.getInWei < maxEnvelopeCostWei) {
-        final requiredWei = _maxBigInt(estimatedTotalCostWei, maxEnvelopeCostWei);
+        final requiredWei = _maxBigInt(
+          estimatedTotalCostWei,
+          maxEnvelopeCostWei,
+        );
         final shortfallWei = requiredWei - celoBalance.getInWei;
         final envelopeGasWei = finalMaxFeePerGasWei * gasLimitWei;
         if (kDebugMode) {
@@ -496,6 +552,7 @@ class Web3MiniAppService {
       );
 
       final txHash = await _sendRawTransaction(signedTx);
+      // Bubble success to UI so it can refresh balances/history.
       onTransactionSent?.call(_credentials.address.with0x);
       return {'id': id, 'result': txHash};
     } catch (e) {
@@ -512,6 +569,7 @@ class Web3MiniAppService {
     Map<String, dynamic> txParams,
   ) async {
     try {
+      // Build unsigned tx object from incoming JSON-RPC payload.
       final transaction = Transaction(
         to: EthereumAddress.fromHex(txParams['to'] as String),
         from: _credentials.address,
@@ -532,6 +590,7 @@ class Web3MiniAppService {
         _credentials,
         transaction,
       );
+      // Return signed payload only; caller chooses where to broadcast.
       return {'id': id, 'result': bytesToHex(signed, include0x: true)};
     } catch (e) {
       return {'id': id, 'error': e.toString()};
@@ -541,6 +600,7 @@ class Web3MiniAppService {
   /// Handles personal-sign style message signatures.
   Future<Map<String, dynamic>> _handleSign(dynamic id, List params) async {
     try {
+      // personal_sign payload is expected to be hex bytes.
       final message = params[0] as String;
       final messageBytes = Uint8List.fromList(hexToBytes(message));
       final signature = (_credentials as EthPrivateKey)
@@ -549,6 +609,290 @@ class Web3MiniAppService {
       return {'id': id, 'result': signatureHex};
     } catch (e) {
       return {'id': id, 'error': e.toString()};
+    }
+  }
+
+  /// Handles EIP-712 typed-data signatures (eth_signTypedData / eth_signTypedData_v4).
+  ///
+  /// Implements the full EIP-712 encoding:
+  ///   sign( keccak256( 0x1901 ‖ domainSeparator ‖ hashStruct(message) ) )
+  ///
+  /// In plain words: we do NOT sign the raw JSON string. We transform the typed
+  /// data into a canonical binary digest first, then sign that digest.
+  Future<Map<String, dynamic>> _handleSignTypedData(
+    dynamic id,
+    List params,
+    String method,
+  ) async {
+    try {
+      if (params.length < 2) {
+        return {
+          'id': id,
+          'error':
+              '$method requires [address, typedData] or [typedData, address].',
+        };
+      }
+
+      // Normalise param order: MetaMask sends [address, typedDataString],
+      // some dApps send [typedData, address].
+      final first = params[0];
+      final second = params[1];
+      final firstString = first?.toString() ?? '';
+      final secondString = second?.toString() ?? '';
+      final addressRe = RegExp(r'^0x[a-fA-F0-9]{40}$');
+      final firstIsAddress = addressRe.hasMatch(firstString);
+
+      final signerAddress = firstIsAddress ? firstString : secondString;
+      if (signerAddress.toLowerCase() !=
+          _credentials.address.with0x.toLowerCase()) {
+        return {
+          'id': id,
+          'error':
+              'Signer mismatch: requested $signerAddress, '
+              'wallet is ${_credentials.address.with0x}.',
+        };
+      }
+
+      final typedDataRaw = firstIsAddress ? second : first;
+      final Map<String, dynamic> typedData;
+      try {
+        if (typedDataRaw is Map) {
+          typedData = Map<String, dynamic>.from(typedDataRaw);
+        } else {
+          typedData =
+              jsonDecode(typedDataRaw.toString()) as Map<String, dynamic>;
+        }
+      } catch (_) {
+        return {'id': id, 'error': 'Could not parse typed data JSON.'};
+      }
+
+      final digest = _eip712Digest(typedData);
+
+      // The returned signature shape is 65 bytes: r (32) + s (32) + v (1).
+      // This is what most JS wallets return for signTypedData.
+      final sig = sign(digest, (_credentials as EthPrivateKey).privateKey);
+      final r = _padTo32(_encodeBigInt(sig.r));
+      final s = _padTo32(_encodeBigInt(sig.s));
+      // EIP-712 uses 27/28 for v (legacy parity), same as personal_sign.
+      final v = Uint8List.fromList([sig.v]);
+      final signature = Uint8List.fromList([...r, ...s, ...v]);
+
+      return {'id': id, 'result': bytesToHex(signature, include0x: true)};
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[Web3MiniAppService] signTypedData error: $e');
+      }
+      return {'id': id, 'error': e.toString()};
+    }
+  }
+
+  /// Produces the 32-byte EIP-712 signing digest:
+  ///   keccak256( 0x1901 ‖ domainSeparator ‖ hashStruct(primaryType) )
+  Uint8List _eip712Digest(Map<String, dynamic> typedData) {
+    // Extract typed-data envelope fields as defined by EIP-712.
+    final types = typedData['types'] as Map<String, dynamic>;
+    final domain = typedData['domain'] as Map<String, dynamic>;
+    final primaryType = typedData['primaryType'] as String;
+    final message = typedData['message'] as Map<String, dynamic>;
+
+    // Normalize the type map so every downstream helper works with one shape:
+    //   Map<String, List<Map<String, dynamic>>>
+    final allTypes = types.map(
+      (k, v) => MapEntry(k, (v as List).cast<Map<String, dynamic>>()),
+    );
+
+    final domainSeparator = _hashStruct('EIP712Domain', domain, allTypes);
+    final messageHash = _hashStruct(primaryType, message, allTypes);
+
+    final payload = Uint8List(2 + 32 + 32);
+    payload[0] = 0x19;
+    payload[1] = 0x01;
+    payload.setRange(2, 34, domainSeparator);
+    payload.setRange(34, 66, messageHash);
+    return keccak256(payload);
+  }
+
+  /// keccak256( typeHash ‖ encodeData(typeName, value, types) )
+  Uint8List _hashStruct(
+    String typeName,
+    Map<String, dynamic> value,
+    Map<String, List<Map<String, dynamic>>> types,
+  ) {
+    final typeHash = _typeHash(typeName, types);
+    final encoded = _encodeData(typeName, value, types);
+    final payload = Uint8List(32 + encoded.length);
+    payload.setRange(0, 32, typeHash);
+    payload.setRange(32, payload.length, encoded);
+    return keccak256(payload);
+  }
+
+  /// keccak256 of the canonical type string, e.g.
+  ///   "Mail(address from,address to,string contents)"
+  Uint8List _typeHash(
+    String typeName,
+    Map<String, List<Map<String, dynamic>>> types,
+  ) {
+    final typeString = _encodeType(typeName, types);
+    return keccak256(Uint8List.fromList(utf8.encode(typeString)));
+  }
+
+  /// Builds the canonical type string including referenced struct types.
+  String _encodeType(
+    String typeName,
+    Map<String, List<Map<String, dynamic>>> types,
+  ) {
+    final fields = types[typeName] ?? [];
+    // Collect referenced struct types (sorted, appended after primary).
+    final deps = <String>{};
+    for (final f in fields) {
+      final baseType = _baseType(f['type'] as String);
+      if (types.containsKey(baseType) && baseType != typeName) {
+        deps.add(baseType);
+      }
+    }
+    final sortedDeps = deps.toList()..sort();
+
+    String buildOne(String name) {
+      final fs = types[name] ?? [];
+      final params = fs.map((f) => '${f['type']} ${f['name']}').join(',');
+      return '$name($params)';
+    }
+
+    return ([typeName, ...sortedDeps]).map(buildOne).join('');
+  }
+
+  /// ABI-encodes the fields of a struct value according to EIP-712 rules.
+  Uint8List _encodeData(
+    String typeName,
+    Map<String, dynamic> value,
+    Map<String, List<Map<String, dynamic>>> types,
+  ) {
+    final fields = types[typeName] ?? [];
+    final chunks = <Uint8List>[];
+
+    for (final field in fields) {
+      final name = field['name'] as String;
+      final type = field['type'] as String;
+      final fieldValue = value[name];
+      chunks.add(_encodeField(type, fieldValue, types));
+    }
+
+    // Each field encodes to one 32-byte word; concatenate in declaration order.
+    final result = Uint8List(chunks.length * 32);
+    for (var i = 0; i < chunks.length; i++) {
+      result.setRange(i * 32, (i + 1) * 32, chunks[i]);
+    }
+    return result;
+  }
+
+  /// Encodes a single field value to a 32-byte word per EIP-712.
+  Uint8List _encodeField(
+    String type,
+    dynamic value,
+    Map<String, List<Map<String, dynamic>>> types,
+  ) {
+    // For newcomers:
+    // - Static scalar types (uint256, address, bool, bytes32) become one 32-byte word.
+    // - Dynamic types (string, bytes, arrays, structs) are represented by hashes.
+    // This mirrors EIP-712 / ABI rules and makes signatures deterministic.
+
+    // Struct reference → recursive hashStruct.
+    final baseType = _baseType(type);
+    if (types.containsKey(baseType)) {
+      if (type.endsWith(']')) {
+        // Array of structs → keccak256 of concatenated hashStructs.
+        final list = value as List;
+        final hashes =
+            list
+                .map(
+                  (item) => _hashStruct(
+                    baseType,
+                    Map<String, dynamic>.from(item as Map),
+                    types,
+                  ),
+                )
+                .expand((b) => b)
+                .toList();
+        return keccak256(Uint8List.fromList(hashes));
+      }
+      return _hashStruct(
+        baseType,
+        Map<String, dynamic>.from(value as Map),
+        types,
+      );
+    }
+
+    // Dynamic types → keccak256 of content.
+    if (type == 'string') {
+      return keccak256(
+        Uint8List.fromList(utf8.encode(value?.toString() ?? '')),
+      );
+    }
+    if (type == 'bytes') {
+      final raw = _hexOrUtf8Bytes(value);
+      return keccak256(raw);
+    }
+
+    // bytesN values are right-padded to fill a 32-byte slot.
+    if (type.startsWith('bytes')) {
+      final raw = _hexOrUtf8Bytes(value);
+      final padded = Uint8List(32);
+      padded.setRange(0, raw.length.clamp(0, 32), raw);
+      return padded;
+    }
+
+    // Boolean.
+    if (type == 'bool') {
+      final padded = Uint8List(32);
+      padded[31] = (value == true || value == 1 || value == '1') ? 1 : 0;
+      return padded;
+    }
+
+    // address → 20 bytes right-aligned in 32.
+    if (type == 'address') {
+      final hex = value.toString().replaceFirst('0x', '');
+      final addrBytes = hexToBytes(hex);
+      final padded = Uint8List(32);
+      padded.setRange(12, 32, addrBytes);
+      return padded;
+    }
+
+    // uintN / intN -> big-endian integer padded to 32-byte word.
+    if (type.startsWith('uint') || type.startsWith('int')) {
+      BigInt bigVal;
+      if (value is BigInt) {
+        bigVal = value;
+      } else if (value is int) {
+        bigVal = BigInt.from(value);
+      } else {
+        final s = value.toString().trim();
+        bigVal =
+            s.startsWith('0x')
+                ? BigInt.parse(s.substring(2), radix: 16)
+                : BigInt.parse(s);
+      }
+      return _padTo32(_encodeBigInt(bigVal));
+    }
+
+    // Fallback: hash unknown types as raw bytes for deterministic behavior.
+    final raw = _hexOrUtf8Bytes(value);
+    return keccak256(raw);
+  }
+
+  /// Strips the array suffix to get the base type name, e.g. "Foo[]" → "Foo".
+  String _baseType(String type) => type.replaceAll(RegExp(r'\[.*\]$'), '');
+
+  /// Converts a hex string or arbitrary value to bytes.
+  Uint8List _hexOrUtf8Bytes(dynamic value) {
+    if (value == null) return Uint8List(0);
+    final s = value.toString().trim();
+    if (s.startsWith('0x')) {
+      return Uint8List.fromList(hexToBytes(s.substring(2)));
+    }
+    try {
+      return Uint8List.fromList(hexToBytes(s));
+    } catch (_) {
+      return Uint8List.fromList(utf8.encode(s));
     }
   }
 
@@ -566,6 +910,14 @@ class Web3MiniAppService {
     required int gasLimit,
     required Uint8List data,
   }) async {
+    // Another plain-language summary:
+    // - Build unsigned tx fields.
+    // - RLP-encode those fields.
+    // - Prefix type byte 0x02 and hash.
+    // - Sign hash with private key.
+    // - Append signature fields and RLP again to produce final raw tx.
+
+    // Unsigned tx payload for type-2 transactions (without signature fields).
     final List<dynamic> txList = [
       _encodeInt(chainId),
       _encodeInt(nonce),
@@ -579,6 +931,7 @@ class Web3MiniAppService {
     ];
 
     final encoded = _rlpEncode(txList);
+    // Type byte 0x02 is part of the signed payload per EIP-1559.
     final signingPayload = Uint8List.fromList([0x02, ...encoded]);
     final hash = keccak256(signingPayload);
 
@@ -606,9 +959,11 @@ class Web3MiniAppService {
     ];
 
     final signedEncoded = _rlpEncode(signedList);
+    // Final raw tx bytes are [typeByte + signedRlp].
     return Uint8List.fromList([0x02, ...signedEncoded]);
   }
 
+  /// Left-pad or trim bytes to exactly 32 bytes.
   Uint8List _padTo32(Uint8List bytes) {
     if (bytes.length == 32) return bytes;
     if (bytes.length > 32) return bytes.sublist(bytes.length - 32);
@@ -617,6 +972,7 @@ class Web3MiniAppService {
     return padded;
   }
 
+  /// Encodes [int] as minimal big-endian byte array.
   Uint8List _encodeInt(int value) {
     if (value == 0) return Uint8List(0);
     final hex = value.toRadixString(16);
@@ -624,6 +980,7 @@ class Web3MiniAppService {
     return Uint8List.fromList(hexToBytes(evenHex));
   }
 
+  /// Encodes [BigInt] as minimal big-endian byte array.
   Uint8List _encodeBigInt(BigInt value) {
     if (value == BigInt.zero) return Uint8List(0);
     final hex = value.toRadixString(16);
@@ -631,6 +988,7 @@ class Web3MiniAppService {
     return Uint8List.fromList(hexToBytes(evenHex));
   }
 
+  /// RLP-encodes a list payload.
   Uint8List _rlpEncode(List<dynamic> items) {
     final encoded = items.map(_rlpItem).toList();
     final payload = encoded.fold<List<int>>([], (a, b) => [...a, ...b]);
@@ -640,6 +998,7 @@ class Web3MiniAppService {
     ]);
   }
 
+  /// RLP-encodes one item (bytes or nested list).
   List<int> _rlpItem(dynamic item) {
     if (item is Uint8List || item is List<int>) {
       final bytes =
@@ -655,6 +1014,7 @@ class Web3MiniAppService {
     throw ArgumentError('Unsupported RLP type: ${item.runtimeType}');
   }
 
+  /// Computes RLP length prefix for strings/lists.
   List<int> _rlpLength(int length, int offset) {
     if (length < 56) return [offset + length];
     final hexLen = length.toRadixString(16);
@@ -663,12 +1023,16 @@ class Web3MiniAppService {
     return [offset + 55 + lenBytes.length, ...lenBytes];
   }
 
+  /// Returns the larger value.
   BigInt _maxBigInt(BigInt a, BigInt b) => a >= b ? a : b;
 
+  /// Returns the smaller value.
   BigInt _minBigInt(BigInt a, BigInt b) => a <= b ? a : b;
 
+  /// Converts a wei amount to RPC hex quantity format.
   String _toRpcHex(BigInt value) => '0x${value.toRadixString(16)}';
 
+  /// Parses a 0x-prefixed (or plain) hex number into BigInt.
   BigInt? _parseHexBigInt(dynamic raw) {
     if (raw == null) return null;
     final normalized = raw.toString().trim().toLowerCase();
