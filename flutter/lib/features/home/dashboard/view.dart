@@ -17,6 +17,7 @@ import 'package:pax/widgets/current_balance_card.dart';
 import 'package:pax/widgets/face_verification_prompt_banner.dart';
 import 'package:pax/widgets/profile_completion_prompt_banner.dart';
 import 'package:pax/widgets/published_reports_card.dart';
+import 'package:pax/widgets/engagement_rewards_card.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:pax/widgets/socials/social_links_carousel.dart'
     show SocialLinksRow;
@@ -84,6 +85,8 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                   loading: () => const SizedBox.shrink(),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
+
+            const EngagementRewardsCard(),
 
             const SocialLinksRow().withPadding(bottom: 8),
 
