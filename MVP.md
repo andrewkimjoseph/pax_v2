@@ -497,7 +497,7 @@ Stores the V2 user's EOA and smart account addresses. Backed by client-side encr
 **Features:**
 - List of miniapps from Remote Config (`miniapps_config`: `are_miniapps_available` + `miniapps` array with id, name, title, imageURI, url, etc.)
 - Optional "Open by URL" (custom dapp) when `is_custom_app_access_feature_available` is true — dialog to paste URL, then open in miniapp WebView
-- Tapping a miniapp opens `/miniapp-webview` with the app URL; WebView can use `window.PaxWallet` (ethereum provider) for dapp interactions
+- Tapping a miniapp opens `/miniapp-webview` with the app URL; WebView can use `window.paxWallet` (ethereum provider) for dapp interactions
 - Converter WebView route (`/webview-converter`) for conversion flows
 
 ---
