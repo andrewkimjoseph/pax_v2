@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/providers/account/account_type_provider.dart';
+import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
@@ -21,7 +22,7 @@ class MiniAppWebView extends ConsumerStatefulWidget {
   /// App bar title; defaults to 'Apps' when null.
   final String? title;
 
-  String get _appBarTitle => title ?? 'Apps';
+  String get _appBarTitle => title ?? 'Mini App';
 
   @override
   ConsumerState<MiniAppWebView> createState() => _MiniAppWebView();
@@ -57,6 +58,7 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
     final walletState = ref.watch(walletCredentialsProvider);
     final paxWallet = ref.watch(paxWalletProvider).wallet;
     final walletEoAddress = paxWallet?.eoAddress;
+    final participantId = ref.watch(participantProvider).participant?.id;
 
     final isWaitingForWallet =
         walletState.status == WalletCredentialsStatus.loading ||
@@ -86,6 +88,7 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
         !_mismatchRecoveryTriggered) {
       _mismatchRecoveryTriggered = true;
       WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
         ref.read(walletCredentialsProvider.notifier).clearCredentials();
         _restoreTriggered = true;
         final container = ProviderScope.containerOf(context);
@@ -110,11 +113,17 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
                   ),
                 ),
                 const Spacer(),
+
                 Text(
                   widget._appBarTitle,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 20, color: PaxColors.deepPurple),
                 ).withPadding(right: 16),
+                FaIcon(
+                  FontAwesomeIcons.puzzlePiece,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
                 const Spacer(),
               ],
             ),
@@ -184,6 +193,7 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
                           .read(walletCredentialsProvider.notifier)
                           .clearCredentials();
                       WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
                         if (ref.read(accountTypeProvider) == AccountType.v2) {
                           final container = ProviderScope.containerOf(context);
                           restoreWalletIfNeeded(container, silentOnly: false);
@@ -201,6 +211,19 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
     }
 
     final credentials = walletState.credentials!;
+
+    final uri = Uri.parse(widget.url);
+    final uriWithParticipant =
+        (participantId != null && participantId.isNotEmpty)
+            ? uri
+                .replace(
+                  queryParameters: {
+                    ...uri.queryParameters,
+                    'participantId': participantId,
+                  },
+                )
+                .toString()
+            : widget.url;
 
     return PopScope(
       canPop: false,
@@ -237,7 +260,7 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
           Divider(color: PaxColors.lightGrey),
         ],
         child: Web3WebView(
-          url: widget.url,
+          url: uriWithParticipant,
           credentials: credentials,
           onControllerCreated:
               (controller) => setState(() => _webViewController = controller),
