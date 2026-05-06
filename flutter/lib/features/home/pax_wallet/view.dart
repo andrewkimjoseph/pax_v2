@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:pax/features/home/pax_wallet/miniapps/view.dart';
 import 'package:pax/features/home/pax_wallet/overview/view.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
+import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
@@ -34,7 +35,21 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
               ref.read(analyticsProvider).customDappOpened({
                 'custom_dapp_url': url,
               });
-              context.push(Routes.miniappWebView, extra: url);
+              final participantId =
+                  ref.read(participantProvider).participant?.id;
+              final uri = Uri.parse(url);
+              final finalUrl =
+                  (participantId != null && participantId.isNotEmpty)
+                      ? uri
+                          .replace(
+                            queryParameters: {
+                              ...uri.queryParameters,
+                              'participantId': participantId,
+                            },
+                          )
+                          .toString()
+                      : url;
+              context.push(Routes.miniappWebView, extra: finalUrl);
             },
             onCancel: () => dialogContext.pop(),
           ),
