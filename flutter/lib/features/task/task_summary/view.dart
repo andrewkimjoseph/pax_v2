@@ -384,7 +384,11 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
             children: [
               InkWell(
                 onTap: () {
-                  context.pop();
+                  if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go(Routes.home);
+                  }
                 },
                 child: FaIcon(
                   FontAwesomeIcons.arrowLeftLong,
