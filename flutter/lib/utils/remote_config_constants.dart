@@ -63,6 +63,12 @@ class RemoteConfigKeys {
   static const String isCurrentBalanceCardAvailable =
       'is_current_balance_card_available';
 
+  /// Controls whether the engagement rewards card is shown.
+  /// When false, the card is hidden (unless in debug mode).
+  /// Key: 'is_engagement_reward_card_available'
+  static const String isEngagementRewardCardAvailable =
+      'is_engagement_reward_card_available';
+
   // App version config keys
   /// The current latest version of the app available in stores.
   /// Used to inform users about available updates.
@@ -161,6 +167,7 @@ class RemoteConfigKeys {
   static const String goodWalletInviteLink = 'goodwallet_invite_link';
   static const String goodWalletInviteCode = 'goodwallet_invite_code';
   static const String goodPaxAppLink = 'good_pax_app_link';
+  static const String theGoodPaxAppEngage = 'the_good_pax_app_engage';
   static const String drpcReferralLink = 'drpc_referral_link';
   static const String paxAppLinkFromSite = 'pax_app_link_from_site';
   static const String esiRegistrationLink = 'esi_registration_link';
