@@ -10,6 +10,7 @@ import 'package:pax/providers/db/participant/participant_provider.dart';
 // import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/widgets/account/account_option_card.dart';
 import 'package:pax/widgets/custom_avatar.dart';
+import 'package:pax/widgets/engagement_rewards_card.dart';
 import 'package:pax/widgets/logout/logout_drawer.dart';
 import 'package:pax/widgets/toast.dart';
 import 'package:pax/widgets/referral_program_card.dart';
@@ -94,6 +95,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
       child: SingleChildScrollView(
         child: Column(
           children: [
+            const EngagementRewardsCard(),
             const ReferralProgramCard(),
 
             Container(
