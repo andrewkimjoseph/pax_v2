@@ -104,6 +104,7 @@ class RemoteConfigService {
           RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
           RemoteConfigKeys.isVoteForCanvassingAvailable: false,
           RemoteConfigKeys.isCurrentBalanceCardAvailable: false,
+          RemoteConfigKeys.isEngagementRewardCardAvailable: false,
         }),
         RemoteConfigKeys.miniappsConfig: await _loadMiniappsConfigDefault(),
         RemoteConfigKeys.goodcollectiveConfig: json.encode({
@@ -119,7 +120,9 @@ class RemoteConfigService {
           RemoteConfigKeys.chainId: 42220,
           RemoteConfigKeys.rpcUrl: 'https://forno.celo.org',
         }),
-        RemoteConfigKeys.linksConfig: json.encode(LinksConfig.defaults().toJson()),
+        RemoteConfigKeys.linksConfig: json.encode(
+          LinksConfig.defaults().toJson(),
+        ),
       });
 
       try {
@@ -388,6 +391,7 @@ class RemoteConfigService {
           RemoteConfigKeys.isV2ReferralFeatureAvailable: false,
           RemoteConfigKeys.isVoteForCanvassingAvailable: false,
           RemoteConfigKeys.isCurrentBalanceCardAvailable: false,
+          RemoteConfigKeys.isEngagementRewardCardAvailable: false,
         };
       }
 
@@ -423,6 +427,9 @@ class RemoteConfigService {
             configMap[RemoteConfigKeys.isVoteForCanvassingAvailable] ?? false,
         RemoteConfigKeys.isCurrentBalanceCardAvailable:
             configMap[RemoteConfigKeys.isCurrentBalanceCardAvailable] ?? false,
+        RemoteConfigKeys.isEngagementRewardCardAvailable:
+            configMap[RemoteConfigKeys.isEngagementRewardCardAvailable] ??
+            false,
       };
     } catch (e) {
       if (kDebugMode) {
@@ -598,7 +605,7 @@ class RemoteConfigService {
 
     final defaults = <String, dynamic>{
       RemoteConfigKeys.paxWalletVersion: '1',
-      RemoteConfigKeys.autoTopupThreshold: 0.01875,
+      RemoteConfigKeys.autoTopupThreshold: 0.075,
       RemoteConfigKeys.chainId: 42220,
       RemoteConfigKeys.rpcUrl: 'https://forno.celo.org',
     };
@@ -650,7 +657,9 @@ class RemoteConfigService {
     try {
       final jsonString = _remoteConfig.getString(RemoteConfigKeys.linksConfig);
       if (kDebugMode) {
-        debugPrint('Remote Config Service: Raw links config string: $jsonString');
+        debugPrint(
+          'Remote Config Service: Raw links config string: $jsonString',
+        );
       }
 
       if (jsonString.isEmpty) {
