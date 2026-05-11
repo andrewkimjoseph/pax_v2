@@ -9,6 +9,8 @@ import 'package:wallet/wallet.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:http/http.dart' as http;
 import 'package:pax/env/env.dart';
+import 'package:pax/models/remote_config/links_config.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -30,9 +32,6 @@ class FaceVerificationWebView extends ConsumerStatefulWidget {
 
 class FaceVerificationWebViewState
     extends ConsumerState<FaceVerificationWebView> {
-  static const String _verificationUrl =
-      'https://thegoodpax.app/verify-identity';
-
   late Web3Client _web3Client;
   late Credentials _credentials;
   String? _currentAddress;
@@ -477,8 +476,14 @@ class FaceVerificationWebViewState
       return const Center(child: CircularProgressIndicator());
     }
 
+    final linksConfig = ref
+        .watch(linksConfigProvider)
+        .maybeWhen(data: (value) => value, orElse: LinksConfig.defaults);
+
     return InAppWebView(
-      initialUrlRequest: URLRequest(url: WebUri(_verificationUrl)),
+      initialUrlRequest: URLRequest(
+        url: WebUri(linksConfig.faceVerificationLink),
+      ),
       initialSettings: InAppWebViewSettings(useHybridComposition: false),
       initialUserScripts: UnmodifiableListView<UserScript>([
         UserScript(

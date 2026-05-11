@@ -9,7 +9,8 @@ class LinksConfig {
   final String goodWalletInviteLink;
   final String goodWalletInviteCode;
   final String goodPaxAppLink;
-  final String theGoodPaxAppEngageLink;
+  final String engagementRewardsLink;
+  final String faceVerificationLink;
   final String drpcReferralLink;
   final String paxAppLinkFromSite;
   final String esiRegistrationLink;
@@ -22,7 +23,8 @@ class LinksConfig {
     required this.goodWalletInviteLink,
     required this.goodWalletInviteCode,
     required this.goodPaxAppLink,
-    required this.theGoodPaxAppEngageLink,
+    required this.engagementRewardsLink,
+    required this.faceVerificationLink,
     required this.drpcReferralLink,
     required this.paxAppLinkFromSite,
     required this.esiRegistrationLink,
@@ -37,7 +39,8 @@ class LinksConfig {
       goodWalletInviteLink: secret_constants.goodWalletInviteLink,
       goodWalletInviteCode: secret_constants.goodWalletInviteCode,
       goodPaxAppLink: secret_constants.goodPaxAppLink,
-      theGoodPaxAppEngageLink: secret_constants.theGoodPaxAppEngageLink,
+      engagementRewardsLink: secret_constants.engagementRewardsLink,
+      faceVerificationLink: secret_constants.faceVerificationLink,
       drpcReferralLink: secret_constants.drpcReferralLink,
       paxAppLinkFromSite: secret_constants.paxAppLinkFromSite,
       esiRegistrationLink: secret_constants.esiRegistrationLink,
@@ -68,9 +71,12 @@ class LinksConfig {
       goodPaxAppLink:
           _readString(json[RemoteConfigKeys.goodPaxAppLink]) ??
           defaults.goodPaxAppLink,
-      theGoodPaxAppEngageLink:
-          _readString(json[RemoteConfigKeys.theGoodPaxAppEngage]) ??
-          defaults.theGoodPaxAppEngageLink,
+      engagementRewardsLink:
+          _readString(json[RemoteConfigKeys.engagementRewardsLink]) ??
+          defaults.engagementRewardsLink,
+      faceVerificationLink:
+          _readString(json[RemoteConfigKeys.faceVerificationLink]) ??
+          defaults.faceVerificationLink,
       drpcReferralLink:
           _readString(json[RemoteConfigKeys.drpcReferralLink]) ??
           defaults.drpcReferralLink,
@@ -92,7 +98,8 @@ class LinksConfig {
       RemoteConfigKeys.goodWalletInviteLink: goodWalletInviteLink,
       RemoteConfigKeys.goodWalletInviteCode: goodWalletInviteCode,
       RemoteConfigKeys.goodPaxAppLink: goodPaxAppLink,
-      RemoteConfigKeys.theGoodPaxAppEngage: theGoodPaxAppEngageLink,
+      RemoteConfigKeys.engagementRewardsLink: engagementRewardsLink,
+      RemoteConfigKeys.faceVerificationLink: faceVerificationLink,
       RemoteConfigKeys.drpcReferralLink: drpcReferralLink,
       RemoteConfigKeys.paxAppLinkFromSite: paxAppLinkFromSite,
       RemoteConfigKeys.esiRegistrationLink: esiRegistrationLink,

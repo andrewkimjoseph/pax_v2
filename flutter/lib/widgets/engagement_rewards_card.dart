@@ -35,7 +35,7 @@ class EngagementRewardsCard extends ConsumerWidget {
 
     if (!isEngagementCardAvailable) return const SizedBox.shrink();
 
-    final uri = Uri.parse(linksConfig.theGoodPaxAppEngageLink);
+    final uri = Uri.parse(linksConfig.engagementRewardsLink);
     final engageUrl =
         (participantId != null && participantId.isNotEmpty)
             ? uri

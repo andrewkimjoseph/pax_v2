@@ -167,7 +167,8 @@ class RemoteConfigKeys {
   static const String goodWalletInviteLink = 'goodwallet_invite_link';
   static const String goodWalletInviteCode = 'goodwallet_invite_code';
   static const String goodPaxAppLink = 'good_pax_app_link';
-  static const String theGoodPaxAppEngage = 'the_good_pax_app_engage';
+  static const String engagementRewardsLink = 'engagement_rewards_link';
+  static const String faceVerificationLink = 'face_verification_link';
   static const String drpcReferralLink = 'drpc_referral_link';
   static const String paxAppLinkFromSite = 'pax_app_link_from_site';
   static const String esiRegistrationLink = 'esi_registration_link';

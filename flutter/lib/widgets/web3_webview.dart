@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -108,10 +109,10 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
     switch (method) {
       case 'eth_sendTransaction':
       case 'eth_signTransaction':
-        return 'Approve transaction';
+        return 'Sign transaction';
       case 'personal_sign':
       case 'eth_sign':
-        return 'Approve message';
+        return 'Sign message';
       default:
         return 'Confirm';
     }
@@ -125,17 +126,43 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
         return 'This app wants to prepare a transaction from your wallet. Only approve if you trust this app.';
       case 'personal_sign':
       case 'eth_sign':
-        return 'This app wants you to approve a message. This proves you own this wallet. Only approve if you trust this app.';
+        return 'This app wants you to sign a message. This proves you own this wallet. Only sign if you trust this app.';
       default:
-        return 'Only approve if you trust this app.';
+        return 'Only sign if you trust this app.';
     }
   }
 
-  Future<bool?> _showWeb3ConfirmationDialog(String method) {
+  String? _decodeHexMessage(String? value) {
+    if (value == null || value.isEmpty) return null;
+    if (!value.startsWith('0x')) return value;
+    try {
+      final bytes = Uint8List.fromList(hexToBytes(value));
+      return utf8.decode(bytes, allowMalformed: false);
+    } catch (_) {
+      return value;
+    }
+  }
+
+  String? _parseSignMessageContent(String method, List params) {
+    if (params.isEmpty) return null;
+
+    switch (method) {
+      case 'personal_sign':
+        return _decodeHexMessage(params[0]?.toString());
+      case 'eth_sign':
+        if (params.length < 2) return null;
+        return _decodeHexMessage(params[1]?.toString());
+      default:
+        return null;
+    }
+  }
+
+  Future<bool?> _showWeb3ConfirmationDialog(String method, List params) {
     if (!mounted) return Future.value(false);
     final completer = Completer<bool>();
     final title = _getConfirmationTitle(method);
     final body = _getConfirmationBody(method);
+    final parsedContent = _parseSignMessageContent(method, params);
     openDrawer(
       context: context,
       barrierDismissible: false,
@@ -180,7 +207,37 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
                         ),
                       ),
                     ],
-                  ).withPadding(top: 8, bottom: 32),
+                  ).withPadding(top: 8, bottom: 16),
+                  if (parsedContent != null && parsedContent.isNotEmpty) ...[
+                    Divider().withPadding(top: 8, bottom: 8),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight:
+                            MediaQuery.of(drawerContext).size.height * 0.3,
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: PaxColors.white,
+                          border: Border.all(
+                            color: PaxColors.lilac.withAlpha(20),
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: SingleChildScrollView(
+                          child: SelectableText(
+                            parsedContent,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: PaxColors.black,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   Divider().withPadding(top: 8, bottom: 8),
                 ],
               ).withPadding(left: 16, right: 16),
@@ -413,7 +470,11 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
                       'error': 'User rejected the request',
                     };
                   } else {
-                    final approved = await _showWeb3ConfirmationDialog(method);
+                    final params = (request['params'] as List?) ?? [];
+                    final approved = await _showWeb3ConfirmationDialog(
+                      method,
+                      params,
+                    );
                     if (approved != true) {
                       responseToSend = {
                         'id': requestId,
