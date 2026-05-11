@@ -10,6 +10,7 @@ import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
+import 'package:pax/widgets/achievement/filter_button.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class MiniAppsView extends ConsumerStatefulWidget {
@@ -26,12 +27,15 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
   /// True while "Check again" has been pressed and verification is refetching.
   bool _isCheckingAgain = false;
 
+  /// null means the All category filter is selected.
+  String? _selectedCategory;
+
   void _onCheckAgainPressed() {
     setState(() => _isCheckingAgain = true);
     ref.invalidate(paxWalletNeedsVerificationProvider);
   }
 
-  Widget _buildMiniappsList(AsyncValue<MiniappsConfig> configAsync) {
+  Widget _buildMiniappsList(AsyncValue<MiniAppsConfig> configAsync) {
     return configAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error:
@@ -56,13 +60,85 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          itemCount: config.miniapps.length,
-          itemBuilder: (context, index) {
-            final app = config.miniapps[index];
-            return _MiniAppCard(app: app);
-          },
+        final categories = config.miniapps
+            .map((app) => app.category)
+            .where((category) => category.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
+
+        final filteredMiniapps =
+            _selectedCategory == null
+                ? config.miniapps
+                : config.miniapps
+                    .where((app) => app.category == _selectedCategory)
+                    .toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (categories.isNotEmpty)
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: PaxColors.deepPurple,
+                    width: 0.1,
+                  ),
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                padding: const EdgeInsets.all(8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        FilterButton(
+                          label: 'All',
+                          isSelected: _selectedCategory == null,
+                          onPressed:
+                              () => setState(() => _selectedCategory = null),
+                        ),
+                        for (final category in categories)
+                          FilterButton(
+                            label: category,
+                            isSelected: _selectedCategory == category,
+                            onPressed:
+                                () => setState(
+                                  () => _selectedCategory = category,
+                                ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ).withPadding(left: 8, right: 8, bottom: 8),
+            Expanded(
+              child:
+                  filteredMiniapps.isEmpty
+                      ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'No apps available in this category.',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: PaxColors.darkGrey,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                      : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        itemCount: filteredMiniapps.length,
+                        itemBuilder: (context, index) {
+                          final app = filteredMiniapps[index];
+                          return _MiniAppCard(app: app);
+                        },
+                      ),
+            ),
+          ],
         );
       },
     );

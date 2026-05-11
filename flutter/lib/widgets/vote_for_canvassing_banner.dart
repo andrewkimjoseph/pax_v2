@@ -28,6 +28,7 @@ class VoteForCanvassingBanner extends ConsumerWidget {
     id: _miniAppId,
     name: _miniAppName,
     title: _miniAppTitle,
+    category: 'Support',
     imageURI: _miniAppImageUrl,
     url: _miniAppUrl,
     isMiniappAvailable: true,

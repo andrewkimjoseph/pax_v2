@@ -454,7 +454,7 @@ class RemoteConfigService {
     }
   }
 
-  Future<MiniappsConfig> getMiniappsConfig() async {
+  Future<MiniAppsConfig> getMiniappsConfig() async {
     if (!_isInitialized) {
       await initialize();
     }
@@ -475,7 +475,7 @@ class RemoteConfigService {
       }
 
       if (jsonString.isEmpty) {
-        return MiniappsConfig(areMiniappsAvailable: false, miniapps: []);
+        return MiniAppsConfig(areMiniappsAvailable: false, miniapps: []);
       }
 
       final Map<String, dynamic> configMap = json.decode(jsonString);
@@ -485,14 +485,14 @@ class RemoteConfigService {
         );
       }
 
-      return MiniappsConfig.fromJson(configMap);
+      return MiniAppsConfig.fromJson(configMap);
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
           '[Remote] Remote Config Service: Error getting miniapps config: $e',
         );
       }
-      return MiniappsConfig(areMiniappsAvailable: false, miniapps: []);
+      return MiniAppsConfig(areMiniappsAvailable: false, miniapps: []);
     }
   }
 

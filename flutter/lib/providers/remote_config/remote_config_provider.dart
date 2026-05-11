@@ -22,7 +22,7 @@ final featureFlagsProvider = FutureProvider((ref) async {
   return service.getFeatureFlags();
 });
 
-final miniappsConfigProvider = FutureProvider<MiniappsConfig>((ref) async {
+final miniappsConfigProvider = FutureProvider<MiniAppsConfig>((ref) async {
   final service = ref.watch(remoteConfigServiceProvider);
   return service.getMiniappsConfig();
 });
@@ -41,7 +41,9 @@ final achievementAmountsProvider = FutureProvider<Map<String, int>>((
   return service.getAchievementAmounts();
 });
 
-final paxWalletConfigProvider = FutureProvider<Map<String, dynamic>>((ref) async {
+final paxWalletConfigProvider = FutureProvider<Map<String, dynamic>>((
+  ref,
+) async {
   final service = ref.watch(remoteConfigServiceProvider);
   return service.getPaxWalletConfig();
 });
