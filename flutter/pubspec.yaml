@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.6.3+139
+version: 2.6.4+140
 
 environment:
   sdk: ^3.7.2
@@ -34,7 +34,7 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  shadcn_flutter: ^0.0.34
+  shadcn_flutter: 0.0.48
   flutter_riverpod: ^3.0.0-dev.3
   google_fonts: ^6.2.1
   riverpod_annotation: ^3.0.0-dev.3
@@ -139,10 +139,7 @@ flutter:
     - lib/assets/logos/
     - lib/assets/scripts/
 
-  fonts:
-    - family: Sen
-      fonts:
-        - asset: lib/assets/fonts/Sen-VariableFont_wght.ttf
+  # Sen is loaded at runtime via the google_fonts package.
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
