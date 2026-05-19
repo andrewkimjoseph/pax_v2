@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart' show InkWell;
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/local/task_context/task_context_provider.dart';
@@ -9,11 +11,12 @@ import 'package:pax/providers/local/task_completion_state_provider.dart';
 import 'package:pax/services/task_completion_service.dart';
 import 'package:pax/utils/time_formatter.dart';
 import 'package:pax/utils/error_message_util.dart';
+import 'package:pax/routing/routes.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:pax/widgets/other_task_card.dart';
 import 'package:pax/widgets/task_timer.dart';
 import 'package:pax/widgets/check_out_product_drawer.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/theming/colors.dart';
 
@@ -178,21 +181,27 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
     );
   }
 
-  // Handle feedback form click
-  void _handleFeedbackFormClick(BuildContext context, String feedbackUrl) {
+  void _openProductLink(String url) {
+    final isV2 = ref.read(accountTypeProvider) == AccountType.v2;
+    if (isV2) {
+      context.push(Routes.miniappWebView, extra: url);
+    } else {
+      UrlHandler.launchCustomTab(context, url);
+    }
+  }
+
+  Future<void> _copyLink(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
+  }
+
+  String _buildFeedbackUrl(String feedbackUrl) {
     final taskContext = ref.read(taskContextProvider);
     final screeningContext = ref.read(screeningContextProvider);
     final currentParticipant = ref.read(participantProvider).participant;
 
-    // Parse the original URI
-    Uri uri = Uri.parse(feedbackUrl);
+    final uri = Uri.parse(feedbackUrl);
+    final queryParams = Map<String, String?>.from(uri.queryParameters);
 
-    // Add query parameters
-    Map<String, String?> queryParams = Map<String, String?>.from(
-      uri.queryParameters,
-    );
-
-    // Add participant info first
     if (currentParticipant?.id != null) {
       queryParams['id'] = currentParticipant?.id;
     }
@@ -208,7 +217,6 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
       queryParams['age'] = age.toString();
     }
 
-    // Add task-related IDs last
     final taskCompletionId =
         ref.read(taskCompletionProvider).result?.taskCompletionId;
     if (taskCompletionId != null) {
@@ -219,10 +227,64 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
       queryParams['screeningId'] = screeningContext!.screening!.id;
     }
 
-    // Create updated URI with all parameters
-    Uri updatedUri = uri.replace(queryParameters: queryParams);
+    return uri.replace(queryParameters: queryParams).toString();
+  }
 
-    UrlHandler.launchCustomTab(context, updatedUri.toString());
+  void _handleFeedbackFormClick(String feedbackUrl) {
+    UrlHandler.launchCustomTab(context, _buildFeedbackUrl(feedbackUrl));
+  }
+
+  Widget _buildLinkActionsRow({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onOpen,
+    required String copyUrl,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          child: SizedBox(
+            height: 48,
+            child: PrimaryButton(
+              onPressed: onOpen,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FaIcon(
+                    icon,
+                    size: 18,
+                    color: PaxColors.white,
+                  ).withPadding(right: 8),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: PaxColors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: 8),
+        SizedBox(
+          width: 48,
+          height: 48,
+          child: IconButton.outline(
+            onPressed: _isCompleting ? null : () => _copyLink(copyUrl),
+            density: ButtonDensity.icon,
+            icon: FaIcon(
+              FontAwesomeIcons.copy,
+              size: 18,
+              color: PaxColors.deepPurple,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   // Error dialog
@@ -308,37 +370,14 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
                   currentTask!.link!.isNotEmpty) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: PrimaryButton(
-                      onPressed:
-                          _isCompleting
-                              ? null
-                              : () => UrlHandler.launchCustomTab(
-                                context,
-                                currentTask.link!,
-                              ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          FaIcon(
-                            FontAwesomeIcons.link,
-                            size: 18,
-                            color: PaxColors.white,
-                          ).withPadding(right: 8),
-                          Text(
-                            'Open product link',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: PaxColors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: _buildLinkActionsRow(
+                    label: 'Open product link',
+                    icon: FontAwesomeIcons.link,
+                    onOpen:
+                        _isCompleting
+                            ? null
+                            : () => _openProductLink(currentTask.link!),
+                    copyUrl: currentTask.link!,
                   ),
                 ).withPadding(bottom: 12),
               ],
@@ -346,37 +385,15 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
                   currentTask!.feedback!.isNotEmpty) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: PrimaryButton(
-                      onPressed:
-                          _isCompleting
-                              ? null
-                              : () => _handleFeedbackFormClick(
-                                context,
-                                currentTask.feedback!,
-                              ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          FaIcon(
-                            FontAwesomeIcons.solidCommentDots,
-                            size: 18,
-                            color: PaxColors.white,
-                          ).withPadding(right: 8),
-                          Text(
-                            'Open feedback form',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                              color: PaxColors.white,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: _buildLinkActionsRow(
+                    label: 'Open feedback form',
+                    icon: FontAwesomeIcons.solidCommentDots,
+                    onOpen:
+                        _isCompleting
+                            ? null
+                            : () =>
+                                _handleFeedbackFormClick(currentTask.feedback!),
+                    copyUrl: _buildFeedbackUrl(currentTask.feedback!),
                   ),
                 ).withPadding(bottom: 12),
               ],
