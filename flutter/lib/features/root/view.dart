@@ -146,6 +146,7 @@ class _RootViewState extends ConsumerState<RootView> {
         const Divider(),
         SizedBox(
           child: NavigationBar(
+            backgroundColor: PaxColors.white,
             alignment: NavigationBarAlignment.spaceBetween,
             labelType: NavigationLabelType.expanded,
             expands: false,
