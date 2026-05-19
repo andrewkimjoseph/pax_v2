@@ -223,10 +223,10 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                     textAlign: TextAlign.center,
                     placeholder: Text(
                       'Enter amount',
-                      style: TextStyle(color: PaxColors.white),
+                      style: TextStyle(color: PaxColors.white, fontSize: 16),
                     ),
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 32,
                       color: PaxColors.white,
                       fontWeight: FontWeight.bold,
                     ),

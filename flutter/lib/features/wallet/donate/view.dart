@@ -138,10 +138,10 @@ class _DonateViewState extends ConsumerState<DonateView> {
                   textAlign: TextAlign.center,
                   placeholder: Text(
                     'Enter amount',
-                    style: TextStyle(color: PaxColors.white),
+                    style: TextStyle(color: PaxColors.white, fontSize: 16),
                   ),
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: TextStyle(
+                    fontSize: 32,
                     color: PaxColors.white,
                     fontWeight: FontWeight.bold,
                   ),
