@@ -61,40 +61,43 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
               child: Container(color: Colors.white),
             ),
           ),
-          Button(
-            style:
-                const ButtonStyle.primary(density: ButtonDensity.normal)
-                    .withBackgroundColor(color: PaxColors.transparent)
-                    .withBorder(),
-            onPressed:
-                canDonate
-                    ? () {
-                      ref
-                          .read(donationContextProvider.notifier)
-                          .setDonationContext(
-                            tokenId ?? 1,
-                            currentBalance ?? 0,
-                          );
-                      context.push('/wallet/donate');
-                    }
-                    : null,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FaIcon(
-                  FontAwesomeIcons.handHoldingHeart,
-                  color: PaxColors.white,
-                  size: 12,
-                ).withPadding(right: 6),
-                Text(
-                  'Give',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
+          SizedBox(
+            height: 45,
+            child: Button(
+              style:
+                  const ButtonStyle.primary(density: ButtonDensity.normal)
+                      .withBackgroundColor(color: PaxColors.transparent)
+                      .withBorder(),
+              onPressed:
+                  canDonate
+                      ? () {
+                        ref
+                            .read(donationContextProvider.notifier)
+                            .setDonationContext(
+                              tokenId ?? 1,
+                              currentBalance ?? 0,
+                            );
+                        context.push('/wallet/donate');
+                      }
+                      : null,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.handHoldingHeart,
                     color: PaxColors.white,
+                    size: 12,
                   ),
-                ),
-              ],
+                  // Text(
+                  //   'Give',
+                  //   style: TextStyle(
+                  //     fontWeight: FontWeight.w900,
+                  //     fontSize: 12,
+                  //     color: PaxColors.white,
+                  //   ),
+                  // ),
+                ],
+              ),
             ),
           ),
         ],
@@ -118,10 +121,11 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
         ref.watch(rewardCurrencyContextProvider).selectedCurrency;
     final tokenId = TokenBalanceUtil.getTokenIdForCurrency(selectedCurrency);
     final currentBalance = paxAccount.balances[tokenId];
-    final normalizedCurrentBalance = TokenBalanceUtil.normalizeWithdrawableBalance(
-      currentBalance ?? 0,
-      tokenId: tokenId ?? 1,
-    );
+    final normalizedCurrentBalance =
+        TokenBalanceUtil.normalizeWithdrawableBalance(
+          currentBalance ?? 0,
+          tokenId: tokenId ?? 1,
+        );
     final isGoodDollarSelected = selectedCurrency == "good_dollar";
 
     final isFetching =
@@ -256,7 +260,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
-                            height: 40,
+                            // height: 40,
                             width: selectWidth,
                             child: Select<String>(
                               itemBuilder: (context, item) {
@@ -342,98 +346,102 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                 final actionEnabled =
                                     normalizedCurrentBalance > 0;
 
-                                final withdrawButton = Button(
-                                  style:
-                                      const ButtonStyle.primary(
-                                            density: ButtonDensity.normal,
-                                          )
-                                          .withBackgroundColor(
-                                            color: PaxColors.deepPurple,
-                                          )
-                                          .withBorder(),
-                                  onPressed:
-                                      actionEnabled
-                                          ? () async {
-                                            ref
-                                                .read(
-                                                  rewardCurrencyContextProvider
-                                                      .notifier,
-                                                )
-                                                .setSelectedCurrency(
-                                                  selectedCurrency,
-                                                );
-
-                                            ref
-                                                .read(
-                                                  withdrawContextProvider
-                                                      .notifier,
-                                                )
-                                                .setWithdrawContext(
-                                                  tokenId ?? 1,
-                                                  normalizedCurrentBalance,
-                                                );
-
-                                            if (widget.nextLocation ==
-                                                "/wallet") {
+                                final withdrawButton = SizedBox(
+                                  height: 45,
+                                  child: Button(
+                                    style:
+                                        const ButtonStyle.primary(
+                                              density: ButtonDensity.normal,
+                                            )
+                                            .withBackgroundColor(
+                                              color: PaxColors.deepPurple,
+                                            )
+                                            .withBorder(),
+                                    onPressed:
+                                        actionEnabled
+                                            ? () async {
                                               ref
-                                                  .read(analyticsProvider)
-                                                  .homeWalletTapped({
-                                                    "selectedCurrency":
-                                                        selectedCurrency,
-                                                    "currentBalance":
-                                                        currentBalance,
-                                                    "tokenId": tokenId,
-                                                    "toLocation":
-                                                        widget.nextLocation,
-                                                  });
-                                            } else {
+                                                  .read(
+                                                    rewardCurrencyContextProvider
+                                                        .notifier,
+                                                  )
+                                                  .setSelectedCurrency(
+                                                    selectedCurrency,
+                                                  );
+
                                               ref
-                                                  .read(analyticsProvider)
-                                                  .walletWithdrawTapped({
-                                                    "selectedCurrency":
-                                                        selectedCurrency,
-                                                    "currentBalance":
-                                                        currentBalance,
-                                                    "tokenId": tokenId,
-                                                    "toLocation":
-                                                        widget.nextLocation,
-                                                  });
+                                                  .read(
+                                                    withdrawContextProvider
+                                                        .notifier,
+                                                  )
+                                                  .setWithdrawContext(
+                                                    tokenId ?? 1,
+                                                    normalizedCurrentBalance,
+                                                  );
+
+                                              if (widget.nextLocation ==
+                                                  "/wallet") {
+                                                ref
+                                                    .read(analyticsProvider)
+                                                    .homeWalletTapped({
+                                                      "selectedCurrency":
+                                                          selectedCurrency,
+                                                      "currentBalance":
+                                                          currentBalance,
+                                                      "tokenId": tokenId,
+                                                      "toLocation":
+                                                          widget.nextLocation,
+                                                    });
+                                              } else {
+                                                ref
+                                                    .read(analyticsProvider)
+                                                    .walletWithdrawTapped({
+                                                      "selectedCurrency":
+                                                          selectedCurrency,
+                                                      "currentBalance":
+                                                          currentBalance,
+                                                      "tokenId": tokenId,
+                                                      "toLocation":
+                                                          widget.nextLocation,
+                                                    });
+                                              }
+                                              context.push(widget.nextLocation);
                                             }
-                                            context.push(widget.nextLocation);
-                                          }
-                                          : null,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      widget.nextLocation == "/wallet"
-                                          ? SvgPicture.asset(
-                                            actionEnabled
-                                                ? 'lib/assets/svgs/canvassing.svg'
-                                                : 'lib/assets/svgs/canvassing_lilac.svg',
-                                            width: 14,
-                                            height: 14,
-                                          ).withPadding(right: 6)
-                                          : FaIcon(
-                                            FontAwesomeIcons.arrowUpFromBracket,
-                                            color: PaxColors.white,
-                                            size: 12,
-                                          ).withPadding(right: 6),
-                                      Text(
+                                            : null,
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
                                         widget.nextLocation == "/wallet"
-                                            ? "Account"
-                                            : "Withdraw",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 12,
-                                          color: PaxColors.white,
+                                            ? SvgPicture.asset(
+                                              actionEnabled
+                                                  ? 'lib/assets/svgs/canvassing.svg'
+                                                  : 'lib/assets/svgs/canvassing_lilac.svg',
+                                              width: 14,
+                                              height: 14,
+                                            ).withPadding(right: 6)
+                                            : FaIcon(
+                                              FontAwesomeIcons
+                                                  .arrowUpFromBracket,
+                                              color: PaxColors.white,
+                                              size: 12,
+                                            ).withPadding(right: 6),
+                                        Text(
+                                          widget.nextLocation == "/wallet"
+                                              ? "Account"
+                                              : "Withdraw",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 12,
+                                            color: PaxColors.white,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
+                                  ).withToolTip(
+                                    widget.nextLocation == "/wallet"
+                                        ? 'Account & wallet'
+                                        : 'Withdraw',
                                   ),
-                                ).withToolTip(
-                                  widget.nextLocation == "/wallet"
-                                      ? 'Account & wallet'
-                                      : 'Withdraw',
                                 );
 
                                 return ref
@@ -457,22 +465,27 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
 
                                         final copyWalletAddressButton =
                                             showPaxAccountCopy
-                                                ? IconButton.outline(
-                                                  onPressed:
-                                                      () => Clipboard.setData(
-                                                        ClipboardData(
-                                                          text: payoutAddress,
+                                                ? SizedBox(
+                                                  height: 45,
+                                                  width: 45,
+                                                  child: IconButton.outline(
+                                                    onPressed:
+                                                        () => Clipboard.setData(
+                                                          ClipboardData(
+                                                            text: payoutAddress,
+                                                          ),
                                                         ),
-                                                      ),
-                                                  density: ButtonDensity.icon,
-                                                  icon: const FaIcon(
-                                                    FontAwesomeIcons.copy,
-                                                    size: 14,
-                                                    color: PaxColors.deepPurple,
+                                                    density: ButtonDensity.icon,
+                                                    icon: const FaIcon(
+                                                      FontAwesomeIcons.copy,
+                                                      size: 14,
+                                                      color:
+                                                          PaxColors.deepPurple,
+                                                    ),
+                                                  ).withToolTip(
+                                                    "Copy PaxAccount address",
+                                                    showTooltip: false,
                                                   ),
-                                                ).withToolTip(
-                                                  "Copy PaxAccount address",
-                                                  showTooltip: false,
                                                 )
                                                 : null;
 
