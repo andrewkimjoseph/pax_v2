@@ -11,7 +11,6 @@ import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/remote_config_constants.dart';
-import 'package:pax/widgets/toast.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class EngagementRewardsCard extends ConsumerWidget {
@@ -125,19 +124,8 @@ class EngagementRewardsCard extends ConsumerWidget {
                     ),
                     IconButton(
                       variance: ButtonStyle.linkIcon(),
-                      onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: engageUrl));
-                        if (!context.mounted) return;
-                        showToast(
-                          context: context,
-                          location: ToastLocation.topCenter,
-                          builder:
-                              (context, overlay) => Toast(
-                                toastColor: PaxColors.green,
-                                text: 'Engagement link copied',
-                                trailingIcon: FontAwesomeIcons.solidCircleCheck,
-                              ),
-                        );
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: engageUrl));
                       },
                       icon: FaIcon(
                         FontAwesomeIcons.copy,
