@@ -127,6 +127,7 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
 
     return Scaffold(
       backgroundColor: PaxColors.deepPurple,
+      resizeToAvoidBottomInset: false,
       headers: [
         AppBar(
           padding: const EdgeInsets.all(8),
@@ -141,7 +142,11 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                     context.go('/wallet');
                   }
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong, size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               const Spacer(),
               const Text(
@@ -208,18 +213,23 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                   validator: amountValidator,
                   showErrors: const {FormValidationMode.submitted},
                   child: TextField(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     controller: _amountController,
                     keyboardType: TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                     textAlign: TextAlign.center,
-                    placeholder: Text('Enter amount'),
+                    placeholder: Text(
+                      'Enter amount',
+                      style: TextStyle(color: PaxColors.white),
+                    ),
                     style: TextStyle(
-                      fontSize: 32,
+                      fontSize: 18,
                       color: PaxColors.white,
                       fontWeight: FontWeight.bold,
                     ),
-                    border: false,
                     cursorColor: PaxColors.white,
                   ).withAlign(Alignment.center),
                 ),
@@ -234,7 +244,9 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                   ).withPadding(right: 4),
 
                   Text(
-                    TokenBalanceUtil.getLocaleFormattedAmount(normalizedBalance),
+                    TokenBalanceUtil.getLocaleFormattedAmount(
+                      normalizedBalance,
+                    ),
                     style: const TextStyle(
                       fontSize: 16,
                       color: PaxColors.white,
@@ -282,10 +294,10 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                               ),
                             );
                           },
-                  ),
-                ),
-              ).withPadding(bottom: 50),
-            ],
+                        ),
+                      ),
+                    ).withPadding(bottom: 50),
+                  ],
                 ),
               ),
             ],
