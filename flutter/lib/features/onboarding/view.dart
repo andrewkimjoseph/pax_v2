@@ -74,35 +74,35 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                    Text(
-                      page.title,
-                      style: Theme.of(context).typography.base.copyWith(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 28,
-                        color:
-                            PaxColors
-                                .deepPurple, // The purple color from your images
+                      Text(
+                        page.title,
+                        style: Theme.of(context).typography.base.copyWith(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 28,
+                          color:
+                              PaxColors
+                                  .deepPurple, // The purple color from your images
+                        ),
+                        textAlign: TextAlign.center,
+                      ).withPadding(bottom: 16),
+                      Text(
+                        page.description,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).typography.base.copyWith(
+                          fontWeight: FontWeight.normal,
+                          fontSize: 14,
+                          color:
+                              PaxColors
+                                  .black, // The purple color from your images
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ).withPadding(bottom: 16),
-                    Text(
-                      page.description,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).typography.base.copyWith(
-                        fontWeight: FontWeight.normal,
-                        fontSize: 14,
-                        color:
-                            PaxColors
-                                .black, // The purple color from your images
-                      ),
-                    ),
 
-                    // Show user info if authenticated
-                    // if (authState.state == AuthState.authenticated &&
-                    //     onboardingState.isLastPage)
-                    // _buildUserInfo(context, authState.user),
-                  ],
-                ).withPadding(left: 16, right: 16),
+                      // Show user info if authenticated
+                      // if (authState.state == AuthState.authenticated &&
+                      //     onboardingState.isLastPage)
+                      // _buildUserInfo(context, authState.user),
+                    ],
+                  ).withPadding(left: 16, right: 16),
                 );
               },
             ),
@@ -190,8 +190,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                                   },
                           child:
                               isLoading
-                                  ? const CircularProgressIndicator()
-                                      .withMargin(right: 8)
+                                  ? const CircularProgressIndicator(size: 16)
                                   : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -199,7 +198,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                                         'lib/assets/svgs/google_icon.svg',
                                         height: 16,
                                         width: 16,
-                                      ).withMargin(right: 8),
+                                      ).withPadding(right: 8),
                                       // FaIcon(
                                       //   FontAwesomeIcons.google,
                                       //   size: 15,
@@ -223,6 +222,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                   )
                   : Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
+
                     children: [
                       SizedBox(
                         width: MediaQuery.of(context).size.width * 0.4,
@@ -248,6 +248,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                               fontSize: 14,
                               color: PaxColors.deepPurple,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
@@ -266,6 +267,7 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
                               fontSize: 14,
                               color: PaxColors.white,
                             ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
