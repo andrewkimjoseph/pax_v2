@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter/material.dart' show InkWell, VoidCallback;
+import 'package:flutter/material.dart'
+    show InkWell, VoidCallback, TextCapitalization;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -60,12 +61,13 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
           );
         }
 
-        final categories = config.miniapps
-            .map((app) => app.category)
-            .where((category) => category.isNotEmpty)
-            .toSet()
-            .toList()
-          ..sort();
+        final categories =
+            config.miniapps
+                .map((app) => app.category)
+                .where((category) => category.isNotEmpty)
+                .toSet()
+                .toList()
+              ..sort();
 
         final filteredMiniapps =
             _selectedCategory == null
@@ -80,10 +82,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
             if (categories.isNotEmpty)
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: PaxColors.deepPurple,
-                    width: 0.1,
-                  ),
+                  border: Border.all(color: PaxColors.deepPurple, width: 0.1),
                   borderRadius: BorderRadius.circular(7),
                 ),
                 padding: const EdgeInsets.all(8),
