@@ -89,7 +89,7 @@ class ClaimWalletOptionCard extends ConsumerWidget {
               state:
                   isSelected ? CheckboxState.checked : CheckboxState.unchecked,
               onChanged: (_) => _toggleSelection(ref, isSelected),
-            ).withPadding(right: 8),
+            ).withPadding(right: 16),
           ],
         ),
       ),

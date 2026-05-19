@@ -276,7 +276,7 @@ class _GoodCollectiveTile extends StatelessWidget {
                               ? CheckboxState.checked
                               : CheckboxState.unchecked,
                       onChanged: (_) => _toggleSelection(ref, isSelected),
-                    ),
+                    ).withPadding(right: 8),
                   ],
                 ),
               ],
