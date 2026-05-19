@@ -1,6 +1,7 @@
 // views/minipay_connection_view.dart (refactored to use provider)
 import 'package:flutter/material.dart' show Divider, InkWell;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show TextInputAction;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -19,7 +20,7 @@ import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:pax/widgets/withdrawal_method_guides/minipay/without_face_verification/steps.dart';
 
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class MiniPayConnectionView extends ConsumerStatefulWidget {
   const MiniPayConnectionView({super.key});
