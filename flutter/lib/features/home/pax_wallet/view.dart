@@ -1,9 +1,11 @@
+import 'package:flutter/material.dart' show TextCapitalization;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/features/home/pax_wallet/miniapps/view.dart';
 import 'package:pax/features/home/pax_wallet/overview/view.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
@@ -58,6 +60,9 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
 
   @override
   Widget build(BuildContext context) {
+    final accountType = ref.watch(accountTypeProvider);
+    final isV2 = accountType == AccountType.v2;
+
     return Scaffold(
       headers: [
         AppBar(
@@ -67,15 +72,43 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
           header: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _segment == WalletAndAppsSegment.wallet
-                    ? 'Overview'
-                    : 'Mini Apps',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 32,
-                  color: PaxColors.black,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    _segment == WalletAndAppsSegment.wallet
+                        ? 'Overview'
+                        : 'Mini Apps',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 32,
+                      color: PaxColors.black,
+                    ),
+                  ),
+                  if (accountType != AccountType.unknown)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            isV2
+                                ? PaxColors.deepPurple
+                                : PaxColors.mediumPurple,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isV2 ? 'V2' : 'V1',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: PaxColors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               ref
                   .watch(featureFlagsProvider)
