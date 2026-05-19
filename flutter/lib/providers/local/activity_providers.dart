@@ -237,15 +237,15 @@ final expiredTaskCompletionsCountProvider = Provider<AsyncValue<int>>((ref) {
 
   return allActivitiesAsync.when(
     data: (allActivities) {
-      final taskCompletions = allActivities
-          .where((a) => a.type == ActivityType.taskCompletion)
-          .toList();
-      final expired =
-          filterTaskCompletionActivities(
-            taskCompletions,
-            allActivities,
-            CompletionFilter.expired,
-          );
+      final taskCompletions =
+          allActivities
+              .where((a) => a.type == ActivityType.taskCompletion)
+              .toList();
+      final expired = filterTaskCompletionActivities(
+        taskCompletions,
+        allActivities,
+        CompletionFilter.expired,
+      );
       return AsyncValue.data(expired.length);
     },
     loading: () => const AsyncValue.loading(),
@@ -260,9 +260,10 @@ final totalReferralsCountProvider = Provider<AsyncValue<int>>((ref) {
 
   return allActivitiesAsync.when(
     data: (allActivities) {
-      final count = allActivities
-          .where((activity) => activity.type == ActivityType.referral)
-          .length;
+      final count =
+          allActivities
+              .where((activity) => activity.type == ActivityType.referral)
+              .length;
       return AsyncValue.data(count);
     },
     loading: () => const AsyncValue.loading(),
@@ -282,7 +283,8 @@ final unclaimedReferralsCountProvider = Provider<AsyncValue<int>>((ref) {
         if (activity.type != ActivityType.referral) continue;
         final referral = activity.referral;
         if (referral == null) continue;
-        final isClaimed = referral.timeRewarded != null ||
+        final isClaimed =
+            referral.timeRewarded != null ||
             (referral.txnHash != null && referral.txnHash!.isNotEmpty);
         if (!isClaimed) count++;
       }
@@ -305,7 +307,8 @@ final totalReferralAmountGdProvider = Provider<AsyncValue<double>>((ref) {
         if (activity.type != ActivityType.referral) continue;
         final referral = activity.referral;
         if (referral == null || referral.amountReceived == null) continue;
-        final isClaimed = referral.timeRewarded != null ||
+        final isClaimed =
+            referral.timeRewarded != null ||
             (referral.txnHash != null && referral.txnHash!.isNotEmpty);
         if (isClaimed) {
           total += referral.amountReceived!.toDouble();
@@ -354,7 +357,8 @@ final totalGoodDollarTokensEarnedProvider = Provider<AsyncValue<double>>((ref) {
             if (activity.type != ActivityType.referral) continue;
             final referral = activity.referral;
             if (referral == null || referral.amountReceived == null) continue;
-            final isClaimed = referral.timeRewarded != null ||
+            final isClaimed =
+                referral.timeRewarded != null ||
                 (referral.txnHash != null && referral.txnHash!.isNotEmpty);
             if (isClaimed) {
               total += referral.amountReceived!.toDouble();
@@ -433,17 +437,21 @@ List<Activity> filterTaskCompletionActivities(
       return taskCompletionActivities.where(isClaimed).toList();
     case CompletionFilter.unclaimed:
       return taskCompletionActivities
-          .where((a) =>
-              a.isComplete &&
-              a.taskCompletion?.isValid != false &&
-              !isClaimed(a))
+          .where(
+            (a) =>
+                a.isComplete &&
+                a.taskCompletion?.isValid != false &&
+                !isClaimed(a),
+          )
           .toList();
     case CompletionFilter.incomplete:
       return taskCompletionActivities
           .where((a) => !a.isComplete && !a.isExpired)
           .toList();
     case CompletionFilter.expired:
-      return taskCompletionActivities.where((a) => !a.isComplete && a.isExpired).toList();
+      return taskCompletionActivities
+          .where((a) => !a.isComplete && a.isExpired)
+          .toList();
   }
 }
 
@@ -461,8 +469,7 @@ List<Activity> filterReferralActivities(
             (a) =>
                 a.type == ActivityType.referral &&
                 a.referral?.timeRewarded == null &&
-                (a.referral?.txnHash == null ||
-                    a.referral!.txnHash!.isEmpty),
+                (a.referral?.txnHash == null || a.referral!.txnHash!.isEmpty),
           )
           .toList();
     case ReferralFilter.claimed:
