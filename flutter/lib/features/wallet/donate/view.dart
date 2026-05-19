@@ -128,18 +128,23 @@ class _DonateViewState extends ConsumerState<DonateView> {
                 validator: amountValidator,
                 showErrors: const {FormValidationMode.submitted},
                 child: TextField(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   controller: _amountController,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
                   textAlign: TextAlign.center,
-                  placeholder: const Text('Enter amount'),
+                  placeholder: Text(
+                    'Enter amount',
+                    style: TextStyle(color: PaxColors.white),
+                  ),
                   style: const TextStyle(
-                    fontSize: 32,
+                    fontSize: 18,
                     color: PaxColors.white,
                     fontWeight: FontWeight.bold,
                   ),
-                  border: false,
                   cursorColor: PaxColors.white,
                 ).withAlign(Alignment.center),
               ).withPadding(all: 16),
