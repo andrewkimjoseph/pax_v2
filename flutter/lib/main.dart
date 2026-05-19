@@ -2,9 +2,10 @@ import 'package:clarity_flutter/clarity_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pax/providers/analytics/clarity/clarity_provider.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:flutter/services.dart';
 
 import 'package:pax/env/env.dart';
@@ -23,6 +24,13 @@ import 'package:pax/widgets/update_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = true;
+  await GoogleFonts.pendingFonts([
+    GoogleFonts.sen(),
+    GoogleFonts.sen(fontWeight: FontWeight.w500),
+    GoogleFonts.sen(fontWeight: FontWeight.w600),
+    GoogleFonts.sen(fontWeight: FontWeight.w700),
+  ]);
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(

@@ -35,14 +35,14 @@ class ThemeNotifier extends Notifier<ThemeData> {
   ///
   /// Updates the current theme state with the light color scheme.
   void toggleLight() {
-    state = state.copyWith(colorScheme: light);
+    state = state.copyWith(colorScheme: () => light);
   }
 
   /// Switches to dark theme.
   ///
   /// Updates the current theme state with the dark color scheme.
   void toggleDark() {
-    state = state.copyWith(colorScheme: dark);
+    state = state.copyWith(colorScheme: () => dark);
   }
 
   /// Builds the initial theme data.

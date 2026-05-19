@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart' show Colors, FontStyle, FontWeight;
-import 'package:google_fonts/google_fonts.dart' show GoogleFonts;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' show Typography;
 import 'text_theme.dart';
 
@@ -7,34 +7,13 @@ import 'text_theme.dart';
 ///
 /// This class extends the shadcn Typography class to provide a consistent
 /// typographic system throughout the application. It maps Flutter's TextTheme
-/// to shadcn's Typography structure while maintaining the Sen font family.
-///
-/// The typography system includes:
-/// - Size variants (xSmall through x9Large)
-/// - Weight variants (thin through black)
-/// - Semantic variants (h1-h4, p, blockQuote, etc.)
-/// - Style variants (normal, italic)
-///
-/// Usage example:
-/// ```dart
-/// ThemeData(
-///   typography: PaxTypography(),
-///   // ...other theme properties
-/// )
-/// ```
+/// to shadcn's Typography structure using Google Fonts Sen.
 class PaxTypography extends Typography {
-  /// Creates a new PaxTypography instance with Sen font family.
-  ///
-  /// All text styles are derived from the paxTextTheme defined in text_theme.dart,
-  /// ensuring consistency across the application.
   PaxTypography()
     : super(
-        // Base font families
-        sans: paxTextTheme.bodyMedium!.copyWith(fontFamily: 'Sen'),
-        // Use an appropriate monospace font for code
+        sans: GoogleFonts.sen(textStyle: paxTextTheme.bodyMedium),
         mono: GoogleFonts.robotoMono(),
 
-        // Size variants
         xSmall: paxTextTheme.labelSmall!,
         small: paxTextTheme.bodySmall!,
         base: paxTextTheme.bodyMedium!,
@@ -49,49 +28,71 @@ class PaxTypography extends Typography {
         x8Large: paxTextTheme.displayMedium!,
         x9Large: paxTextTheme.displayLarge!,
 
-        // Weight variants
-        thin: paxTextTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w100),
-        extraLight: paxTextTheme.bodyMedium!.copyWith(
+        thin: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
+          fontWeight: FontWeight.w100,
+        ),
+        extraLight: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
           fontWeight: FontWeight.w200,
         ),
-        light: paxTextTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w300),
-        normal: paxTextTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w400),
-        medium: paxTextTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w500),
-        semiBold: paxTextTheme.bodyMedium!.copyWith(
+        light: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
+          fontWeight: FontWeight.w300,
+        ),
+        normal: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
+          fontWeight: FontWeight.w400,
+        ),
+        medium: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
+          fontWeight: FontWeight.w500,
+        ),
+        semiBold: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
           fontWeight: FontWeight.w600,
         ),
-        bold: paxTextTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w700),
-        extraBold: paxTextTheme.bodyMedium!.copyWith(
+        bold: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
+          fontWeight: FontWeight.w700,
+        ),
+        extraBold: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
           fontWeight: FontWeight.w800,
         ),
-        black: paxTextTheme.bodyMedium!.copyWith(fontWeight: FontWeight.w900),
+        black: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
+          fontWeight: FontWeight.w900,
+        ),
 
-        // Style variants
-        italic: paxTextTheme.bodyMedium!.copyWith(fontStyle: FontStyle.italic),
+        italic: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium,
+          fontStyle: FontStyle.italic,
+        ),
 
-        // Semantic variants (mapping to HTML elements)
         h1: paxTextTheme.displayLarge!,
         h2: paxTextTheme.displayMedium!,
         h3: paxTextTheme.displaySmall!,
         h4: paxTextTheme.headlineMedium!,
         p: paxTextTheme.bodyMedium!,
-        blockQuote: paxTextTheme.bodyLarge!.copyWith(
+        blockQuote: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyLarge,
           fontStyle: FontStyle.italic,
         ),
-        // Fix: Use monospace font for code
         inlineCode: GoogleFonts.robotoMono(
-          textStyle: paxTextTheme.bodyMedium!.copyWith(
-            fontFamily: 'Roboto Mono',
-          ),
+          textStyle: paxTextTheme.bodyMedium,
         ),
 
-        // Special variants
-        lead: paxTextTheme.bodyLarge!.copyWith(fontWeight: FontWeight.w500),
+        lead: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyLarge,
+          fontWeight: FontWeight.w500,
+        ),
         textLarge: paxTextTheme.bodyLarge!,
         textSmall: paxTextTheme.bodySmall!,
-        // Fix: Use a theme-aware color instead of hardcoded grey
-        textMuted: paxTextTheme.bodyMedium!.copyWith(
-          color: Colors.grey.shade600,
+        textMuted: GoogleFonts.sen(
+          textStyle: paxTextTheme.bodyMedium!.copyWith(
+            color: Colors.grey.shade600,
+          ),
         ),
       );
 }
