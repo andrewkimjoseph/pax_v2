@@ -5,8 +5,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/features/home/pax_wallet/miniapps/view.dart';
 import 'package:pax/features/home/pax_wallet/overview/view.dart';
-import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
+import 'package:pax/widgets/common/account_type_badge.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
@@ -60,9 +60,6 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
 
   @override
   Widget build(BuildContext context) {
-    final accountType = ref.watch(accountTypeProvider);
-    final isV2 = accountType == AccountType.v2;
-
     return Scaffold(
       headers: [
         AppBar(
@@ -85,29 +82,9 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
                       color: PaxColors.black,
                     ),
                   ),
-                  if (accountType != AccountType.unknown)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            isV2
-                                ? PaxColors.deepPurple
-                                : PaxColors.mediumPurple,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        isV2 ? 'V2' : 'V1',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: PaxColors.white,
-                        ),
-                      ),
-                    ),
+                  const AccountTypeBadge(
+                    margin: EdgeInsets.only(left: 8),
+                  ),
                 ],
               ),
               ref
