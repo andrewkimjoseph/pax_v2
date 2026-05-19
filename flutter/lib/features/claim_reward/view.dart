@@ -15,7 +15,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/utils/currency_symbol.dart';
 import 'package:pax/constants/task_timer.dart';
-import 'package:pax/widgets/toast.dart';
 import 'package:pax/providers/local/claim_payout_context_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 
@@ -445,23 +444,10 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                           ),
                         ).withPadding(right: 8),
                         InkWell(
-                          onTap: () async {
-                            await Clipboard.setData(
+                          onTap: () {
+                            Clipboard.setData(
                               ClipboardData(text: referralId),
                             );
-                            if (context.mounted) {
-                              showToast(
-                                context: context,
-                                location: ToastLocation.topCenter,
-                                builder:
-                                    (context, overlay) => Toast(
-                                      toastColor: PaxColors.green,
-                                      text: 'Referral ID copied',
-                                      trailingIcon:
-                                          FontAwesomeIcons.solidCircleCheck,
-                                    ),
-                              );
-                            }
                           },
                           child: Container(
                             padding: EdgeInsets.all(4),
@@ -502,23 +488,10 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                           ),
                         ).withPadding(right: 8),
                         InkWell(
-                          onTap: () async {
-                            await Clipboard.setData(
+                          onTap: () {
+                            Clipboard.setData(
                               ClipboardData(text: taskCompletionId),
                             );
-                            if (context.mounted) {
-                              showToast(
-                                context: context,
-                                location: ToastLocation.topCenter,
-                                builder:
-                                    (context, overlay) => Toast(
-                                      toastColor: PaxColors.green,
-                                      text: 'Task Completion ID copied',
-                                      trailingIcon:
-                                          FontAwesomeIcons.solidCircleCheck,
-                                    ),
-                              );
-                            }
                           },
                           child: Container(
                             padding: EdgeInsets.all(4),
@@ -725,24 +698,10 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                                   ),
                                 ).withPadding(right: 8),
                                 InkWell(
-                                  onTap: () async {
-                                    await Clipboard.setData(
+                                  onTap: () {
+                                    Clipboard.setData(
                                       ClipboardData(text: taskCompletionId),
                                     );
-                                    if (context.mounted) {
-                                      showToast(
-                                        context: context,
-                                        location: ToastLocation.topCenter,
-                                        builder:
-                                            (context, overlay) => Toast(
-                                              toastColor: PaxColors.green,
-                                              text: 'Task Completion ID copied',
-                                              trailingIcon:
-                                                  FontAwesomeIcons
-                                                      .solidCircleCheck,
-                                            ),
-                                      );
-                                    }
                                   },
                                   child: Container(
                                     padding: EdgeInsets.all(4),
