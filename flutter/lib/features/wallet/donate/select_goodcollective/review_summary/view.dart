@@ -13,7 +13,7 @@ import 'package:pax/utils/donation_constants.dart';
 import 'package:pax/utils/token_address_util.dart';
 import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/utils/url_handler.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class DonationReviewSummaryView extends ConsumerStatefulWidget {
   const DonationReviewSummaryView({super.key});
@@ -407,7 +407,7 @@ class _DonationReviewSummaryViewState
                 ),
               ],
             ),
-          ).withMargin(bottom: 32),
+          ).withPadding(bottom: 32),
         ],
       ).withPadding(horizontal: 8, bottom: 8),
     );

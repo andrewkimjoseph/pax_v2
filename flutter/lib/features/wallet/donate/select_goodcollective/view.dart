@@ -10,7 +10,7 @@ import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:pax/widgets/about_goodcollective_dialog.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class SelectGoodCollectiveView extends ConsumerWidget {
   const SelectGoodCollectiveView({super.key});
@@ -167,7 +167,7 @@ class SelectGoodCollectiveView extends ConsumerWidget {
                 ),
               ],
             ),
-          ).withMargin(bottom: 32),
+          ).withPadding(bottom: 32),
         ],
       ).withPadding(horizontal: 8, bottom: 8),
     );

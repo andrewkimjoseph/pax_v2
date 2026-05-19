@@ -16,7 +16,7 @@ import 'package:pax/utils/token_balance_util.dart';
 import 'package:pax/widgets/change_withdrawal_method_card.dart';
 import 'package:flutter/foundation.dart';
 
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class ReviewSummaryView extends ConsumerStatefulWidget {
   const ReviewSummaryView({super.key});
@@ -526,7 +526,7 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                 ),
               ],
             ),
-          ).withMargin(bottom: 32),
+          ).withPadding(bottom: 32),
         ],
       ).withPadding(horizontal: 8, bottom: 8),
     );
