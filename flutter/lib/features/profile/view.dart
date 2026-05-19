@@ -4,8 +4,8 @@ import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
+import 'package:pax/widgets/common/account_type_badge.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/utils/country_util.dart';
@@ -122,9 +122,6 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
     final isLoading = participantState.state == ParticipantState.loading;
     final paxAccount = ref.watch(paxAccountProvider).account;
     final hasPaymentMethod = paxAccount?.payoutWalletAddress != null;
-    final accountType = ref.watch(accountTypeProvider);
-    final isV2 = accountType == AccountType.v2;
-
     final bool isProfileComplete =
         participant != null &&
         participant.country != null &&
@@ -232,28 +229,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                                   ),
                                 ],
                               ).withPadding(bottom: 8, top: 12),
-                              if (accountType != AccountType.unknown)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        isV2
-                                            ? PaxColors.deepPurple
-                                            : PaxColors.mediumPurple,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    isV2 ? 'V2' : 'V1',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: PaxColors.white,
-                                    ),
-                                  ),
-                                ),
+                              const AccountTypeBadge(),
                             ],
                           ).withPadding(bottom: 16, top: 12),
 
