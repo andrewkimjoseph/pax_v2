@@ -10,7 +10,10 @@ import 'package:pax/theming/colors.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class FaceVerificationPromptBanner extends ConsumerWidget {
-  const FaceVerificationPromptBanner({super.key});
+  const FaceVerificationPromptBanner({super.key, this.source = 'dashboard'});
+
+  /// Analytics / navigation source (e.g. `dashboard`, `pax_wallet_overview`).
+  final String source;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -32,11 +35,11 @@ class FaceVerificationPromptBanner extends ConsumerWidget {
         return InkWell(
           onTap: () {
             ref.read(analyticsProvider).v2FaceVerificationPromptTapped({
-              'source': 'dashboard',
+              'source': source,
             });
             context.push(
               Routes.completeGoodDollarFaceVerification,
-              extra: 'dashboard',
+              extra: source,
             );
           },
           child: Container(
