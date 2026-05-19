@@ -6,10 +6,12 @@
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
 import 'package:pax/env/env.dart';
+import 'package:pax/firebase_messaging_background_handler.dart';
 import 'package:pax/firebase_options.dart';
 import 'package:pax/services/branch_service.dart';
 import 'package:pax/services/notifications/notification_service.dart';
@@ -194,4 +196,11 @@ class AppInitializer {
       debugPrint('[Branch] Branch SDK initialized');
     }
   }
+}
+
+// Legacy entry point for Android persisted callback handles registered before
+// the handler moved to main.dart. Must stay in this library.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await firebaseMessagingBackgroundHandler(message);
 }

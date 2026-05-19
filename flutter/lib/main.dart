@@ -9,6 +9,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:flutter/services.dart';
 
 import 'package:pax/env/env.dart';
+import 'package:pax/firebase_messaging_background_handler.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/fcm/fcm_provider.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
@@ -24,6 +25,7 @@ import 'package:pax/widgets/update_dialog.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   GoogleFonts.config.allowRuntimeFetching = true;
   await GoogleFonts.pendingFonts([
     GoogleFonts.sen(),
@@ -48,7 +50,6 @@ Future<void> main() async {
   if (kIsWeb) {
     // Only initialize Firebase synchronously (required for app to work)
     await AppInitializer().initializeFirebaseOnly();
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     // Start app immediately - splash will be removed when Flutter renders
     runApp(ProviderScope(child: App()));
     // Continue other initializations in background
@@ -60,7 +61,6 @@ Future<void> main() async {
   } else {
     // On mobile, wait for full initialization before starting app
     await AppInitializer().initialize();
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     runApp(ProviderScope(child: App()));
   }
 }
@@ -246,13 +246,4 @@ class _AppState extends ConsumerState<App> {
       ),
     );
   }
-}
-
-@pragma('vm:entry-point')
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
-
-// Backward-compatible entry point for older persisted callback handles.
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await firebaseMessagingBackgroundHandler(message);
 }
