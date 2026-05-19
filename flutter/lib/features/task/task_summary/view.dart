@@ -16,7 +16,7 @@ import 'package:pax/utils/contract_address_constants.dart';
 import 'package:pax/utils/error_message_util.dart';
 import 'package:pax/utils/token_address_util.dart';
 import 'package:pax/widgets/other_task_card.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/theming/colors.dart';

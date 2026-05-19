@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/local/screening_context/screening_context_provider.dart';
 import 'package:pax/widgets/task_timer.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pax/theming/colors.dart';
@@ -269,8 +269,9 @@ class _TaskItselfViewState extends ConsumerState<FillAFormView> {
         child: Stack(
           children: [
             InAppWebView(
-              initialSettings:
-                  InAppWebViewSettings(useHybridComposition: false),
+              initialSettings: InAppWebViewSettings(
+                useHybridComposition: false,
+              ),
               onWebViewCreated: (controller) {
                 _webViewController = controller;
                 WidgetsBinding.instance.addPostFrameCallback((_) {

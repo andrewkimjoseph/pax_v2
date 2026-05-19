@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/constants/task_timer.dart';
 import 'package:pax/theming/colors.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class TaskTimer extends ConsumerStatefulWidget {
   final DateTime screeningTimeCreated;
@@ -106,7 +106,8 @@ class _TaskTimerState extends ConsumerState<TaskTimer> {
             color: timerColor,
           ).withPadding(right: 6),
           SizedBox(
-            width: 58, // Fixed width to accommodate "H:MM:SS" format (e.g. 2:00:54)
+            width:
+                58, // Fixed width to accommodate "H:MM:SS" format (e.g. 2:00:54)
             child: Text(
               _formatTime(_remainingSeconds),
               style: TextStyle(
