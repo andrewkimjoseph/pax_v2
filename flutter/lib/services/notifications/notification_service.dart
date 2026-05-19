@@ -112,6 +112,9 @@ class NotificationService {
           requestAlertPermission: true,
           requestBadgePermission: true,
           requestSoundPermission: true,
+          defaultPresentAlert: true,
+          defaultPresentBadge: true,
+          defaultPresentSound: true,
         );
 
     const InitializationSettings initializationSettings =
@@ -370,10 +373,11 @@ class NotificationService {
         debugPrint('[Data] Data: ${message.data}');
       }
 
-      RemoteNotification? notification = message.notification;
-      AndroidNotification? android = message.notification?.android;
+      final RemoteNotification? notification = message.notification;
 
-      if (notification != null && android != null) {
+      // Android: show via flutter_local_notifications. iOS: FCM foreground
+      // presentation options handle display; avoid duplicate banners.
+      if (notification != null && Platform.isAndroid) {
         showNotification(
           id: notification.hashCode,
           title: notification.title ?? '',
