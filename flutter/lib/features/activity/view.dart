@@ -11,8 +11,8 @@ import 'package:pax/widgets/activity/activity_card.dart';
 import 'package:pax/widgets/common/gradient_badge.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import '../../theming/colors.dart' show PaxColors;
-import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/auth/auth_provider.dart';
+import 'package:pax/widgets/common/account_type_badge.dart';
 import 'package:pax/providers/remote_config/remote_config_provider.dart';
 
 class ActivityView extends ConsumerStatefulWidget {
@@ -132,9 +132,6 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
     final allActivitiesAsync = ref.watch(allActivitiesProvider(userId));
     // Watch feature flags
     final featureFlags = ref.watch(featureFlagsProvider);
-    final accountType = ref.watch(accountTypeProvider);
-    final isV2 = accountType == AccountType.v2;
-
     return Scaffold(
       headers: [
         AppBar(
@@ -154,29 +151,9 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                       color: PaxColors.black,
                     ),
                   ),
-                  if (accountType != AccountType.unknown)
-                    Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            isV2
-                                ? PaxColors.deepPurple
-                                : PaxColors.mediumPurple,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        isV2 ? 'V2' : 'V1',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: PaxColors.white,
-                        ),
-                      ),
-                    ),
+                  const AccountTypeBadge(
+                    margin: EdgeInsets.only(left: 8),
+                  ),
                 ],
               ),
               const Spacer(),
