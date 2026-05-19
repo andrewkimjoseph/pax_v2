@@ -19,8 +19,7 @@ class ClaimSelectWalletView extends ConsumerStatefulWidget {
       _ClaimSelectWalletViewState();
 }
 
-class _ClaimSelectWalletViewState
-    extends ConsumerState<ClaimSelectWalletView> {
+class _ClaimSelectWalletViewState extends ConsumerState<ClaimSelectWalletView> {
   @override
   Widget build(BuildContext context) {
     final withdrawalMethods =
@@ -52,8 +51,11 @@ class _ClaimSelectWalletViewState
                 onTap: () {
                   context.pop();
                 },
-                child: FaIcon(FontAwesomeIcons.arrowLeftLong,
-                    size: 20, color: PaxColors.deepPurple),
+                child: FaIcon(
+                  FontAwesomeIcons.arrowLeftLong,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
               const Spacer(),
               const Text(
@@ -98,40 +100,43 @@ class _ClaimSelectWalletViewState
                   height: 48,
                   child: PrimaryButton(
                     enabled: isContinueEnabled,
-                    onPressed: isContinueEnabled
-                        ? () {
-                            ref
-                                .read(analyticsProvider)
-                                .continueSelectWalletTapped({
-                              "amount": claimContext?.amount,
-                              "tokenId": claimContext?.tokenId,
-                              "selectedPaymentMethodId":
-                                  claimContext?.selectedWithdrawalMethod?.id,
-                              "claimKind": claimContext?.claimKind.name,
-                              "isDonation": claimContext?.isDonation,
-                            });
-                            final nextPath =
-                                (claimContext?.isDonation == true &&
-                                        showDonationFlow &&
-                                        isGoodDollarClaim)
-                                    ? '/claim-reward/claim-payout/select-wallet/select-goodcollective'
-                                    : '/claim-reward/claim-payout/select-wallet/review-summary';
-                            context.push(nextPath);
-                          }
-                        : null,
+                    onPressed:
+                        isContinueEnabled
+                            ? () {
+                              ref
+                                  .read(analyticsProvider)
+                                  .continueSelectWalletTapped({
+                                    "amount": claimContext?.amount,
+                                    "tokenId": claimContext?.tokenId,
+                                    "selectedPaymentMethodId":
+                                        claimContext
+                                            ?.selectedWithdrawalMethod
+                                            ?.id,
+                                    "claimKind": claimContext?.claimKind.name,
+                                    "isDonation": claimContext?.isDonation,
+                                  });
+                              final nextPath =
+                                  (claimContext?.isDonation == true &&
+                                          showDonationFlow &&
+                                          isGoodDollarClaim)
+                                      ? '/claim-reward/claim-payout/select-wallet/select-goodcollective'
+                                      : '/claim-reward/claim-payout/select-wallet/review-summary';
+                              context.push(nextPath);
+                            }
+                            : null,
                     child: Text(
                       'Continue',
                       style: Theme.of(context).typography.base.copyWith(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 14,
-                            color: PaxColors.white,
-                          ),
+                        fontWeight: FontWeight.normal,
+                        fontSize: 14,
+                        color: PaxColors.white,
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-          ).withMargin(bottom: 32),
+          ).withPadding(bottom: 32),
         ],
       ).withPadding(horizontal: 8, bottom: 8),
     );
