@@ -11,7 +11,7 @@ import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/url_handler.dart';
 import 'package:pax/widgets/about_goodcollective_dialog.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class ClaimSelectGoodCollectiveView extends ConsumerWidget {
   const ClaimSelectGoodCollectiveView({super.key});
@@ -188,7 +188,7 @@ class ClaimSelectGoodCollectiveView extends ConsumerWidget {
                 ),
               ],
             ),
-          ).withMargin(bottom: 32),
+          ).withPadding(bottom: 32),
         ],
       ).withPadding(horizontal: 8, bottom: 8),
     );
@@ -301,7 +301,7 @@ class _GoodCollectiveTile extends StatelessWidget {
                               ? CheckboxState.checked
                               : CheckboxState.unchecked,
                       onChanged: (_) => _toggleSelection(ref, isSelected),
-                    ),
+                    ).withPadding(right: 8),
                   ],
                 ),
               ],

@@ -608,7 +608,7 @@ class _ClaimImpactReviewSummaryViewState
                 ),
               ],
             ),
-          ).withMargin(bottom: 32),
+          ).withPadding(bottom: 32),
         ],
       ).withPadding(horizontal: 8, bottom: 8),
     );

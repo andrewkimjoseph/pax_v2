@@ -15,7 +15,7 @@ import 'package:pax/providers/local/achievement_claim_provider.dart';
 import 'package:pax/providers/db/achievement/achievement_provider.dart';
 import 'package:pax/utils/error_message_util.dart';
 
-import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider, Consumer;
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
 class ClaimReviewSummaryView extends ConsumerStatefulWidget {
   const ClaimReviewSummaryView({super.key});
@@ -532,7 +532,7 @@ class _ClaimReviewSummaryViewState
                 ),
               ],
             ),
-          ).withMargin(bottom: 32),
+          ).withPadding(bottom: 32),
         ],
       ).withPadding(horizontal: 8, bottom: 8),
     );
