@@ -763,6 +763,8 @@ class PaxWalletNotifier extends Notifier<PaxWalletStateModel> {
       );
     }
 
+    await registerPaxWalletAsWithdrawalMethod();
+
     final isWhitelisted = await GoodDollarIdentityService.isWhitelisted(
       wallet.eoAddress!,
     );
