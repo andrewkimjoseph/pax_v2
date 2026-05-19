@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:flutter_svg/svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 // import 'package:pax/providers/local/activity_providers.dart';
 // import 'package:pax/utils/token_balance_util.dart';
@@ -53,6 +54,8 @@ class _AccountViewState extends ConsumerState<AccountView> {
   Widget build(BuildContext context) {
     final participantState = ref.watch(participantProvider);
     final participant = participantState.participant;
+    final accountType = ref.watch(accountTypeProvider);
+    final isV2 = accountType == AccountType.v2;
     // final tasksCount = ref.watch(totalTaskCompletionsProvider);
     // final totalGoodDollars = ref.watch(totalGoodDollarTokensEarnedProvider);
 
@@ -65,13 +68,41 @@ class _AccountViewState extends ConsumerState<AccountView> {
           header: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Account',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 32,
-                  color: PaxColors.black,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Account',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 32,
+                      color: PaxColors.black,
+                    ),
+                  ),
+                  if (accountType != AccountType.unknown)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            isV2
+                                ? PaxColors.deepPurple
+                                : PaxColors.mediumPurple,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isV2 ? 'V2' : 'V1',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: PaxColors.white,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
@@ -153,24 +184,10 @@ class _AccountViewState extends ConsumerState<AccountView> {
                                     ),
                                   ).withPadding(right: 8),
                                   InkWell(
-                                    onTap: () async {
-                                      await Clipboard.setData(
+                                    onTap: () {
+                                      Clipboard.setData(
                                         ClipboardData(text: participant.id),
                                       );
-                                      if (context.mounted) {
-                                        showToast(
-                                          context: context,
-                                          location: ToastLocation.topCenter,
-                                          builder:
-                                              (context, overlay) => Toast(
-                                                toastColor: PaxColors.green,
-                                                text: 'Participant ID copied',
-                                                trailingIcon:
-                                                    FontAwesomeIcons
-                                                        .solidCircleCheck,
-                                              ),
-                                        );
-                                      }
                                     },
                                     child: Container(
                                       padding: EdgeInsets.all(4),
