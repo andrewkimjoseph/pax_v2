@@ -15,13 +15,13 @@ class AchievementConstants {
 
   // Achievement Amounts
   static const int taskStarterAmount = 100;
-  static const int taskExpertAmount = 1000;
-  static const int profilePerfectionistAmount = 400;
-  static const int payoutConnectorAmount = 500;
-  static const int doublePayoutConnectorAmount = 500;
-  static const int triplePayoutConnectorAmount = 500;
-  static const int verifiedHumanAmount = 500;
-  static const int goodImpactAmount = 500;
+  static const int taskExpertAmount = 200;
+  static const int profilePerfectionistAmount = 100;
+  static const int payoutConnectorAmount = 100;
+  static const int doublePayoutConnectorAmount = 50;
+  static const int triplePayoutConnectorAmount = 50;
+  static const int verifiedHumanAmount = 200;
+  static const int goodImpactAmount = 200;
 
   // Remote config keys for achievement amounts
   static const String taskStarterAmountKey = 'taskStarterAmount';
