@@ -6,6 +6,7 @@ import 'package:pax/providers/local/wallet_transactions_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/theming/colors.dart';
+import 'package:pax/widgets/face_verification_prompt_banner.dart';
 import 'package:pax/widgets/pax_wallet/balance_card.dart';
 import 'package:pax/extensions/tooltip.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
@@ -91,6 +92,7 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            const FaceVerificationPromptBanner(),
             PaxWalletBalanceCard(
               viewState: viewState,
               address: wallet?.eoAddress,
