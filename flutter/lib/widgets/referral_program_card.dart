@@ -199,18 +199,19 @@ class ReferralProgramCard extends ConsumerWidget {
                   ),
                   IconButton(
                     variance: ButtonStyle.linkIcon(),
-                    onPressed: hasValidReferralLink
-                        ? () async {
-                      try {
-                        await Share.share(
-                          inviteLink!,
-                          subject: 'Join Pax with my link',
-                        );
-                      } catch (_) {
-                        // Silent failure; user can tap again if needed.
-                      }
-                    }
-                        : null,
+                    onPressed:
+                        hasValidReferralLink
+                            ? () async {
+                              try {
+                                await Share.share(
+                                  inviteLink!,
+                                  subject: 'Join Pax with my link',
+                                );
+                              } catch (_) {
+                                // Silent failure; user can tap again if needed.
+                              }
+                            }
+                            : null,
                     icon: FaIcon(
                       FontAwesomeIcons.shareNodes,
                       size: 24,
