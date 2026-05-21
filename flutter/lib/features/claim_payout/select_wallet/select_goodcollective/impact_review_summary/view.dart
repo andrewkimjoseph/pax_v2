@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' show Divider, InkWell;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart' show SvgPicture;
@@ -16,7 +15,7 @@ import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/currency_symbol.dart';
 import 'package:pax/utils/error_message_util.dart';
 import 'package:pax/utils/token_balance_util.dart';
-import 'package:pax/utils/url_handler.dart';
+import 'package:pax/widgets/change_good_collective_card.dart';
 import 'package:pax/widgets/change_withdrawal_method_card.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
@@ -476,104 +475,19 @@ class _ClaimImpactReviewSummaryViewState
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child:
-                          (collective?.coverURI ?? '').isNotEmpty
-                              ? CachedNetworkImage(
-                                imageUrl: collective!.coverURI!,
-                                width: 52,
-                                height: 52,
-                                fit: BoxFit.cover,
-                                errorWidget: (context, url, error) {
-                                  return SvgPicture.asset(
-                                    'lib/assets/svgs/goodcollective.svg',
-                                    width: 52,
-                                    height: 52,
-                                  );
-                                },
-                                placeholder: (context, url) {
-                                  return SvgPicture.asset(
-                                    'lib/assets/svgs/goodcollective.svg',
-                                    width: 52,
-                                    height: 52,
-                                  );
-                                },
-                              )
-                              : SvgPicture.asset(
-                                'lib/assets/svgs/goodcollective.svg',
-                                width: 52,
-                                height: 52,
-                              ),
-                    ).withPadding(right: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            collective?.name ?? '-',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                              color: PaxColors.black,
-                            ),
-                          ).withPadding(bottom: 6),
-                          Builder(
-                            builder: (context) {
-                              final contract = collective?.donationContract;
-                              if (contract == null) {
-                                return const Text(
-                                  '-',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                    color: PaxColors.lilac,
-                                  ),
-                                );
-                              }
-                              return InkWell(
-                                onTap:
-                                    () => UrlHandler.launchCustomTab(
-                                      context,
-                                      'https://goodcollective.xyz/collective/$contract',
-                                    ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '${contract.substring(0, 20)}...',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 12,
-                                        color: PaxColors.lilac,
-                                        decoration: TextDecoration.underline,
-                                        decorationColor: PaxColors.lilac,
-                                      ),
-                                    ).withPadding(right: 4),
-                                    const FaIcon(
-                                      FontAwesomeIcons.arrowUpRightFromSquare,
-                                      size: 10,
-                                      color: PaxColors.lilac,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    const FaIcon(
-                      FontAwesomeIcons.circleCheck,
-                      color: PaxColors.deepPurple,
-                      size: 18,
-                    ),
-                  ],
-                ),
-              ],
+              children:
+                  collective != null
+                      ? [
+                        ChangeGoodCollectiveCard(
+                          collective,
+                          onChangeTap: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            }
+                          },
+                        ),
+                      ]
+                      : [Text('No collective selected')],
             ),
           ),
           Spacer(),
