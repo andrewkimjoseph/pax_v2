@@ -275,7 +275,22 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
       headers: [
         AppBar(
           padding: EdgeInsets.all(8),
-          leading: [],
+          leading: [
+            InkWell(
+              onTap: () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/home');
+                }
+              },
+              child: FaIcon(
+                FontAwesomeIcons.arrowLeftLong,
+                size: 20,
+                color: PaxColors.deepPurple,
+              ),
+            ),
+          ],
           backgroundColor: PaxColors.white,
         ).withPadding(top: 16, horizontal: 8),
       ],
@@ -445,9 +460,7 @@ class _ClaimRewardViewState extends ConsumerState<ClaimRewardView> {
                         ).withPadding(right: 8),
                         InkWell(
                           onTap: () {
-                            Clipboard.setData(
-                              ClipboardData(text: referralId),
-                            );
+                            Clipboard.setData(ClipboardData(text: referralId));
                           },
                           child: Container(
                             padding: EdgeInsets.all(4),
