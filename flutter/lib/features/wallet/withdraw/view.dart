@@ -145,7 +145,7 @@ class _WithdrawViewState extends ConsumerState<WithdrawView> {
                 child: FaIcon(
                   FontAwesomeIcons.arrowLeftLong,
                   size: 20,
-                  color: PaxColors.deepPurple,
+                  color: PaxColors.white,
                 ),
               ),
               const Spacer(),
