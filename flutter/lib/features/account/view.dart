@@ -77,9 +77,7 @@ class _AccountViewState extends ConsumerState<AccountView> {
                       color: PaxColors.black,
                     ),
                   ),
-                  const AccountTypeBadge(
-                    margin: EdgeInsets.only(left: 8),
-                  ),
+                  const AccountTypeBadge(margin: EdgeInsets.only(left: 8)),
                 ],
               ),
             ],

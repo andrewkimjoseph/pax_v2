@@ -151,9 +151,7 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
                       color: PaxColors.black,
                     ),
                   ),
-                  const AccountTypeBadge(
-                    margin: EdgeInsets.only(left: 8),
-                  ),
+                  const AccountTypeBadge(margin: EdgeInsets.only(left: 8)),
                 ],
               ),
               const Spacer(),
@@ -311,7 +309,7 @@ class _ActivityViewState extends ConsumerState<ActivityView> {
               );
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
         ),
         Divider(color: PaxColors.lightGrey),
