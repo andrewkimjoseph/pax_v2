@@ -153,7 +153,7 @@ class _WalletViewViewState extends ConsumerState<WalletView> {
                     ).withPadding(bottom: 8);
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
 
             Container(

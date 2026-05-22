@@ -82,16 +82,14 @@ class _WalletAndAppsViewState extends ConsumerState<WalletAndAppsView> {
                       color: PaxColors.black,
                     ),
                   ),
-                  const AccountTypeBadge(
-                    margin: EdgeInsets.only(left: 8),
-                  ),
+                  const AccountTypeBadge(margin: EdgeInsets.only(left: 8)),
                 ],
               ),
               ref
                   .watch(featureFlagsProvider)
                   .when(
                     loading: () => const SizedBox.shrink(),
-                    error: (_, __) => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
                     data:
                         (flags) =>
                             kDebugMode ||
