@@ -211,12 +211,21 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
           return;
         }
 
-        // No backup found -- create new wallet
+        // No backup found during restore — do not create a new wallet here.
+        // Wallet creation is handled explicitly by the wallet creation flow.
         drive.close();
         if (kDebugMode) {
-          debugPrint('[WalletCredentials] WalletCredentials: no Drive backup, creating new wallet');
+          debugPrint(
+            '[WalletCredentials] WalletCredentials: no Drive backup found during restore',
+          );
         }
-        await createWallet(accessToken: accessToken, accountId: accountId);
+        state = state.copyWith(
+          status: WalletCredentialsStatus.error,
+          errorMessage:
+              'Wallet backup not found in Google Drive. '
+              'Please sign in with the Google account you used when creating your wallet.',
+        );
+        return;
       } catch (e) {
         drive.close();
         rethrow;
