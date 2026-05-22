@@ -61,11 +61,15 @@ class NotificationService {
       await _initializeLocalNotifications();
       _isInitialized = true;
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Local notifications initialized');
+        debugPrint(
+          '[Notification] Notification Service: Local notifications initialized',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Error initializing: $e');
+        debugPrint(
+          '[Notification] Notification Service: Error initializing: $e',
+        );
       }
     }
   }
@@ -76,7 +80,9 @@ class NotificationService {
   Future<AuthorizationStatus?> requestPermissionAndEnsureFcmToken() async {
     if (_isFcmInitialized) {
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: FCM already initialized');
+        debugPrint(
+          '[Notification] Notification Service: FCM already initialized',
+        );
       }
       return null;
     }
@@ -85,12 +91,16 @@ class NotificationService {
       final status = await _initializeFirebaseMessaging();
       _isFcmInitialized = true;
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: FCM permission and token ready');
+        debugPrint(
+          '[Notification] Notification Service: FCM permission and token ready',
+        );
       }
       return status;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Error initializing FCM: $e');
+        debugPrint(
+          '[Notification] Notification Service: Error initializing FCM: $e',
+        );
       }
       rethrow;
     }
@@ -124,7 +134,7 @@ class NotificationService {
         );
 
     await _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         if (kDebugMode) {
           debugPrint('[Notification] Notification tapped: ${response.payload}');
@@ -193,12 +203,16 @@ class NotificationService {
       final token = await _messaging.getToken();
       _currentToken = token;
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Got token: ${token?.substring(0, 10)}...');
+        debugPrint(
+          '[Notification] Notification Service: Got token: ${token?.substring(0, 10)}...',
+        );
       }
       return token;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Error getting token: $e');
+        debugPrint(
+          '[Notification] Notification Service: Error getting token: $e',
+        );
       }
       return null;
     }
@@ -209,7 +223,9 @@ class NotificationService {
   Future<void> saveTokenForParticipant(String participantId) async {
     if (_isSavingToken) {
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Token save already in progress');
+        debugPrint(
+          '[Notification] Notification Service: Token save already in progress',
+        );
       }
       return;
     }
@@ -221,7 +237,9 @@ class NotificationService {
       final token = await getToken();
       if (token == null) {
         if (kDebugMode) {
-          debugPrint('[Notification] Notification Service: No token available to save');
+          debugPrint(
+            '[Notification] Notification Service: No token available to save',
+          );
         }
         return;
       }
@@ -233,11 +251,15 @@ class NotificationService {
       }
       await _repository.saveToken(participantId, token);
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Token saved successfully');
+        debugPrint(
+          '[Notification] Notification Service: Token saved successfully',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Error saving token: $e');
+        debugPrint(
+          '[Notification] Notification Service: Error saving token: $e',
+        );
       }
     } finally {
       _isSavingToken = false;
@@ -270,10 +292,10 @@ class NotificationService {
     String? payload,
   }) async {
     await _flutterLocalNotificationsPlugin.show(
-      id,
-      title,
-      body,
-      _defaultNotificationDetails,
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: _defaultNotificationDetails,
       payload: payload,
     );
   }
@@ -320,13 +342,13 @@ class NotificationService {
       final remainingMinutes = taskTimerDurationMinutes - minutes;
       try {
         await _flutterLocalNotificationsPlugin.zonedSchedule(
-          scheduledId,
-          'Task reminder',
-          minutes >= taskTimerDurationMinutes
+          id: scheduledId,
+          title: 'Task reminder',
+          body: minutes >= taskTimerDurationMinutes
               ? 'Cooldown is ending soon.'
               : '${_formatTaskTimeRemaining(remainingMinutes)} left on your task.',
-          tzScheduled,
-          _defaultNotificationDetails,
+          scheduledDate: tzScheduled,
+          notificationDetails: _defaultNotificationDetails,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         );
       } catch (e) {
@@ -346,9 +368,7 @@ class NotificationService {
       final hours = remainingMinutes ~/ 60;
       return hours == 1 ? '1 hour' : '$hours hours';
     }
-    return remainingMinutes == 1
-        ? '1 min'
-        : '$remainingMinutes min';
+    return remainingMinutes == 1 ? '1 min' : '$remainingMinutes min';
   }
 
   /// Cancels all task cooldown reminders (IDs [taskCooldownNotificationIdBase] through +6).
@@ -359,7 +379,7 @@ class NotificationService {
       id <= taskCooldownNotificationIdBase + 6;
       id++
     ) {
-      await _flutterLocalNotificationsPlugin.cancel(id);
+      await _flutterLocalNotificationsPlugin.cancel(id: id);
     }
   }
 
@@ -368,8 +388,12 @@ class NotificationService {
   void setupForegroundMessageHandling(Function(RemoteMessage) onMessageTap) {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       if (kDebugMode) {
-        debugPrint('[Foreground] Foreground message received: ${message.messageId}');
-        debugPrint('[Notification] Notification: ${message.notification?.title}');
+        debugPrint(
+          '[Foreground] Foreground message received: ${message.messageId}',
+        );
+        debugPrint(
+          '[Notification] Notification: ${message.notification?.title}',
+        );
         debugPrint('[Data] Data: ${message.data}');
       }
 
@@ -444,11 +468,15 @@ class NotificationService {
       });
 
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Remote notification sent successfully');
+        debugPrint(
+          '[Notification] Notification Service: Remote notification sent successfully',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('[Notification] Notification Service: Error sending remote notification: $e');
+        debugPrint(
+          '[Notification] Notification Service: Error sending remote notification: $e',
+        );
       }
       rethrow;
     }
