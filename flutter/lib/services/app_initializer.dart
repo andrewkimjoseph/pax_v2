@@ -124,11 +124,11 @@ class AppInitializer {
     try {
       await FirebaseAppCheck.instance
           .activate(
-            androidProvider:
+            providerAndroid:
                 kDebugMode
-                    ? AndroidProvider.debug
-                    : AndroidProvider.playIntegrity,
-            webProvider: ReCaptchaV3Provider(Env.webRecaptchaSiteKey),
+                    ? AndroidDebugProvider()
+                    : AndroidPlayIntegrityProvider(),
+            providerWeb: ReCaptchaV3Provider(Env.webRecaptchaSiteKey),
           )
           .timeout(
             Duration(seconds: kIsWeb ? 3 : 10),
