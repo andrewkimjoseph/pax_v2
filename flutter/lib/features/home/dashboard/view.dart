@@ -83,7 +83,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     ).withPadding(bottom: 8);
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
 
             const EngagementRewardsCard(),
@@ -98,7 +98,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     value: tasksCount.when(
                       data: (c) => c.toString(),
                       loading: () => '--',
-                      error: (_, __) => '0',
+                      error: (_, _) => '0',
                     ),
                     label: 'Tasks Done',
                     isLoading: tasksCount is AsyncLoading,
@@ -110,7 +110,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     value: totalGoodDollars.when(
                       data: (a) => TokenBalanceUtil.getLocaleFormattedAmount(a),
                       loading: () => '--',
-                      error: (_, __) => '0',
+                      error: (_, _) => '0',
                     ),
                     label: 'All G\$ Earned',
                     isLoading: totalGoodDollars is AsyncLoading,
@@ -130,7 +130,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     value: donationsMadeCount.when(
                       data: (c) => c.toString(),
                       loading: () => '--',
-                      error: (_, __) => '0',
+                      error: (_, _) => '0',
                     ),
                     label: 'Donations Made',
                     isLoading: donationsMadeCount is AsyncLoading,
@@ -147,7 +147,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     value: totalGoodDollarDonated.when(
                       data: (a) => TokenBalanceUtil.getLocaleFormattedAmount(a),
                       loading: () => '--',
-                      error: (_, __) => '0',
+                      error: (_, _) => '0',
                     ),
                     label: 'G\$ Donated',
                     isLoading: totalGoodDollarDonated is AsyncLoading,
@@ -167,7 +167,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     value: totalReferralsCount.when(
                       data: (c) => c.toString(),
                       loading: () => '--',
-                      error: (_, __) => '0',
+                      error: (_, _) => '0',
                     ),
                     label: 'Referrals Made',
                     isLoading: totalReferralsCount is AsyncLoading,
@@ -179,7 +179,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     value: totalReferralAmountGd.when(
                       data: (a) => TokenBalanceUtil.getLocaleFormattedAmount(a),
                       loading: () => '--',
-                      error: (_, __) => '0',
+                      error: (_, _) => '0',
                     ),
                     label: 'Referral G\$ Made',
                     isLoading: totalReferralAmountGd is AsyncLoading,
@@ -204,7 +204,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     value: unclaimedReferralRewardsCount.when(
                       data: (c) => c.toString(),
                       loading: () => '--',
-                      error: (_, __) => '0',
+                      error: (_, _) => '0',
                     ),
                     label: 'Pending Referrals',
                     isLoading: unclaimedReferralRewardsCount is AsyncLoading,
@@ -216,7 +216,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     value: unclaimedCount.when(
                       data: (c) => c.toString(),
                       loading: () => '--',
-                      error: (_, __) => '0',
+                      error: (_, _) => '0',
                     ),
                     label: 'Pending Completions',
                     isLoading: unclaimedCount is AsyncLoading,
@@ -312,7 +312,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
   }
 
   Widget _statCard({
-    required IconData icon,
+    required FaIconData icon,
     required String value,
     required String label,
     Color? valueColor,
