@@ -64,11 +64,11 @@ class _WithdrawalMethodPromptBannerState
     return featureFlags.when(
       // Do not hide while RC loads — same default as withdrawal screen (allow in debug; else assume available).
       loading: () => _WithdrawalMethodPromptBannerState._banner(context, ref),
-      error: (_, __) => _WithdrawalMethodPromptBannerState._banner(context, ref),
+      error: (_, _) => _WithdrawalMethodPromptBannerState._banner(context, ref),
       data: (flags) {
         final available =
             flags[RemoteConfigKeys.isWithdrawalMethodConnectionAvailable] ??
-                true;
+            true;
         if (!kDebugMode && available != true) {
           return const SizedBox.shrink();
         }
@@ -80,68 +80,65 @@ class _WithdrawalMethodPromptBannerState
 
   static Widget _banner(BuildContext context, WidgetRef ref) {
     final child = InkWell(
-          onTap: () {
-            ref.read(analyticsProvider).setUpWithdrawalMethodTapped({
-              'source': 'dashboard_banner',
-            });
-            context.push(WithdrawalMethodPromptBanner._route);
-          },
-          child: Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  PaxColors.deepPurple.withValues(alpha: 0.1),
-                  PaxColors.lilac.withValues(alpha: 0.1),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(
-                color: PaxColors.deepPurple.withValues(alpha: 0.3),
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                FaIcon(
-                  FontAwesomeIcons.wallet,
-                  color: PaxColors.deepPurple,
-                  size: 24,
-                ).withPadding(right: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Connect a withdrawal method',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: PaxColors.deepPurple,
-                        ),
-                      ).withPadding(bottom: 2),
-                      Text(
-                        'Link MiniPay or GoodWallet so you can receive payouts.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: PaxColors.darkGrey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                FaIcon(
-                  FontAwesomeIcons.chevronRight,
-                  color: PaxColors.deepPurple,
-                  size: 16,
-                ),
-              ],
-            ),
+      onTap: () {
+        ref.read(analyticsProvider).setUpWithdrawalMethodTapped({
+          'source': 'dashboard_banner',
+        });
+        context.push(WithdrawalMethodPromptBanner._route);
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              PaxColors.deepPurple.withValues(alpha: 0.1),
+              PaxColors.lilac.withValues(alpha: 0.1),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        );
+          border: Border.all(
+            color: PaxColors.deepPurple.withValues(alpha: 0.3),
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            FaIcon(
+              FontAwesomeIcons.wallet,
+              color: PaxColors.deepPurple,
+              size: 24,
+            ).withPadding(right: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Connect a withdrawal method',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: PaxColors.deepPurple,
+                    ),
+                  ).withPadding(bottom: 2),
+                  Text(
+                    'Link MiniPay or GoodWallet so you can receive payouts.',
+                    style: TextStyle(fontSize: 13, color: PaxColors.darkGrey),
+                  ),
+                ],
+              ),
+            ),
+            FaIcon(
+              FontAwesomeIcons.chevronRight,
+              color: PaxColors.deepPurple,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
     return child;
   }
 }
