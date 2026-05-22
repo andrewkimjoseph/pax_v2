@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:pax/utils/achievement_constants.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart';
-
 enum AchievementStatus { inProgress, earned, claimed }
 
 class Achievement {
@@ -109,7 +107,7 @@ class Achievement {
     }
   }
 
-  IconData get icon {
+  FaIconData get icon {
     switch (name) {
       case AchievementConstants.payoutConnector:
       case AchievementConstants.doublePayoutConnector:

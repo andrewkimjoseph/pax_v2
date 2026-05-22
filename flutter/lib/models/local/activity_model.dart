@@ -2,7 +2,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:pax/exports/shadcn.dart';
 import 'package:pax/models/firestore/reward/reward_model.dart';
 import 'package:pax/models/firestore/referral/referral.dart';
 import 'package:pax/models/firestore/donation/donation_model.dart';
@@ -118,7 +117,7 @@ class Activity {
     return null;
   }
 
-  IconData? getIcon() {
+  FaIconData? getIcon() {
     if (type == ActivityType.taskCompletion) {
       return FontAwesomeIcons.flagCheckered;
     }
