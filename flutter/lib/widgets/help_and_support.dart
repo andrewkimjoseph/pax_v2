@@ -7,7 +7,7 @@ class HelpAndSupportCard extends ConsumerWidget {
   const HelpAndSupportCard(this.label, {this.icon, super.key});
 
   final String label;
-  final IconData? icon;
+  final FaIconData? icon;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

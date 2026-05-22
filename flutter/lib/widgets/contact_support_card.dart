@@ -10,7 +10,7 @@ class ContactSupportCard extends ConsumerWidget {
   final String channel;
   final String icon;
 
-  static const _faIcons = <String, IconData>{
+  static const _faIcons = <String, FaIconData>{
     'customer_support': FontAwesomeIcons.ticket,
     'website': FontAwesomeIcons.globe,
   };

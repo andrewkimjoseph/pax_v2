@@ -103,7 +103,7 @@ class SocialLinksRow extends ConsumerWidget {
   Widget _socialButton(
     BuildContext context,
     WidgetRef ref, {
-    required IconData icon,
+    required FaIconData icon,
     required Color color,
     required String name,
     required String url,
