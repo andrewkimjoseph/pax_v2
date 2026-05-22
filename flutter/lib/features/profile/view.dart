@@ -36,7 +36,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
   void _showToast({
     required String message,
     required Color backgroundColor,
-    required IconData icon,
+    required FaIconData icon,
   }) {
     if (!mounted) return;
     showToast(

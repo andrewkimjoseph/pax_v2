@@ -22,9 +22,9 @@ class Toast extends ConsumerWidget {
   final Color leadingIconColor;
 
   final Color trailingIconColor;
-  final IconData? leadingIcon;
+  final FaIconData? leadingIcon;
 
-  final IconData trailingIcon;
+  final FaIconData trailingIcon;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
