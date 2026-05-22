@@ -22,6 +22,6 @@ final hasServerWalletIdProvider = Provider.family<bool, String>((ref, taskId) {
   return walletIdAsync.when(
     data: (data) => data != null && data.isNotEmpty,
     loading: () => false,
-    error: (_, __) => false,
+    error: (_, _) => false,
   );
 });

@@ -43,6 +43,6 @@ final taskScreeningProvider = Provider.family<Screening?, String>((
       }
     },
     loading: () => null,
-    error: (_, __) => null,
+    error: (_, _) => null,
   );
 });
