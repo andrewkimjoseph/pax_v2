@@ -40,7 +40,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
     return configAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error:
-          (_, __) => Center(
+          (_, _) => Center(
             child: Text(
               'No apps available right now.',
               style: TextStyle(fontSize: 16, color: PaxColors.darkGrey),
@@ -246,7 +246,7 @@ class _MiniAppsViewState extends ConsumerState<MiniAppsView> {
     return paxWalletNeedsVerificationAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error:
-          (_, __) => _buildVerificationPrompt(
+          (_, _) => _buildVerificationPrompt(
             context,
             onCheckAgain: _onCheckAgainPressed,
             isCheckingAgain: _isCheckingAgain,
@@ -387,8 +387,8 @@ class _MiniAppCard extends ConsumerWidget {
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => _placeholderIcon(),
-                    errorWidget: (_, __, ___) => _placeholderIcon(),
+                    placeholder: (_, _) => _placeholderIcon(),
+                    errorWidget: (_, _, _) => _placeholderIcon(),
                   ),
                 ).withPadding(right: 16)
               else
@@ -432,7 +432,7 @@ class _MiniAppCard extends ConsumerWidget {
         color: PaxColors.lilac.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Icon(
+      child: FaIcon(
         FontAwesomeIcons.puzzlePiece,
         color: PaxColors.deepPurple,
         size: 24,
