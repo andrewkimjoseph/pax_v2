@@ -93,12 +93,7 @@ class _WithdrawalMethodsViewState extends ConsumerState<WithdrawalMethodsView> {
       },
     );
 
-    final cardChildren =
-        isV2
-            ? [
-              paxWalletCard,
-            ]
-            : [minipayCard, goodWalletCard];
+    final cardChildren = isV2 ? [paxWalletCard] : [minipayCard, goodWalletCard];
 
     return featureFlags.when(
       data: (flags) {
@@ -172,7 +167,7 @@ class _WithdrawalMethodsViewState extends ConsumerState<WithdrawalMethodsView> {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
