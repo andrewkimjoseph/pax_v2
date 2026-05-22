@@ -26,7 +26,7 @@ class FaceVerificationPromptBanner extends ConsumerWidget {
 
     return needsVerification.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (show) {
         if (!show) {
           return const SizedBox.shrink();

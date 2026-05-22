@@ -21,7 +21,7 @@ class V2AvailabilityBanner extends ConsumerWidget {
 
     return featureFlags.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (flags) {
         final isV2UpgradeAvailable =
             flags[RemoteConfigKeys.isV2UpgradeAvailable] == true;

@@ -530,7 +530,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                             child: withdrawButton,
                                           ),
                                       error:
-                                          (_, __) => Align(
+                                          (_, _) => Align(
                                             alignment:
                                                 widget.nextLocation == "/wallet"
                                                     ? Alignment.centerLeft
@@ -540,7 +540,7 @@ class _CurrentBalanceCardState extends ConsumerState<CurrentBalanceCard> {
                                     );
                               },
                               loading: () => const SizedBox.shrink(),
-                              error: (_, __) => const SizedBox.shrink(),
+                              error: (_, _) => const SizedBox.shrink(),
                             ),
                       ),
                     ],
