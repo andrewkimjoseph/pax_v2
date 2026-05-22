@@ -203,9 +203,11 @@ class ReferralProgramCard extends ConsumerWidget {
                         hasValidReferralLink
                             ? () async {
                               try {
-                                await Share.share(
-                                  inviteLink!,
-                                  subject: 'Join Pax with my link',
+                                await SharePlus.instance.share(
+                                  ShareParams(
+                                    text: inviteLink!,
+                                    subject: 'Join Pax with my link',
+                                  ),
                                 );
                               } catch (_) {
                                 // Silent failure; user can tap again if needed.
