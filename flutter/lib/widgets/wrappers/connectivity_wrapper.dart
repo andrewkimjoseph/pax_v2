@@ -51,8 +51,10 @@ class ConnectivityWrapper extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const FaIcon(FontAwesomeIcons.internetExplorer, size: 64)
-                .withPadding(bottom: 16),
+            const FaIcon(
+              FontAwesomeIcons.internetExplorer,
+              size: 64,
+            ).withPadding(bottom: 16),
             const Text(
               'No Internet Connection',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -74,7 +76,10 @@ class ConnectivityWrapper extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const FaIcon(Icons.vpn_lock, size: 64).withPadding(bottom: 16),
+            const FaIcon(
+              FontAwesomeIcons.lock,
+              size: 64,
+            ).withPadding(bottom: 16),
             const Text(
               'VPN Connection Detected',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
