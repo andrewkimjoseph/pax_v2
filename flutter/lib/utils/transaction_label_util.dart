@@ -2,7 +2,6 @@
 /// Use for UI only; only shows Sent / Received (or "Transaction" when unknown).
 library;
 
-import 'package:flutter/material.dart' show IconData;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class TransactionLabelUtil {
@@ -48,7 +47,7 @@ class TransactionLabelUtil {
   }
 
   /// Icon for the given label (e.g. for use on transaction cards).
-  static IconData getIconForLabel(String label) {
+  static FaIconData getIconForLabel(String label) {
     switch (label) {
       case 'Sent':
         return FontAwesomeIcons.circleArrowUp;
