@@ -70,9 +70,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       color: PaxColors.black,
                     ),
                   ),
-                  const AccountTypeBadge(
-                    margin: EdgeInsets.only(left: 8),
-                  ),
+                  const AccountTypeBadge(margin: EdgeInsets.only(left: 8)),
                 ],
               ),
 
@@ -144,7 +142,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                                           onPressed: _onTasksPressed,
                                         ),
                                     error:
-                                        (_, __) => _homeTabButton(
+                                        (_, _) => _homeTabButton(
                                           label: 'Tasks',
                                           isActive: index == 1,
                                           isError: true,
@@ -155,7 +153,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                               )
                               : const SizedBox.shrink(),
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
                 featureFlags.when(
                   data:
@@ -198,7 +196,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                               )
                               : const SizedBox.shrink(),
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
               ],
             ),
@@ -229,7 +227,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                       () =>
                           const SizedBox.shrink(key: ValueKey('loading_tasks')),
                   error:
-                      (_, __) =>
+                      (_, _) =>
                           const SizedBox.shrink(key: ValueKey('error_tasks')),
                 )
                 : featureFlags.when(
@@ -250,7 +248,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                         key: ValueKey('loading_achievements'),
                       ),
                   error:
-                      (_, __) => const SizedBox.shrink(
+                      (_, _) => const SizedBox.shrink(
                         key: ValueKey('error_achievements'),
                       ),
                 ),
