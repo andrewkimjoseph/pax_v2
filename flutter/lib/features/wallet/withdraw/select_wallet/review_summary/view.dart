@@ -515,7 +515,7 @@ class _ReviewSummaryViewState extends ConsumerState<ReviewSummaryView> {
                         ),
                       ),
                   error:
-                      (_, __) => const SizedBox(
+                      (_, _) => const SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: PrimaryButton(

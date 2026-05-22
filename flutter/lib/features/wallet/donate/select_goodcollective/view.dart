@@ -105,7 +105,7 @@ class SelectGoodCollectiveView extends ConsumerWidget {
                   loading:
                       () => const Center(child: CircularProgressIndicator()),
                   error:
-                      (_, __) => const Center(
+                      (_, _) => const Center(
                         child: Text('Unable to load GoodCollectives'),
                       ),
                 ),
