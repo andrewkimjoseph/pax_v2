@@ -763,7 +763,7 @@ final routerProvider = Provider((ref) {
       ),
       GoRoute(
         path: "/claim-payout/select-wallet",
-        redirect: (_, __) => "/claim-reward/claim-payout/select-wallet",
+        redirect: (_, _) => "/claim-reward/claim-payout/select-wallet",
       ),
       GoRoute(
         path: Routes.createV2Wallet,
