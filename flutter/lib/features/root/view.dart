@@ -214,7 +214,7 @@ class _RootViewState extends ConsumerState<RootView> {
     ];
   }
 
-  IconData _getIconForLabel(String label, {bool isSelected = false}) {
+  FaIconData _getIconForLabel(String label, {bool isSelected = false}) {
     switch (label) {
       case 'Home':
         return FontAwesomeIcons.house;

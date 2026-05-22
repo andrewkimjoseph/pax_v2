@@ -236,7 +236,7 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
 
   Widget _buildLinkActionsRow({
     required String label,
-    required IconData icon,
+    required FaIconData icon,
     required VoidCallback? onOpen,
     required String copyUrl,
   }) {
