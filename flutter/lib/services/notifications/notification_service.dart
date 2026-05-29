@@ -413,7 +413,7 @@ class NotificationService {
   /// Sets up handling of foreground messages (when app is open).
   /// Converts remote notifications to local notifications for display.
   void setupForegroundMessageHandling(Function(RemoteMessage) onMessageTap) {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       if (kDebugMode) {
         debugPrint(
           '[Foreground] Foreground message received: ${message.messageId}',
