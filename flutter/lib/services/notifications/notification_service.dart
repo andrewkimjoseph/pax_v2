@@ -185,6 +185,14 @@ class NotificationService {
       sound: true,
     );
 
+    if (!kIsWeb && Platform.isAndroid) {
+      await _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.requestNotificationsPermission();
+    }
+
     _currentToken = await _messaging.getToken();
     if (kDebugMode) {
       debugPrint('[FCM] FCM Token: ${_currentToken?.substring(0, 10)}...');
