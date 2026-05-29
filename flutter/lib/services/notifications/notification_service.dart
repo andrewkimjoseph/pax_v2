@@ -147,17 +147,15 @@ class NotificationService {
 
     if (!kIsWeb) {
       if (Platform.isAndroid) {
-        await _flutterLocalNotificationsPlugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >()
-            ?.createNotificationChannel(channel);
-        // Request exact alarm permission for scheduled notifications (Android 14+).
-        await _flutterLocalNotificationsPlugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >()
-            ?.requestExactAlarmsPermission();
+        final androidPlugin =
+            _flutterLocalNotificationsPlugin
+                .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin
+                >();
+        await androidPlugin?.createNotificationChannel(channel);
+        // Android 13+: required for flutter_local_notifications to show banners.
+        await androidPlugin?.requestNotificationsPermission();
+        await androidPlugin?.requestExactAlarmsPermission();
       }
     }
   }
