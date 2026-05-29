@@ -111,7 +111,7 @@ class NotificationService {
     if (!kIsWeb) {
       tz_data.initializeTimeZones();
       // Use UTC for scheduled times; screeningTimeCreated from Firestore is UTC.
-      tz.setLocalLocation(tz.getLocation('UTC'));
+      tz.setLocalLocation(tz.getLocation('Etc/UTC'));
     }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
