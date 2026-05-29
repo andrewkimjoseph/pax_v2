@@ -428,8 +428,8 @@ class NotificationService {
 
       // Android: show via flutter_local_notifications. iOS: FCM foreground
       // presentation options handle display; avoid duplicate banners.
-      if (notification != null && Platform.isAndroid) {
-        showNotification(
+      if (notification != null && !kIsWeb && Platform.isAndroid) {
+        await showNotification(
           id: notification.hashCode,
           title: notification.title ?? '',
           body: notification.body ?? '',
