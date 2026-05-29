@@ -332,6 +332,8 @@ class NotificationService {
           channel.name,
           channelDescription: channel.description,
           icon: 'ic_main',
+          importance: Importance.high,
+          priority: Priority.high,
         ),
         iOS: const DarwinNotificationDetails(),
       );
