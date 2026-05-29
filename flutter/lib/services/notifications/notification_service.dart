@@ -297,13 +297,32 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
-    await _flutterLocalNotificationsPlugin.show(
-      id: id,
-      title: title,
-      body: body,
-      notificationDetails: _defaultNotificationDetails,
-      payload: payload,
-    );
+    if (!_isInitialized) {
+      await initialize();
+    }
+    if (!_isInitialized) {
+      if (kDebugMode) {
+        debugPrint(
+          '[Notification] showNotification aborted: plugin not initialized',
+        );
+      }
+      return;
+    }
+
+    try {
+      await _flutterLocalNotificationsPlugin.show(
+        id: id & 0x7FFFFFFF,
+        title: title,
+        body: body,
+        notificationDetails: _defaultNotificationDetails,
+        payload: payload,
+      );
+    } catch (e, stack) {
+      if (kDebugMode) {
+        debugPrint('[Notification] showNotification failed: $e');
+        debugPrint('$stack');
+      }
+    }
   }
 
   static NotificationDetails get _defaultNotificationDetails =>
