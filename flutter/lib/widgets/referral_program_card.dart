@@ -132,7 +132,7 @@ class ReferralProgramCard extends ConsumerWidget {
                                 fit: BoxFit.contain,
                               ),
                             ),
-                            const TextSpan(text: ' and 1000 '),
+                            const TextSpan(text: ' and 500 '),
                             WidgetSpan(
                               alignment: PlaceholderAlignment.middle,
                               child: Image.asset(
