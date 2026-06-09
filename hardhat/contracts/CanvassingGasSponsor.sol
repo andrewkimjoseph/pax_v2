@@ -4,6 +4,7 @@ pragma solidity ^0.8.34;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./CanvassingWalletRegistry.sol";
@@ -22,10 +23,12 @@ import "./CanvassingWalletRegistry.sol";
  *      Implements the UUPS upgradeable proxy pattern with reentrancy protection
  *      on all state-changing functions that perform external calls (sponsorWallet, withdraw).
  *      Owned by the deployer; only the owner may sponsor wallets or authorise upgrades.
+ *      The owner may pause sponsorship via pause() without blocking withdraw or upgrades.
  */
 contract CanvassingGasSponsor is
     Initializable,
     OwnableUpgradeable,
+    PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     UUPSUpgradeable
 {
@@ -128,6 +131,7 @@ contract CanvassingGasSponsor is
         require(_registry != address(0), "CanvassingGasSponsor: registry cannot be zero address");
 
         __Ownable_init(_owner);
+        __Pausable_init();
         __ReentrancyGuard_init();
 
         registry = CanvassingWalletRegistry(_registry);
@@ -160,7 +164,7 @@ contract CanvassingGasSponsor is
     function sponsorWallet(
         address eoAddress,
         uint256 amount
-    ) external onlyOwner nonReentrant {
+    ) external onlyOwner whenNotPaused nonReentrant {
         require(eoAddress != address(0), "CanvassingGasSponsor: eoAddress cannot be zero address");
         require(amount > 0, "CanvassingGasSponsor: amount must be greater than zero");
         require(
@@ -214,6 +218,20 @@ contract CanvassingGasSponsor is
         require(success, "CanvassingGasSponsor: withdrawal failed");
 
         emit Withdrawn(to, amount);
+    }
+
+    /**
+     * @notice Pause gas sponsorship.
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /**
+     * @notice Resume gas sponsorship.
+     */
+    function unpause() external onlyOwner {
+        _unpause();
     }
 
     // -------------------------------------------------------------------------
