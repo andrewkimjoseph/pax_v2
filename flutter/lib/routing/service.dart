@@ -9,6 +9,7 @@ import 'package:pax/features/complete_profile/view.dart';
 import 'package:pax/features/face_verification/view.dart';
 import 'package:pax/features/home/pax_wallet/view.dart';
 import 'package:pax/features/report_page/view.dart';
+import 'package:pax/features/task/task_itself/answer_poll/view.dart';
 import 'package:pax/features/task/task_itself/check_out_app/view.dart';
 import 'package:pax/features/task/task_itself/fill_a_form/view.dart';
 import 'package:pax/features/wallet_creation/view.dart';
@@ -656,6 +657,12 @@ final routerProvider = Provider((ref) {
                         ImageStepPhotoView(path: state.extra as String),
               ),
             ],
+          ),
+          GoRoute(
+            path: "/answer-poll",
+            builder:
+                (BuildContext context, GoRouterState state) =>
+                    const AnswerPollView(),
           ),
         ],
       ),

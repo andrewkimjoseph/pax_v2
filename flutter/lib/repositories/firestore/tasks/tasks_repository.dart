@@ -28,10 +28,13 @@ class TasksRepository {
     String? participantId,
     String? participantCountry,
   ) {
-    // Build the base query
-    final Query tasksQuery = _tasksCollection
-        .where('isAvailable', isEqualTo: true)
-        .where('isTest', isEqualTo: false);
+    // In debug builds, include test tasks for QA.
+    final Query tasksQuery =
+        kDebugMode
+            ? _tasksCollection.where('isAvailable', isEqualTo: true)
+            : _tasksCollection
+                .where('isAvailable', isEqualTo: true)
+                .where('isTest', isEqualTo: false);
 
     // Get all available tasks
     Stream<List<Task>> availableTasksStream = tasksQuery.snapshots().map((

@@ -305,6 +305,10 @@ class TaskCard extends ConsumerWidget {
                     nextRoute = "/tasks/fill-a-form";
                   }
 
+                  if (task.actionText == 'Answer Poll') {
+                    nextRoute = "/tasks/answer-poll";
+                  }
+
                   if (task.actionText == 'Do Video Interview') {
                     nextRoute = "/tasks/do-video-interview";
                   }

@@ -263,6 +263,8 @@ class Task {
         return 'Check Out App';
       case 'fillAForm':
         return 'Fill A Form';
+      case 'answerPoll':
+        return 'Answer Poll';
       case 'doVideoInterview':
         return 'Do Video Interview';
       default:

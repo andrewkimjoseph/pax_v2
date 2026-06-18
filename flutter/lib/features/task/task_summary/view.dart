@@ -6,6 +6,7 @@ import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
+import 'package:pax/providers/db/withdrawal_method/withdrawal_method_provider.dart';
 import 'package:pax/providers/local/task_context/task_context_provider.dart';
 import 'package:pax/providers/local/screening_state_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
@@ -179,19 +180,66 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
               participant?.dateOfBirth != null &&
               participant?.gender != null);
 
-      final participantIsCompletelyComplete =
-          participantIsComplete && hasDeployedPaxAccount;
+      var participantIsReadyForScreening = false;
+      var v1NeedsWithdrawalMethod = false;
 
-      // If participant is not completely complete, show dialog and return
-      if (!participantIsCompletelyComplete) {
+      if (isV2) {
+        participantIsReadyForScreening =
+            participantIsComplete && hasDeployedPaxAccount;
+      } else if (participantId != null) {
+        await ref
+            .read(withdrawalMethodsProvider.notifier)
+            .refresh(participantId);
+        final hasWithdrawalMethod =
+            ref.read(withdrawalMethodsProvider).hasWithdrawalMethods;
+        participantIsReadyForScreening =
+            participantIsComplete && hasWithdrawalMethod;
+        v1NeedsWithdrawalMethod = participantIsComplete && !hasWithdrawalMethod;
+      }
+
+      if (!mounted) return;
+
+      // If participant is not ready, show the appropriate setup dialog and return
+      if (!participantIsReadyForScreening) {
         if (isV2) {
           final needsFv = await ref.read(
             paxWalletNeedsVerificationProvider.future,
           );
           if (!mounted) return;
           _showV2CompletionDialog(needsFv: needsFv);
-        } else {
+        } else if (v1NeedsWithdrawalMethod) {
+          if (!context.mounted) return;
           _showWithdrawalMethodDialog();
+        } else {
+          if (!context.mounted) return;
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder:
+                (dialogContext) => AlertDialog(
+                  title: const Text(
+                    'Complete setup to continue',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: PaxColors.deepPurple,
+                    ),
+                  ),
+                  content: const Text(
+                    'To continue with this task, complete your profile first.',
+                  ),
+                  actions: [
+                    PrimaryButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        context.pop();
+                        context.push(Routes.profile);
+                      },
+                      child: const Text('Complete profile'),
+                    ),
+                  ],
+                ),
+          );
         }
         return;
       }
@@ -309,6 +357,10 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
 
         if (currentTask.actionText == 'Fill A Form') {
           nextRoute = '/tasks/fill-a-form';
+        }
+
+        if (currentTask.actionText == 'Answer Poll') {
+          nextRoute = '/tasks/answer-poll';
         }
 
         context.push(nextRoute);
