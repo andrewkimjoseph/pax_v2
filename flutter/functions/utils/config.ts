@@ -17,10 +17,13 @@ export const PAX_MASTER_PRIVATE_KEY = process.env.PAX_MASTER_PRIVATE_KEY || '';
 
 export const PAXACCOUNT_V1_IMPLEMENTATION_ADDRESS = process.env.PAXACCOUNT_V1_IMPLEMENTATION_ADDRESS as Address;
 export const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+export const PK_TELLTALE_BOT_TOKEN = process.env.PK_TELLTALE_BOT_TOKEN || '';
 export const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
 
 export const ETHERSCAN_API_KEY_1 = process.env.ETHERSCAN_API_KEY_1 || '';
 export const ETHERSCAN_API_KEY_2 = process.env.ETHERSCAN_API_KEY_2 || '';
+export const ETHERSCAN_API_KEY_3 = process.env.ETHERSCAN_API_KEY_3 || '';
+export const ETHERSCAN_API_KEY_4 = process.env.ETHERSCAN_API_KEY_4 || '';
 
 /** Etherscan v2 API base URL and Celo chain id for txList. */
 export const ETHERSCAN_V2_BASE_URL = 'https://api.etherscan.io/v2/api';
@@ -38,26 +41,9 @@ export const CREATE2_FACTORY = "0x4e59b44847b379578588920cA78FbF26c0B4956C" as A
 export const IDENTITY_PROXY_CONTRACT_ADDRESS =
   "0xC361A6E67822a0EDc17D899227dd9FC50BD62F42" as Address;
 
-export const IDENTITY_ABI = [
-  {
-    name: "identities",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "account", type: "address" }],
-    outputs: [
-      { name: "dateAuthenticated", type: "uint256" },
-      { name: "dateAdded", type: "uint256" },
-      { name: "did", type: "string" },
-      { name: "whitelistedOnChainId", type: "uint256" },
-      { name: "status", type: "uint8" },
-      { name: "authCount", type: "uint32" },
-    ],
-  },
-] as const;
-
 // Canvassing contract addresses (proxies)
 export const CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS: Address = "0x74Cc10C7c8EE72CbAB508f3A6142C90c68579f3F"; // Implm - 0x2b62b26049c54c3d46638617ce6ea4b7e1f1c365
-export const CANVASSING_GAS_SPONSOR_PROXY_ADDRESS: Address = "0xBdA6e6b41a688eaB89C57d3DA3BF8b556B43AB2C"; // Implm - 0xE6570E2DD6A24f48092Ae4c9F60012Efd87CEcB7
+export const CANVASSING_GAS_SPONSOR_PROXY_ADDRESS: Address = "0xBdA6e6b41a688eaB89C57d3DA3BF8b556B43AB2C"; // Implm - 0xBE409E4C3Cc87c1A20E7ca595183D563426a4FAa
 export const CANVASSING_TASK_MANAGER_PROXY_ADDRESS: Address = "0x339a7328289ef6f51be3f4d0Cb19cc46EB9eF4f1"; // Implm - 0xed1c55593C82E13E3D7bbF39bCAa3071eE76Fc12
 export const CANVASSING_REWARDER_PROXY_ADDRESS: Address = "0x4D167933D742B31229bc730eADf5f2E3c4feceA2"; // Implm - 0xEdC0D00857962893c0BD69AFd65C1E3A99F6f6dC
 
@@ -72,7 +58,10 @@ export const USDT_TOKEN_ADDRESS = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e" a
 export const USDC_TOKEN_ADDRESS = "0xcebA9300f2b948710d2653dD7B07f33A8B32118C" as Address;
 
 /** Default CELO amount to sponsor per wallet (in ether). */
-export const DEFAULT_SPONSOR_AMOUNT_CELO = "0.0375";
+export const DEFAULT_SPONSOR_AMOUNT_CELO = "0.1";
+
+/** Minimum balance threshold for sponsoring gas (in ether). */
+export const MIN_BALANCE_THRESHOLD_CELO = "0.075";
 
 /** Default referral reward amount (off-chain, stored as numeric). */
 export const REFERRAL_REWARD_AMOUNT = 100;
