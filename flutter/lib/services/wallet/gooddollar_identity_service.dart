@@ -21,6 +21,12 @@ class GoodDollarIdentityService {
   // getWhitelistedOnChainId(address) -> string
   static final String _getWhitelistedOnChainIdSelector =
       EvmSelectorUtil.computeSelector('getWhitelistedOnChainId(address)');
+  // getWhitelistedRoot(address) -> address
+  static final String _getWhitelistedRootSelector =
+      EvmSelectorUtil.computeSelector('getWhitelistedRoot(address)');
+
+  static const String _zeroAddress =
+      '0x0000000000000000000000000000000000000000';
 
   static Future<Map<String, dynamic>> _rpcCall(
     String method,
@@ -147,6 +153,72 @@ class GoodDollarIdentityService {
       }
       return false;
     }
+  }
+
+  /// Returns the whitelisted identity root for [walletAddress], or null if
+  /// not whitelisted / zero address / RPC failure.
+  static Future<String?> getWhitelistedRoot(String walletAddress) async {
+    Future<String?> attempt() async {
+      final paddedAddress = walletAddress
+          .replaceFirst('0x', '')
+          .toLowerCase()
+          .padLeft(64, '0');
+
+      final data = '$_getWhitelistedRootSelector$paddedAddress';
+      final result = await _rpcCall('eth_call', [
+        {'to': _identityContractAddressProxy, 'data': data},
+        'latest',
+      ]);
+
+      final returnValue = result['result'] as String? ?? '0x';
+      if (returnValue == '0x' || returnValue.length <= 2) {
+        throw const FormatException('Empty getWhitelistedRoot response');
+      }
+
+      final hexStr = returnValue.substring(2);
+      if (hexStr.length < 64) {
+        throw const FormatException('getWhitelistedRoot response too short');
+      }
+
+      final root = '0x${hexStr.substring(24, 64)}';
+      if (root.toLowerCase() == _zeroAddress.toLowerCase()) {
+        return null;
+      }
+      return root;
+    }
+
+    try {
+      return await attempt();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          'GoodDollarIdentityService: getWhitelistedRoot first attempt error: $e, retrying once',
+        );
+      }
+    }
+
+    try {
+      return await attempt();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint(
+          '[GoodDollarIdentityService] getWhitelistedRoot retry failed: $e',
+        );
+      }
+      return null;
+    }
+  }
+
+  /// True when [walletAddress] is whitelisted and is the identity root itself
+  /// (not a connected wallet under another root).
+  static Future<bool> isWhitelistedRoot(String walletAddress) async {
+    final whitelisted = await isWhitelisted(walletAddress);
+    if (!whitelisted) return false;
+
+    final root = await getWhitelistedRoot(walletAddress);
+    if (root == null) return false;
+
+    return root.toLowerCase() == walletAddress.toLowerCase();
   }
 
   /// Gets the chain ID on which the wallet was whitelisted.
