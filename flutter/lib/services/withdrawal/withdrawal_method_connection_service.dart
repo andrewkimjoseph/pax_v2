@@ -72,8 +72,9 @@ class WithdrawalMethodConnectionService {
   // Check if wallet is GoodDollar verified
   Future<bool> isGoodDollarVerified(
     String walletAddress,
-    bool checkWhitelist,
-  ) async {
+    bool checkWhitelist, {
+    bool requireWhitelistedRoot = false,
+  }) async {
     Future<bool> runCheck() async {
       // First, validate that the wallet address is a valid Ethereum address
       if (!isValidEthereumAddress(walletAddress)) {
@@ -82,6 +83,10 @@ class WithdrawalMethodConnectionService {
 
       if (!checkWhitelist) {
         return true;
+      }
+
+      if (requireWhitelistedRoot) {
+        return await GoodDollarIdentityService.isWhitelistedRoot(walletAddress);
       }
 
       return await _isWhitelisted(walletAddress);

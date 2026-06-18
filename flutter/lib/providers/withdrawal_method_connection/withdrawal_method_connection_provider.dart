@@ -213,12 +213,28 @@ class WithdrawalMethodConnectionNotifier
       state: WithdrawalMethodConnectionState.checkingWhitelist,
     );
 
+    final isV1 = ref.read(paxAccountProvider).account?.isV1 ?? false;
+    final requireWhitelistedRoot = isV1 && checkWhitelist;
+
     final isVerified = await _withdrawalMethodService.isGoodDollarVerified(
       walletAddress,
       checkWhitelist,
+      requireWhitelistedRoot: requireWhitelistedRoot,
     );
 
     if (!isVerified) {
+      if (requireWhitelistedRoot) {
+        final isWhitelisted = await _withdrawalMethodService.isGoodDollarVerified(
+          walletAddress,
+          true,
+        );
+        if (isWhitelisted) {
+          throw Exception(
+            'Please enter your verified identity root address. Linked wallets cannot be used for your first withdrawal method.',
+          );
+        }
+      }
+
       throw Exception(
         'This wallet is not GoodDollar verified. Please complete verification first.',
       );
