@@ -50,6 +50,3 @@ app.*.map.json
 lib/env/
 
 .vscode
-
-functions/utils/helpers/decryptPrivateKey.ts
-functions/utils/helpers/toBeRemoved.ts

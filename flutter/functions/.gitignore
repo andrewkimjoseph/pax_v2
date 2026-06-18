@@ -12,3 +12,6 @@ node_modules/
 .env
 
 /lib/
+
+utils/helpers/decryptPrivateKey.ts
+
