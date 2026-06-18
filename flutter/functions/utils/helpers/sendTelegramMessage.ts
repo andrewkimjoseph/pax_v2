@@ -7,37 +7,47 @@ interface TelegramMessage {
   parse_mode?: string;
 }
 
+interface SendTelegramMessageOptions {
+  botToken?: string;
+}
+
 /**
  * Sends a message to Telegram using the configured bot token and chat ID
  * @param message - The Telegram message object
  * @returns Promise<void>
  */
-export async function sendTelegramMessage(message: TelegramMessage): Promise<void> {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+export async function sendTelegramMessage(
+  message: TelegramMessage,
+  options?: SendTelegramMessageOptions
+): Promise<void> {
+  const botToken = options?.botToken || TELEGRAM_BOT_TOKEN;
+  const chatId = message.chat_id || TELEGRAM_CHAT_ID;
+
+  if (!botToken || !chatId) {
     logger.warn("Telegram bot token or chat ID not configured", {
-      hasBotToken: !!TELEGRAM_BOT_TOKEN,
-      hasChatId: !!TELEGRAM_CHAT_ID,
+      hasBotToken: !!botToken,
+      hasChatId: !!chatId,
     });
     return;
   }
 
   try {
     logger.info("Sending Telegram message", {
-      chatId: TELEGRAM_CHAT_ID,
+      chatId,
       messageLength: message.text.length,
     });
 
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(message),
+      body: JSON.stringify({ ...message, chat_id: chatId }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      logger.error('Telegram API error', {
+      logger.error("Telegram API error", {
         status: response.status,
         statusText: response.statusText,
         errorData,
@@ -46,15 +56,15 @@ export async function sendTelegramMessage(message: TelegramMessage): Promise<voi
     }
 
     const result = await response.json();
-    logger.info('Telegram message sent successfully', {
+    logger.info("Telegram message sent successfully", {
       messageId: result.result?.message_id,
       chatId: result.result?.chat?.id,
     });
   } catch (error) {
-    logger.error('Failed to send Telegram message', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+    logger.error("Failed to send Telegram message", {
+      error: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }
-} 
+}

@@ -152,10 +152,9 @@ export const processAchievementClaim = onCall(
 
         let privateKeyHex: string;
         try {
-          privateKeyHex = decryptPrivateKey(encryptedPrivateKey, sessionKey);
-          if (!privateKeyHex.startsWith("0x")) {
-            privateKeyHex = "0x" + privateKeyHex;
-          }
+          privateKeyHex = await decryptPrivateKey(encryptedPrivateKey, sessionKey, {
+            participantId: userId,
+          });
         } catch (error) {
           logger.error("[V2] Failed to decrypt private key (achievement claim)", {
             error,

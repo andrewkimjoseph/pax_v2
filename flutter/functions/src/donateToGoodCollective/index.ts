@@ -149,10 +149,9 @@ export const donateToGoodCollective = onCall(
           userId,
           eoWalletAddress,
         });
-        let privateKeyHex = decryptPrivateKey(encryptedPrivateKey!, sessionKey!);
-        if (!privateKeyHex.startsWith("0x")) {
-          privateKeyHex = "0x" + privateKeyHex;
-        }
+        let privateKeyHex = await decryptPrivateKey(encryptedPrivateKey!, sessionKey!, {
+          participantId: userId,
+        });
         const eoaAccount = privateKeyToAccount(privateKeyHex as `0x${string}`);
         if (eoaAccount.address.toLowerCase() !== eoWalletAddress!.toLowerCase()) {
           throw new HttpsError(
