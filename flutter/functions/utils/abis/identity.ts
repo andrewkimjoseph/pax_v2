@@ -1,3 +1,5 @@
+import type { Abi } from "viem";
+
 export const identityABI = [
   {
     name: "identities",
@@ -13,4 +15,11 @@ export const identityABI = [
       { name: "authCount", type: "uint32" },
     ],
   },
-] as const;
+  {
+    name: "getWhitelistedRoot",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "whitelisted", type: "address" }],
+  },
+] as const satisfies Abi;
