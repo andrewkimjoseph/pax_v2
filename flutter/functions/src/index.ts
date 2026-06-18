@@ -3,6 +3,7 @@ export { createPaxAccountV1Proxy } from './createPaxAccountV1Proxy';
 export { withdrawToPaymentMethod } from './withdrawToPaymentMethod';
 export { screenParticipantProxy } from './screenParticipantProxy';
 export { markTaskCompletionAsComplete } from './markTaskCompletionAsComplete';
+export { submitPollResponse } from './submitPollResponse';
 export { rewardParticipantProxy } from './rewardParticipantProxy';
 export { deleteParticipantOnRequest } from './deleteParticipantOnRequest';
 export { sendNotification } from './sendNotification';
