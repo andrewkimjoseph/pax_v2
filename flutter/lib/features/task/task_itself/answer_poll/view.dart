@@ -151,8 +151,9 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
             .read(activityNotifierProvider.notifier)
             .loadActivities(participantId);
       }
-
-      context.push('/tasks/task-complete');
+      if (mounted) {
+        context.pushReplacement('/tasks/task-complete');
+      }
     } catch (e) {
       if (!mounted) return;
       ref.read(analyticsProvider).taskCompletionFailed({
@@ -214,10 +215,7 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
               const Text(
                 'Poll',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
               Consumer(
@@ -371,7 +369,9 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
                             fontWeight: FontWeight.w500,
                             color:
                                 _isSubmitting
-                                    ? PaxColors.deepPurple.withValues(alpha: 0.5)
+                                    ? PaxColors.deepPurple.withValues(
+                                      alpha: 0.5,
+                                    )
                                     : PaxColors.deepPurple,
                           ),
                         ),
