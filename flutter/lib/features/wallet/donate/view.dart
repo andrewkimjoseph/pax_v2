@@ -82,7 +82,7 @@ class _DonateViewState extends ConsumerState<DonateView> {
                 child: const FaIcon(
                   FontAwesomeIcons.arrowLeftLong,
                   size: 20,
-                  color: PaxColors.deepPurple,
+                  color: PaxColors.white,
                 ),
               ),
               const Spacer(),
