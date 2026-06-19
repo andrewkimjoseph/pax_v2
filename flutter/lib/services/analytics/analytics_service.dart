@@ -3,12 +3,12 @@ import 'package:amplitude_flutter/configuration.dart';
 import 'package:amplitude_flutter/default_tracking.dart';
 import 'package:amplitude_flutter/events/base_event.dart';
 import 'package:amplitude_flutter/events/identify.dart';
-import 'package:clarity_flutter/clarity_flutter.dart';
 import 'package:facebook_app_events/facebook_app_events.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_branch_sdk/flutter_branch_sdk.dart';
+import 'package:pax/services/analytics/clarity/clarity.dart';
 
 class AnalyticsService {
   static final AnalyticsService _instance = AnalyticsService._internal();
@@ -78,7 +78,7 @@ class AnalyticsService {
     await _amplitude.setUserId(participantId);
     await _firebaseAnalytics.setUserId(id: participantId);
     FlutterBranchSdk.setIdentity(participantId);
-    Clarity.setCustomUserId(participantId);
+    setClarityUserId(participantId);
   }
 
   /// Logs an event with optional properties.

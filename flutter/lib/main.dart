@@ -1,10 +1,9 @@
-import 'package:clarity_flutter/clarity_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:pax/providers/analytics/clarity/clarity_provider.dart';
+import 'package:pax/services/analytics/clarity/clarity.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:flutter/services.dart';
 
@@ -181,9 +180,8 @@ class _AppState extends ConsumerState<App> {
         theme: ref.watch(themeProvider),
         builder: (context, child) {
           return MobileOnlyWrapper(
-            child: ClarityWidget(
-              clarityConfig: ref.watch(clarityConfigProvider),
-              app: MediaQuery(
+            child: wrapWithClarity(
+              child: MediaQuery(
                 data: MediaQuery.of(
                   context,
                 ).copyWith(textScaler: TextScaler.noScaling),
