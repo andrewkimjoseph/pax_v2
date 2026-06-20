@@ -153,6 +153,17 @@ class GoodDollarIdentityService {
       }
     }
 
+    if (kDebugMode) {
+      final root = await getWhitelistedRoot(walletAddress);
+      if (root != null) {
+        debugPrint(
+          '[GoodDollarIdentityService] debug: non-zero getWhitelistedRoot '
+          '($root) treated as whitelisted for $walletAddress',
+        );
+        return true;
+      }
+    }
+
     return false;
   }
 
