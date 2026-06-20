@@ -134,7 +134,7 @@ class GoodDollarIdentityService {
     }
 
     try {
-      return await attempt();
+      if (await attempt()) return true;
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
@@ -144,15 +144,16 @@ class GoodDollarIdentityService {
     }
 
     try {
-      return await attempt();
+      if (await attempt()) return true;
     } catch (e) {
       if (kDebugMode) {
         debugPrint(
           '[GoodDollarIdentityService] GoodDollarIdentityService: isWhitelisted retry failed: $e',
         );
       }
-      return false;
     }
+
+    return false;
   }
 
   /// Returns the whitelisted identity root for [walletAddress], or null if
