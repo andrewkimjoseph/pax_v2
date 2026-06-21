@@ -119,6 +119,18 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
       'taskCompletionId': screeningContext?.screeningResult?.taskCompletionId,
     });
 
+    if (!mounted) return;
+
+    late BuildContext loadingDialogContext;
+    showDialog<void>(
+      barrierDismissible: false,
+      context: context,
+      builder: (dialogContext) {
+        loadingDialogContext = dialogContext;
+        return _buildCompletionDialog();
+      },
+    );
+
     try {
       final answers =
           poll.questions
@@ -138,6 +150,10 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
 
       if (!mounted) return;
 
+      if (loadingDialogContext.mounted && loadingDialogContext.canPop()) {
+        loadingDialogContext.pop();
+      }
+
       ref.read(analyticsProvider).taskCompletionComplete({
         'taskId': taskId,
         'screeningId': screeningId,
@@ -156,6 +172,11 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
       }
     } catch (e) {
       if (!mounted) return;
+
+      if (loadingDialogContext.mounted && loadingDialogContext.canPop()) {
+        loadingDialogContext.pop();
+      }
+
       ref.read(analyticsProvider).taskCompletionFailed({
         'taskId': taskId,
         'screeningId': screeningId,
@@ -167,6 +188,28 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  Widget _buildCompletionDialog() {
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator().withPadding(bottom: 24),
+            Text(
+              'Marking task as completed...',
+              style: TextStyle(
+                color: PaxColors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showErrorDialog(String message) {
