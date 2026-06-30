@@ -56,7 +56,7 @@ class TaskCompletionService {
         completedAt: DateTime.now(),
       );
 
-      await NotificationService().cancelTaskCooldownReminders();
+      await NotificationService().onTaskCompleted();
 
       // Create achievements
       final authState = ref.read(authProvider);

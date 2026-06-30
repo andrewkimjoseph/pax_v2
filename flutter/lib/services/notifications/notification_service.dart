@@ -410,6 +410,9 @@ class NotificationService {
     }
   }
 
+  /// Call when any task type is marked complete (checkout, form, poll, etc.).
+  Future<void> onTaskCompleted() => cancelTaskCooldownReminders();
+
   /// Sets up handling of foreground messages (when app is open).
   /// Converts remote notifications to local notifications for display.
   void setupForegroundMessageHandling(Function(RemoteMessage) onMessageTap) {

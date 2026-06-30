@@ -15,6 +15,7 @@ import 'package:pax/services/wallet/smart_account_service.dart';
 import 'package:pax/services/blockchain/blockchain_service.dart';
 import 'package:pax/utils/contract_address_constants.dart';
 import 'package:pax/utils/error_message_util.dart';
+import 'package:pax/utils/time_formatter.dart';
 import 'package:pax/utils/token_address_util.dart';
 import 'package:pax/widgets/other_task_card.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -168,6 +169,16 @@ class _TaskSummaryViewState extends ConsumerState<TaskSummaryView> {
       final serverWalletId =
           ref.read(paxAccountProvider).account?.serverWalletId;
       final participant = ref.read(participantProvider).participant;
+
+      if (!isEligibleForTasks(participant?.dateOfBirth)) {
+        if (!mounted) return;
+        final message =
+            participant?.dateOfBirth == null
+                ? 'Complete your profile to continue with this task.'
+                : 'Pax is for users 18 and older.';
+        _showErrorDialog(context, message);
+        return;
+      }
 
       final paxAccount = ref.watch(paxAccountProvider).account;
 

@@ -20,9 +20,15 @@ final availableTasksStreamProvider = StreamProvider.family
     .autoDispose<List<Task>, String?>((ref, participantId) {
       final repository = ref.watch(tasksRepositoryProvider);
 
-      // Get participant's country from participant provider
+      // Get participant's country and DOB from participant provider
       final participantState = ref.watch(participantProvider);
       final participantCountry = participantState.participant?.country;
+      final participantDateOfBirth =
+          participantState.participant?.dateOfBirth;
 
-      return repository.getAvailableTasks(participantId, participantCountry);
+      return repository.getAvailableTasks(
+        participantId,
+        participantCountry,
+        participantDateOfBirth,
+      );
     });

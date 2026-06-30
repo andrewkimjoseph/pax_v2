@@ -4,6 +4,7 @@ import 'package:lottie/lottie.dart';
 import 'package:pax/providers/db/tasks/task_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/local/screenings_provider.dart';
+import 'package:pax/utils/time_formatter.dart';
 import 'package:pax/widgets/task_card.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -77,6 +78,29 @@ class _TaskViewState extends ConsumerState<TasksView> {
             data: (screenings) {
               // Show empty state only when both streams have loaded and tasks is empty
               if (tasks.isEmpty) {
+                final dateOfBirth = participant?.dateOfBirth;
+                if (dateOfBirth == null) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Complete your profile by adding your country, gender, and date of birth to see available tasks.',
+                        textAlign: TextAlign.center,
+                      ).withPadding(all: 16),
+                    ],
+                  ).withAlign(Alignment.center);
+                }
+                if (!isEligibleForTasks(dateOfBirth)) {
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Pax is for users 18 and older.',
+                        textAlign: TextAlign.center,
+                      ).withPadding(all: 16),
+                    ],
+                  ).withAlign(Alignment.center);
+                }
                 return Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

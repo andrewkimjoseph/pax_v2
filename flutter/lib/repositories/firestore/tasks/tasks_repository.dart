@@ -5,6 +5,7 @@ import 'package:pax/constants/task_timer.dart';
 import 'package:pax/models/firestore/task/task_model.dart';
 import 'package:pax/models/firestore/task_completion/task_completion_model.dart';
 import 'package:pax/utils/country_util.dart';
+import 'package:pax/utils/time_formatter.dart';
 import 'package:rxdart/rxdart.dart';
 import 'dart:async';
 
@@ -27,6 +28,7 @@ class TasksRepository {
   Stream<List<Task>> getAvailableTasks(
     String? participantId,
     String? participantCountry,
+    Timestamp? participantDateOfBirth,
   ) {
     // In debug builds, include test tasks for QA.
     final Query tasksQuery =
@@ -146,6 +148,10 @@ class TasksRepository {
       screeningsData,
       nowUtc,
     ) {
+      if (!isEligibleForTasks(participantDateOfBirth)) {
+        return <Task>[];
+      }
+
       // Separate completions into valid fully completed and in-progress.
       final fullyCompletedTaskIds =
           completions

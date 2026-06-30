@@ -21,6 +21,8 @@ extension FormatActivityTimeStamp on Activity {
   String get formattedTimestamp => formatTimestampWithIntl(timestamp);
 }
 
+const int minimumTaskParticipantAge = 18;
+
 int calculateAge(DateTime birthDate) {
   final now = DateTime.now();
   int age = now.year - birthDate.year;
@@ -29,4 +31,18 @@ int calculateAge(DateTime birthDate) {
     age--;
   }
   return age;
+}
+
+bool isAtLeastMinimumAge(
+  DateTime birthDate, {
+  int minimumAge = minimumTaskParticipantAge,
+}) {
+  final today = DateTime.now();
+  final cutoff = DateTime(today.year - minimumAge, today.month, today.day);
+  return !birthDate.isAfter(cutoff);
+}
+
+bool isEligibleForTasks(Timestamp? dateOfBirth) {
+  if (dateOfBirth == null) return false;
+  return isAtLeastMinimumAge(dateOfBirth.toDate());
 }

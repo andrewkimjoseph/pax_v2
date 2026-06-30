@@ -12,6 +12,7 @@ import 'package:pax/providers/local/task_completion_state_provider.dart';
 import 'package:pax/providers/local/task_context/task_context_provider.dart';
 import 'package:pax/services/poll_service.dart';
 import 'package:pax/services/poll_submission_service.dart';
+import 'package:pax/services/notifications/notification_service.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/error_message_util.dart';
 import 'package:pax/widgets/submit_poll_drawer.dart';
@@ -147,6 +148,8 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
         taskId: taskId,
         answers: answers,
       );
+
+      await NotificationService().onTaskCompleted();
 
       if (!mounted) return;
 

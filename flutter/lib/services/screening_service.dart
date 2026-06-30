@@ -27,6 +27,34 @@ class ScreeningService {
 
   ScreeningService(this.ref);
 
+  /// Schedules cooldown reminders only while the task is still in progress.
+  /// Cancels any pending reminders if the task completion is already finished.
+  Future<void> _scheduleRemindersIfTaskInProgress(
+    String screeningId,
+    DateTime screeningTimeCreated,
+  ) async {
+    final taskCompletionQuery =
+        await FirebaseFirestore.instance
+            .collection('task_completions')
+            .where('screeningId', isEqualTo: screeningId)
+            .limit(1)
+            .get();
+
+    if (taskCompletionQuery.docs.isNotEmpty) {
+      final taskCompletion = TaskCompletion.fromFirestore(
+        taskCompletionQuery.docs.first,
+      );
+      if (taskCompletion.timeCompleted != null) {
+        await NotificationService().onTaskCompleted();
+        return;
+      }
+    }
+
+    await NotificationService().scheduleTaskCooldownReminders(
+      screeningTimeCreated,
+    );
+  }
+
   /// Checks if a participant has already been screened for a specific task.
   /// Returns a ScreeningResult if a completed screening exists, null otherwise.
   Future<ScreeningResult?> checkIfParticipantIsAlreadyScreenedForTask({
@@ -144,7 +172,8 @@ class ScreeningService {
 
         final screening = ref.read(screeningContextProvider)?.screening;
         if (screening?.timeCreated != null) {
-          await NotificationService().scheduleTaskCooldownReminders(
+          await _scheduleRemindersIfTaskInProgress(
+            existingScreeningResult.screeningId,
             screening!.timeCreated!.toDate(),
           );
         }
@@ -216,7 +245,8 @@ class ScreeningService {
 
       final screening = ref.read(screeningContextProvider)?.screening;
       if (screening?.timeCreated != null) {
-        await NotificationService().scheduleTaskCooldownReminders(
+        await _scheduleRemindersIfTaskInProgress(
+          screeningResult.screeningId,
           screening!.timeCreated!.toDate(),
         );
       }
