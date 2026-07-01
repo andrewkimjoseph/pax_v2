@@ -285,11 +285,7 @@ export const processReferralClaim = onCall(
         }
         let privateKeyHex: string;
         try {
-          privateKeyHex = await decryptPrivateKey(
-            encryptedPrivateKey!,
-            sessionKey!,
-            { participantId: userId }
-          );
+          privateKeyHex = decryptPrivateKey(encryptedPrivateKey!, sessionKey!);
         } catch (error) {
           logger.error("[V2][Referral] Decrypt failed", { error });
           throw new HttpsError(
