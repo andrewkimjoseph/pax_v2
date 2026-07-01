@@ -250,10 +250,9 @@ export const rewardParticipantProxy = onCall(
         }
         let privateKeyHex: string;
         try {
-          privateKeyHex = await decryptPrivateKey(
+          privateKeyHex = decryptPrivateKey(
             encryptedPrivateKey!,
-            sessionKey!,
-            { participantId: userId }
+            sessionKey!
           );
         } catch (error) {
           logger.error("[V2] Decrypt failed (reward)", { error });
