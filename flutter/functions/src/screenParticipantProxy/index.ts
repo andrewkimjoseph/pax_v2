@@ -172,10 +172,9 @@ export const screenParticipantProxy = onCall(
         // V2: decrypt EOA key from request, build smart account
         let privateKeyHex: string;
         try {
-          privateKeyHex = await decryptPrivateKey(
+          privateKeyHex = decryptPrivateKey(
             encryptedPrivateKey!,
-            sessionKey!,
-            { participantId }
+            sessionKey!
           );
         } catch (error) {
           logger.error("[V2] Failed to decrypt private key (V2 screening)", {
