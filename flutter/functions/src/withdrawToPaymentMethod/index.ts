@@ -209,9 +209,7 @@ export const withdrawToPaymentMethod = onCall(
         // V2: build smart account from decrypted EOA key
         let privateKeyHex: string;
         try {
-          privateKeyHex = await decryptPrivateKey(encryptedPrivateKey!, sessionKey!, {
-            participantId: userId,
-          });
+          privateKeyHex = decryptPrivateKey(encryptedPrivateKey!, sessionKey!);
         } catch (error) {
           logger.error("[V2] Failed to decrypt private key (V2 withdraw)", { error });
           throw new HttpsError(
