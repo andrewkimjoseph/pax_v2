@@ -52,24 +52,6 @@ class _WebViewConverterPageState extends ConsumerState<WebViewConverterPage> {
     if (mounted) context.pop();
   }
 
-  Future<void> _injectBalance(InAppWebViewController controller) async {
-    final value = widget.payload.valueToInject.toDouble();
-    // Escape selector for use inside a double-quoted JS string (backslash and quote)
-    final selectorEscaped = widget.payload.selector
-        .replaceAll(r'\', r'\\')
-        .replaceAll('"', r'\"');
-    final script = '''
-(function() {
-  var el = document.querySelector("$selectorEscaped");
-  if (el) {
-    el.value = $value;
-    el.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-})();
-''';
-    await controller.evaluateJavascript(source: script);
-  }
-
   @override
   void dispose() {
     _controller?.dispose();
@@ -127,7 +109,6 @@ class _WebViewConverterPageState extends ConsumerState<WebViewConverterPage> {
                     },
                     onLoadStop: (controller, url) async {
                       _controller ??= controller;
-                      await _injectBalance(controller);
                       if (mounted) {
                         setState(() => isLoading = false);
                         _updateNavigationState();
