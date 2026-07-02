@@ -84,7 +84,7 @@ class _TaskViewState extends ConsumerState<TasksView> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Complete your profile by adding your country, gender, and date of birth to see available tasks.',
+                        'Complete your profile to see available tasks.',
                         textAlign: TextAlign.center,
                       ).withPadding(all: 16),
                     ],
