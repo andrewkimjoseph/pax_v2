@@ -11,6 +11,8 @@ class LinksConfig {
   final String goodPaxAppLink;
   final String engagementRewardsLink;
   final String faceVerificationLink;
+  final String goodDollarIdentityHostLinkPrefix;
+  final String goodDollarConverterLink;
   final String drpcReferralLink;
   final String paxAppLinkFromSite;
   final String esiRegistrationLink;
@@ -25,6 +27,8 @@ class LinksConfig {
     required this.goodPaxAppLink,
     required this.engagementRewardsLink,
     required this.faceVerificationLink,
+    required this.goodDollarIdentityHostLinkPrefix,
+    required this.goodDollarConverterLink,
     required this.drpcReferralLink,
     required this.paxAppLinkFromSite,
     required this.esiRegistrationLink,
@@ -41,6 +45,9 @@ class LinksConfig {
       goodPaxAppLink: secret_constants.goodPaxAppLink,
       engagementRewardsLink: secret_constants.engagementRewardsLink,
       faceVerificationLink: secret_constants.faceVerificationLink,
+      goodDollarIdentityHostLinkPrefix:
+          secret_constants.goodDollarIdentityHostLinkPrefix,
+      goodDollarConverterLink: secret_constants.goodDollarConverterLink,
       drpcReferralLink: secret_constants.drpcReferralLink,
       paxAppLinkFromSite: secret_constants.paxAppLinkFromSite,
       esiRegistrationLink: secret_constants.esiRegistrationLink,
@@ -77,6 +84,12 @@ class LinksConfig {
       faceVerificationLink:
           _readString(json[RemoteConfigKeys.faceVerificationLink]) ??
           defaults.faceVerificationLink,
+      goodDollarIdentityHostLinkPrefix:
+          _readString(json[RemoteConfigKeys.goodDollarIdentityHostLinkPrefix]) ??
+          defaults.goodDollarIdentityHostLinkPrefix,
+      goodDollarConverterLink:
+          _readString(json[RemoteConfigKeys.goodDollarConverterLink]) ??
+          defaults.goodDollarConverterLink,
       drpcReferralLink:
           _readString(json[RemoteConfigKeys.drpcReferralLink]) ??
           defaults.drpcReferralLink,
@@ -100,6 +113,9 @@ class LinksConfig {
       RemoteConfigKeys.goodPaxAppLink: goodPaxAppLink,
       RemoteConfigKeys.engagementRewardsLink: engagementRewardsLink,
       RemoteConfigKeys.faceVerificationLink: faceVerificationLink,
+      RemoteConfigKeys.goodDollarIdentityHostLinkPrefix:
+          goodDollarIdentityHostLinkPrefix,
+      RemoteConfigKeys.goodDollarConverterLink: goodDollarConverterLink,
       RemoteConfigKeys.drpcReferralLink: drpcReferralLink,
       RemoteConfigKeys.paxAppLinkFromSite: paxAppLinkFromSite,
       RemoteConfigKeys.esiRegistrationLink: esiRegistrationLink,
