@@ -39,7 +39,8 @@ class PaxWalletBalanceCard extends ConsumerStatefulWidget {
   final String refreshTooltip;
   final String? networkLabel;
 
-  /// Called when "Check G$ exchange rate" is tapped before opening (e.g. analytics). Receives gdBalance.
+  /// Called when "Check G$ exchange rate" is tapped before opening (e.g. analytics).
+  /// Open with [UrlHandler.launchGdConverterWebView](context, linksConfig.goodDollarConverterLink).
   final void Function(num gdBalance)? onBeforeOpenConverter;
 
   @override
