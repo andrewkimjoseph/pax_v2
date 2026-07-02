@@ -8,8 +8,12 @@ import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
+import 'package:pax/models/remote_config/links_config.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
+import 'package:pax/utils/goodid_url.dart';
+import 'package:pax/utils/url_handler.dart';
 import 'package:pax/utils/user_property_constants.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pax/theming/colors.dart';
@@ -37,6 +41,7 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
   /// run only once if the webview fires the success callback multiple times.
   bool _postVerificationSideEffectsStarted = false;
   final GlobalKey _webViewKey = GlobalKey();
+  String? _goodIdUrl;
 
   Future<void> _restoreWallet() async {
     if (!mounted) return;
@@ -55,7 +60,9 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
         'FaceVerificationView: _onVerificationResult called (verified=$verified, chain=$chain)',
       );
     }
-    final faceVerificationNotifier = ref.read(faceVerificationProvider.notifier);
+    final faceVerificationNotifier = ref.read(
+      faceVerificationProvider.notifier,
+    );
     final analytics = ref.read(analyticsProvider);
     final participantNotifier = ref.read(participantProvider.notifier);
     final paxWalletNotifier = ref.read(paxWalletProvider.notifier);
@@ -275,6 +282,11 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
       });
     }
 
+    final linksConfig = ref
+        .watch(linksConfigProvider)
+        .maybeWhen(data: (value) => value, orElse: LinksConfig.defaults);
+    final goodIdHostPrefix = linksConfig.goodDollarIdentityHostLinkPrefix;
+
     return Scaffold(
       headers: [
         AppBar(
@@ -300,7 +312,27 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
               ).withPadding(right: 16),
               Spacer(),
               IconButton(
+                onPressed:
+                    _goodIdUrl == null
+                        ? null
+                        : () {
+                          UrlHandler.launchInExternalBrowser(_goodIdUrl!);
+                        },
+                variance: const ButtonStyle.outline(
+                  density: ButtonDensity.icon,
+                ),
+                icon: FaIcon(
+                  FontAwesomeIcons.arrowUpRightFromSquare,
+                  size: 20,
+                  color:
+                      _goodIdUrl == null
+                          ? PaxColors.darkGrey.withValues(alpha: 0.4)
+                          : PaxColors.deepPurple,
+                ),
+              ).withPadding(right: 16),
+              IconButton(
                 onPressed: () {
+                  setState(() => _goodIdUrl = null);
                   final currentState = _webViewKey.currentState;
                   if (currentState is FaceVerificationWebViewState) {
                     currentState.reload();
@@ -320,6 +352,13 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
         key: _webViewKey,
         credentials: walletState.credentials!,
         onVerificationResult: _onVerificationResult,
+        onUrlChanged: (url) {
+          if (!mounted) return;
+          setState(() {
+            _goodIdUrl =
+                isGoodIdUrl(url, goodIdHostPrefix) ? url : null;
+          });
+        },
       ),
     );
   }
