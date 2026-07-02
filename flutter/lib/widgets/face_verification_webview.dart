@@ -18,11 +18,13 @@ class FaceVerificationWebView extends ConsumerStatefulWidget {
   final Credentials credentials;
   final void Function({required bool verified, required String chain})
   onVerificationResult;
+  final void Function(String? url)? onUrlChanged;
 
   const FaceVerificationWebView({
     super.key,
     required this.credentials,
     required this.onVerificationResult,
+    this.onUrlChanged,
   });
 
   @override
@@ -43,6 +45,15 @@ class FaceVerificationWebViewState
   Timer? _popupTimer;
   bool _isPopupShowing = false;
   InAppWebViewController? _controller;
+  String? _currentUrl;
+
+  String? get currentUrl => _currentUrl;
+
+  void _updateCurrentUrl(String? urlString) {
+    if (_currentUrl == urlString) return;
+    _currentUrl = urlString;
+    widget.onUrlChanged?.call(urlString);
+  }
 
   @override
   void initState() {
@@ -526,6 +537,7 @@ class FaceVerificationWebViewState
       onLoadStart: (controller, url) async {
         if (!mounted) return;
         final urlString = url?.toString();
+        _updateCurrentUrl(urlString);
 
         if (urlString != null) {
           final hasParams = _parseVerifiedAndChainParams(urlString) != null;
@@ -570,6 +582,7 @@ class FaceVerificationWebViewState
       onLoadStop: (controller, url) async {
         if (!mounted) return;
         final urlString = url?.toString();
+        _updateCurrentUrl(urlString);
 
         _popupTimer?.cancel();
         _popupTimer = null;
@@ -620,6 +633,7 @@ class FaceVerificationWebViewState
       onUpdateVisitedHistory: (controller, url, isReload) async {
         if (!mounted) return;
         final urlString = url?.toString();
+        _updateCurrentUrl(urlString);
 
         if (urlString != null && isReload == false) {
           final parsed = _parseVerifiedAndChainParams(urlString);
@@ -663,6 +677,7 @@ class FaceVerificationWebViewState
   }
 
   void reload() {
+    _updateCurrentUrl(null);
     final controller = _controller;
     if (controller != null) {
       controller.reload();
