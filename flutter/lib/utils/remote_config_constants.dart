@@ -139,7 +139,9 @@ class RemoteConfigKeys {
   static const String paxWalletConfig = 'pax_wallet_config';
 
   /// The name of the remote config parameter containing external links config.
-  /// Contains social/invite URLs and invite codes as JSON.
+  /// Contains social/invite URLs, GoodID host prefix, G$ converter link, etc. as JSON.
+  /// Firebase `links_config` must include `gooddollar_identity_host_link_prefix`
+  /// and `gooddollar_converter_link` alongside existing keys.
   /// Key: 'links_config'
   static const String linksConfig = 'links_config';
 
@@ -169,6 +171,9 @@ class RemoteConfigKeys {
   static const String goodPaxAppLink = 'good_pax_app_link';
   static const String engagementRewardsLink = 'engagement_rewards_link';
   static const String faceVerificationLink = 'face_verification_link';
+  static const String goodDollarIdentityHostLinkPrefix =
+      'gooddollar_identity_host_link_prefix';
+  static const String goodDollarConverterLink = 'gooddollar_converter_link';
   static const String drpcReferralLink = 'drpc_referral_link';
   static const String paxAppLinkFromSite = 'pax_app_link_from_site';
   static const String esiRegistrationLink = 'esi_registration_link';
