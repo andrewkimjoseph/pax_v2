@@ -4,10 +4,12 @@ import 'package:flutter_svg/svg.dart' show SvgPicture;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/analytics/analytics_provider.dart';
 import 'package:pax/widgets/common/account_type_badge.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_account/pax_account_provider.dart';
+import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/utils/country_util.dart';
 import 'package:pax/widgets/custom_avatar.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -120,8 +122,19 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
     final participantState = ref.watch(participantProvider);
     final participant = participantState.participant;
     final isLoading = participantState.state == ParticipantState.loading;
-    final paxAccount = ref.watch(paxAccountProvider).account;
-    final hasPaymentMethod = paxAccount?.payoutWalletAddress != null;
+    final accountType = ref.watch(accountTypeProvider);
+    final paxAccountState = ref.watch(paxAccountProvider);
+    final paxWalletState = ref.watch(paxWalletProvider);
+    final paxAccount = paxAccountState.account;
+    final hasPaxWalletLoaded =
+        paxWalletState.state == PaxWalletState.loaded &&
+        (paxWalletState.wallet?.eoAddress?.isNotEmpty ?? false);
+    final walletDataStillLoading =
+        paxAccountState.state == PaxAccountState.loading ||
+        paxWalletState.state == PaxWalletState.loading;
+    final hasPaymentMethod =
+        paxAccount?.payoutWalletAddress != null ||
+        (accountType == AccountType.v2 && hasPaxWalletLoaded);
     final bool isProfileComplete =
         participant != null &&
         participant.country != null &&
@@ -188,7 +201,9 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
       ],
 
       child:
-          !hasPaymentMethod
+          walletDataStillLoading
+              ? const Center(child: CircularProgressIndicator())
+              : !hasPaymentMethod
               ? Center(
                 child: Text(
                   'Please connect a withdrawal method to view your profile.',
