@@ -5,10 +5,6 @@ import 'package:pax/features/webview/webview_converter_payload.dart';
 import 'package:pax/routing/routes.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Coinbase G$ to USD converter page URL (GoodDollar base amount).
-const String coinbaseGdConverterUrl =
-    r'https://www.coinbase.com/converter/g$/usd';
-
 /// Handles launching URLs either in an external browser or in-app WebView
 class UrlHandler {
   /// Launches a URL in an in-app browser view
@@ -42,24 +38,16 @@ class UrlHandler {
     context.push('/webview', extra: url);
   }
 
-  /// Opens the G$ converter in an in-app WebView and injects [balance]
-  /// into the page's base amount input (default selector: [selector]).
-  static void launchGdConverterWebView(
-    BuildContext context,
-    String url,
-    num balance, {
-    String selector = '#base',
-  }) {
+  /// Opens the G$ converter in an in-app WebView.
+  ///
+  /// Pass [url] from [LinksConfig.goodDollarConverterLink] via [linksConfigProvider].
+  static void launchGdConverterWebView(BuildContext context, String url) {
     if (url.isEmpty) {
       throw ArgumentError('URL cannot be empty');
     }
     context.push(
       Routes.webviewConverter,
-      extra: WebViewConverterPayload(
-        url: url,
-        valueToInject: balance,
-        selector: selector,
-      ),
+      extra: WebViewConverterPayload(url: url),
     );
   }
 
