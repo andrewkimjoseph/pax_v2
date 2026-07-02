@@ -27,6 +27,9 @@ class Web3WebView extends ConsumerStatefulWidget {
   /// Called after a transaction is successfully sent (e.g. to refresh wallet balances).
   final void Function(String eoAddress)? onTransactionSent;
 
+  /// Called when the user taps reload in the bottom navigation bar.
+  final VoidCallback? onReload;
+
   const Web3WebView({
     super.key,
     required this.url,
@@ -35,6 +38,7 @@ class Web3WebView extends ConsumerStatefulWidget {
     this.onVerificationResult,
     this.onControllerCreated,
     this.onTransactionSent,
+    this.onReload,
   });
 
   @override
@@ -630,6 +634,7 @@ class _Web3WebViewState extends ConsumerState<Web3WebView> {
                         onPressed:
                             _controller != null
                                 ? () {
+                                  widget.onReload?.call();
                                   _controller?.reload();
                                   _updateNavigationState();
                                 }
