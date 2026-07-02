@@ -8,8 +8,12 @@ import 'package:pax/providers/account/account_type_provider.dart';
 import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/local/pax_wallet_view_provider.dart';
+import 'package:pax/models/remote_config/links_config.dart';
+import 'package:pax/providers/remote_config/remote_config_provider.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
 import 'package:pax/theming/colors.dart';
+import 'package:pax/utils/goodid_url.dart';
+import 'package:pax/utils/url_handler.dart';
 import 'package:pax/widgets/web3_webview.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Divider;
 
@@ -32,6 +36,7 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
   bool _restoreTriggered = false;
   bool _mismatchRecoveryTriggered = false;
   InAppWebViewController? _webViewController;
+  String? _goodIdUrl;
 
   static bool _eoAddressMatches(String? a, String? b) {
     if (a == null || b == null) return false;
@@ -225,6 +230,11 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
                 .toString()
             : widget.url;
 
+    final linksConfig = ref
+        .watch(linksConfigProvider)
+        .maybeWhen(data: (value) => value, orElse: LinksConfig.defaults);
+    final goodIdHostPrefix = linksConfig.goodDollarIdentityHostLinkPrefix;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (bool didPop, dynamic result) async {
@@ -254,6 +264,20 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
                   style: TextStyle(fontSize: 20, color: PaxColors.deepPurple),
                 ).withPadding(right: 16),
                 const Spacer(),
+                if (_goodIdUrl != null)
+                  IconButton(
+                    onPressed: () {
+                      UrlHandler.launchInExternalBrowser(_goodIdUrl!);
+                    },
+                    variance: const ButtonStyle.outline(
+                      density: ButtonDensity.icon,
+                    ),
+                    icon: const FaIcon(
+                      FontAwesomeIcons.arrowUpRightFromSquare,
+                      size: 20,
+                      color: PaxColors.deepPurple,
+                    ),
+                  ),
               ],
             ),
           ).withPadding(top: 16, horizontal: 8),
@@ -264,6 +288,16 @@ class _MiniAppWebView extends ConsumerState<MiniAppWebView> {
           credentials: credentials,
           onControllerCreated:
               (controller) => setState(() => _webViewController = controller),
+          onUrlChanged: (url) {
+            if (!mounted) return;
+            setState(() {
+              _goodIdUrl =
+                  isGoodIdUrl(url, goodIdHostPrefix) ? url : null;
+            });
+          },
+          onReload: () {
+            if (mounted) setState(() => _goodIdUrl = null);
+          },
           onTransactionSent: (eoAddress) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (!mounted) return;
