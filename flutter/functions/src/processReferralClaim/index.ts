@@ -22,6 +22,8 @@ import {
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
 import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
+import { createWithdrawalRecordIfNotExists } from "../../utils/helpers/createWithdrawal";
+import { resolveWithdrawalPaymentMethodIdByRecipient } from "../../utils/helpers/resolveWithdrawalPaymentMethod";
 import type { ToSimpleSmartAccountReturnType } from "permissionless/accounts";
 
 function isHttpsError(e: unknown): e is HttpsError {
@@ -439,12 +441,49 @@ export const processReferralClaim = onCall(
         timeUpdated: now,
       });
 
+      const resolvedPaymentMethodId =
+        await resolveWithdrawalPaymentMethodIdByRecipient(
+          referringParticipantId,
+          recipientAddress
+        );
+
+      let withdrawalId: string | null = null;
+      if (resolvedPaymentMethodId) {
+        const withdrawalResult = await createWithdrawalRecordIfNotExists(
+          {
+            participantId: referringParticipantId,
+            paymentMethodId: resolvedPaymentMethodId,
+            amountRequested: Number(payoutAmount),
+            rewardCurrencyId: 1,
+            txnHash: bundleTxnHash,
+          },
+          isV2 ? "V2" : "V1"
+        );
+        withdrawalId = withdrawalResult.withdrawalId;
+        logger.info(`${logPrefix} Claim withdrawal record processed`, {
+          participantId: referringParticipantId,
+          referralId,
+          recipientAddress,
+          paymentMethodId: resolvedPaymentMethodId,
+          withdrawalId,
+          created: withdrawalResult.created,
+        });
+      } else {
+        logger.warn(`${logPrefix} Claim recipient not mapped to payment method`, {
+          participantId: referringParticipantId,
+          referralId,
+          recipientAddress,
+          txnHash: bundleTxnHash,
+        });
+      }
+
       return {
         success: true,
         participantProxy: smartAaAddress,
         paxAccountContractAddress: recipientAddress,
         referralId,
         txnHash: bundleTxnHash,
+        withdrawalId,
         amount: payoutAmount,
       };
     } catch (error) {
