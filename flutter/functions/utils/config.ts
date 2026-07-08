@@ -28,7 +28,7 @@ export const ETHERSCAN_API_KEY_4 = process.env.ETHERSCAN_API_KEY_4 || '';
 export const ETHERSCAN_V2_BASE_URL = 'https://api.etherscan.io/v2/api';
 
 export const FUNCTION_RUNTIME_OPTS: CallableOptions = {
-  // enforceAppCheck: true
+  enforceAppCheck: false
 };
 
 admin.initializeApp();
