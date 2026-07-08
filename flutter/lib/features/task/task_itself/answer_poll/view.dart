@@ -12,7 +12,7 @@ import 'package:pax/providers/local/task_completion_state_provider.dart';
 import 'package:pax/providers/local/task_context/task_context_provider.dart';
 import 'package:pax/services/poll_service.dart';
 import 'package:pax/services/poll_submission_service.dart';
-import 'package:pax/services/notifications/notification_service.dart';
+import 'package:pax/services/task_completion_service.dart';
 import 'package:pax/theming/colors.dart';
 import 'package:pax/utils/error_message_util.dart';
 import 'package:pax/widgets/submit_poll_drawer.dart';
@@ -143,13 +143,17 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
               )
               .toList();
 
-      await _pollSubmissionService.submitPollResponse(
+      final result = await _pollSubmissionService.submitPollResponse(
         screeningId: screeningId,
         taskId: taskId,
         answers: answers,
       );
 
-      await NotificationService().onTaskCompleted();
+      await ref.read(taskCompletionServiceProvider).onTaskRecordedComplete(
+        screeningId: screeningId,
+        taskId: taskId,
+        taskCompletionId: result['taskCompletionId'] as String,
+      );
 
       if (!mounted) return;
 
@@ -163,7 +167,6 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
       });
 
       final participantId = ref.read(participantProvider).participant?.id;
-      ref.invalidate(activityRepositoryProvider);
       if (participantId != null) {
         ref.invalidate(availableTasksStreamProvider(participantId));
         await ref
