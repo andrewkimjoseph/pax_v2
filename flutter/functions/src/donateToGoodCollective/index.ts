@@ -16,6 +16,7 @@ import {
   MIN_DONATION_AMOUNT_GD,
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
+import { CANVASSINGTaggedCallData } from "../../utils/helpers/attribution";
 
 export const donateToGoodCollective = onCall(
   FUNCTION_RUNTIME_OPTS,
@@ -271,7 +272,10 @@ export const donateToGoodCollective = onCall(
           addedPaymentMethod: !!addPaymentMethodData,
         });
         userOpTxnHash = await smartAccountClient.sendUserOperation({
-          calls,
+          calls: calls.map((call) => ({
+            ...call,
+            data: CANVASSINGTaggedCallData(call.data),
+          })),
         });
       } else {
         logger.info("donateToGoodCollective: sending V2 user operation", {
@@ -292,7 +296,7 @@ export const donateToGoodCollective = onCall(
             {
               to: currency as Address,
               value: BigInt(0),
-              data: transferData,
+              data: CANVASSINGTaggedCallData(transferData),
             },
           ],
         });
