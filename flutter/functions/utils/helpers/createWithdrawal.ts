@@ -12,6 +12,21 @@ interface WithdrawalParams {
   txnHash: string;
 }
 
+export async function findExistingWithdrawalByTxn(
+  participantId: string,
+  txnHash: string
+): Promise<string | null> {
+  const existing = await DB()
+    .collection("withdrawals")
+    .where("participantId", "==", participantId)
+    .where("txnHash", "==", txnHash)
+    .limit(1)
+    .get();
+
+  if (existing.empty) return null;
+  return existing.docs[0].id;
+}
+
 /**
  * Function to create a withdrawal record in the database
  */
@@ -68,4 +83,27 @@ export async function createWithdrawalRecord(
     logger.error(`${prefix}Error creating withdrawal record`, { error });
     throw error;
   }
-} 
+}
+
+export async function createWithdrawalRecordIfNotExists(
+  params: WithdrawalParams,
+  logPrefix?: "V1" | "V2"
+): Promise<{ withdrawalId: string; created: boolean }> {
+  const existingId = await findExistingWithdrawalByTxn(
+    params.participantId,
+    params.txnHash
+  );
+
+  if (existingId) {
+    const prefix = logPrefix ? `[${logPrefix}] ` : "";
+    logger.info(`${prefix}Withdrawal record already exists for transaction`, {
+      participantId: params.participantId,
+      txnHash: params.txnHash,
+      withdrawalId: existingId,
+    });
+    return { withdrawalId: existingId, created: false };
+  }
+
+  const createdId = await createWithdrawalRecord(params, logPrefix);
+  return { withdrawalId: createdId, created: true };
+}
