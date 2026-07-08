@@ -7,6 +7,7 @@ import {
   CANVASSING_REWARDER_PROXY_ADDRESS,
   PIMLICO_URL,
 } from "../config";
+import { CANVASSINGTaggedCallData } from "./attribution";
 
 /**
  * Submit a sponsored userOp that calls the CanvassingRewarder proxy with arbitrary calldata.
@@ -52,7 +53,7 @@ export async function submitSponsoredRewarderCall(params: {
       {
         to: CANVASSING_REWARDER_PROXY_ADDRESS,
         value: BigInt(0),
-        data: params.data,
+        data: CANVASSINGTaggedCallData(params.data),
       },
     ],
   });
