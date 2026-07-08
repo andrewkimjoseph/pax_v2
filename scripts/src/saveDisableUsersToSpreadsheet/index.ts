@@ -6,7 +6,6 @@ import {
 } from "../../config";
 import { google } from "googleapis";
 import * as fs from "fs";
-import * as path from "path";
 
 async function authorizeGoogleSheets() {
   const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, "utf8"));
