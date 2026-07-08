@@ -22,6 +22,8 @@ import { canvassingRewarderABI } from "../../utils/abis/canvassingRewarder";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
 import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
+import { createWithdrawalRecordIfNotExists } from "../../utils/helpers/createWithdrawal";
+import { resolveWithdrawalPaymentMethodIdByRecipient } from "../../utils/helpers/resolveWithdrawalPaymentMethod";
 export const processAchievementClaim = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
@@ -301,7 +303,43 @@ export const processAchievementClaim = onCall(
           timeClaimed: new Date(),
         });
 
-        return { success: true, txnHash: bundleTxnHash };
+        const resolvedPaymentMethodId =
+          await resolveWithdrawalPaymentMethodIdByRecipient(
+            userId,
+            recipientAddress
+          );
+
+        let withdrawalId: string | null = null;
+        if (resolvedPaymentMethodId) {
+          const withdrawalResult = await createWithdrawalRecordIfNotExists(
+            {
+              participantId: userId,
+              paymentMethodId: resolvedPaymentMethodId,
+              amountRequested: Number(amountEarned),
+              rewardCurrencyId: 1,
+              txnHash: bundleTxnHash,
+            },
+            "V2"
+          );
+          withdrawalId = withdrawalResult.withdrawalId;
+          logger.info("[V2] Claim withdrawal record processed", {
+            userId,
+            achievementId,
+            recipientAddress,
+            paymentMethodId: resolvedPaymentMethodId,
+            withdrawalId,
+            created: withdrawalResult.created,
+          });
+        } else {
+          logger.warn("[V2] Claim recipient not mapped to payment method", {
+            userId,
+            achievementId,
+            recipientAddress,
+            txnHash: bundleTxnHash,
+          });
+        }
+
+        return { success: true, txnHash: bundleTxnHash, withdrawalId };
       } else {
         logger.info("[V1] Sponsored CanvassingRewarder achievement claim (Privy)", {
           userId,
@@ -448,7 +486,43 @@ export const processAchievementClaim = onCall(
           timeClaimed: new Date(),
         });
 
-        return { success: true, txnHash: bundleTxnHash };
+        const resolvedPaymentMethodId =
+          await resolveWithdrawalPaymentMethodIdByRecipient(
+            userId,
+            recipientAddress
+          );
+
+        let withdrawalId: string | null = null;
+        if (resolvedPaymentMethodId) {
+          const withdrawalResult = await createWithdrawalRecordIfNotExists(
+            {
+              participantId: userId,
+              paymentMethodId: resolvedPaymentMethodId,
+              amountRequested: Number(amountEarned),
+              rewardCurrencyId: 1,
+              txnHash: bundleTxnHash,
+            },
+            "V1"
+          );
+          withdrawalId = withdrawalResult.withdrawalId;
+          logger.info("[V1] Claim withdrawal record processed", {
+            userId,
+            achievementId,
+            recipientAddress,
+            paymentMethodId: resolvedPaymentMethodId,
+            withdrawalId,
+            created: withdrawalResult.created,
+          });
+        } else {
+          logger.warn("[V1] Claim recipient not mapped to payment method", {
+            userId,
+            achievementId,
+            recipientAddress,
+            txnHash: bundleTxnHash,
+          });
+        }
+
+        return { success: true, txnHash: bundleTxnHash, withdrawalId };
       }
     } catch (error) {
       logger.error("Error processing achievement claim:", {
