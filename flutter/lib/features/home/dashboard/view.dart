@@ -36,7 +36,7 @@ class DashboardView extends ConsumerStatefulWidget {
 class _DashboardViewState extends ConsumerState<DashboardView> {
   @override
   Widget build(BuildContext context) {
-    final tasksCount = ref.watch(totalTaskCompletionsProvider);
+    final tasksCount = ref.watch(validTaskCompletionsCountProvider);
     final totalGoodDollars = ref.watch(totalGoodDollarTokensEarnedProvider);
     final unclaimedCount = ref.watch(unclaimedTaskCompletionsCountProvider);
     final totalReferralsCount = ref.watch(totalReferralsCountProvider);
