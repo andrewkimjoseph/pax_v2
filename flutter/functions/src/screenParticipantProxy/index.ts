@@ -19,6 +19,7 @@ import {
   CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
+import { CANVASSINGTaggedCallData } from "../../utils/helpers/attribution";
 import {
   createScreeningSignaturePackageCanvassing,
   generateRandomNonce,
@@ -270,7 +271,7 @@ export const screenParticipantProxy = onCall(
           {
             to: CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
             value: BigInt(0),
-            data: screeningData,
+            data: CANVASSINGTaggedCallData(screeningData),
           },
         ],
       });
