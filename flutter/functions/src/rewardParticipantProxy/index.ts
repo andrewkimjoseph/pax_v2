@@ -24,6 +24,8 @@ import {
   createRewardRecord,
   updateRewardWithTxnHash,
 } from "../../utils/helpers/createReward";
+import { createWithdrawalRecordIfNotExists } from "../../utils/helpers/createWithdrawal";
+import { resolveWithdrawalPaymentMethodIdByRecipient } from "../../utils/helpers/resolveWithdrawalPaymentMethod";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
 
@@ -405,6 +407,42 @@ export const rewardParticipantProxy = onCall(
         isV2 ? "V2" : "V1"
       );
 
+      const resolvedPaymentMethodId =
+        await resolveWithdrawalPaymentMethodIdByRecipient(
+          participantId,
+          recipientAddress
+        );
+
+      let withdrawalId: string | null = null;
+      if (resolvedPaymentMethodId) {
+        const withdrawalResult = await createWithdrawalRecordIfNotExists(
+          {
+            participantId,
+            paymentMethodId: resolvedPaymentMethodId,
+            amountRequested: Number(rewardAmountPerParticipant),
+            rewardCurrencyId: Number(rewardCurrencyId),
+            txnHash: bundleTxnHash,
+          },
+          isV2 ? "V2" : "V1"
+        );
+        withdrawalId = withdrawalResult.withdrawalId;
+        logger.info(`${logPrefix} Claim withdrawal record processed`, {
+          participantId,
+          taskCompletionId,
+          recipientAddress,
+          paymentMethodId: resolvedPaymentMethodId,
+          withdrawalId,
+          created: withdrawalResult.created,
+        });
+      } else {
+        logger.warn(`${logPrefix} Claim recipient not mapped to payment method`, {
+          participantId,
+          taskCompletionId,
+          recipientAddress,
+          txnHash: bundleTxnHash,
+        });
+      }
+
       return {
         success: true,
         participantProxy: smartAaAddress,
@@ -416,6 +454,7 @@ export const rewardParticipantProxy = onCall(
         nonce: nonceString,
         txnHash: bundleTxnHash,
         rewardRecordId,
+        withdrawalId,
         amount: rewardAmountPerParticipant,
         rewardCurrencyId,
       };
