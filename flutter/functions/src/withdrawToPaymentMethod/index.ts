@@ -17,6 +17,7 @@ import {
   AUTH,
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
+import { CANVASSINGTaggedCallData } from "../../utils/helpers/attribution";
 import { createWithdrawalRecord } from "../../utils/helpers/createWithdrawal";
 /**
  * Cloud function to withdraw tokens to a payment method
@@ -266,7 +267,7 @@ export const withdrawToPaymentMethod = onCall(
             {
               to: paxAccountAddress as Address,
               value: BigInt(0),
-              data: withdrawData,
+              data: CANVASSINGTaggedCallData(withdrawData),
             },
           ],
         });
@@ -281,7 +282,7 @@ export const withdrawToPaymentMethod = onCall(
             {
               to: currency as Address,
               value: BigInt(0),
-              data: transferData,
+              data: CANVASSINGTaggedCallData(transferData),
             },
           ],
         });
