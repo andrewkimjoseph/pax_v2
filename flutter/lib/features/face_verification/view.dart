@@ -341,7 +341,11 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
                 variance: const ButtonStyle.outline(
                   density: ButtonDensity.icon,
                 ),
-                icon: const FaIcon(FontAwesomeIcons.rotate, size: 20),
+                icon: const FaIcon(
+                  FontAwesomeIcons.rotate,
+                  size: 20,
+                  color: PaxColors.deepPurple,
+                ),
               ),
             ],
           ),
@@ -355,8 +359,7 @@ class _FaceVerificationViewState extends ConsumerState<FaceVerificationView> {
         onUrlChanged: (url) {
           if (!mounted) return;
           setState(() {
-            _goodIdUrl =
-                isGoodIdUrl(url, goodIdHostPrefix) ? url : null;
+            _goodIdUrl = isGoodIdUrl(url, goodIdHostPrefix) ? url : null;
           });
         },
       ),
