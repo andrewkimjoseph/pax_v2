@@ -203,6 +203,29 @@ final totalTaskCompletionsProvider = Provider<AsyncValue<int>>((ref) {
   );
 });
 
+// Provider for claimed task completions (reward paid with txn linked to completion)
+final validTaskCompletionsCountProvider = Provider<AsyncValue<int>>((ref) {
+  final userId = ref.watch(authProvider).user.uid;
+  final allActivitiesAsync = ref.watch(allActivitiesProvider(userId));
+
+  return allActivitiesAsync.when(
+    data: (allActivities) {
+      final taskCompletions =
+          allActivities
+              .where((a) => a.type == ActivityType.taskCompletion)
+              .toList();
+      final claimed = filterTaskCompletionActivities(
+        taskCompletions,
+        allActivities,
+        CompletionFilter.claimed,
+      );
+      return AsyncValue.data(claimed.length);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (error, stackTrace) => AsyncValue.error(error, stackTrace),
+  );
+});
+
 // Provider for count of unclaimed task completions (complete, valid, no reward yet)
 final unclaimedTaskCompletionsCountProvider = Provider<AsyncValue<int>>((ref) {
   final userId = ref.watch(authProvider).user.uid;
