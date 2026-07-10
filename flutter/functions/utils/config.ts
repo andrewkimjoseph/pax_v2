@@ -57,10 +57,10 @@ export const USDT_TOKEN_ADDRESS = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e" a
 export const USDC_TOKEN_ADDRESS = "0xcebA9300f2b948710d2653dD7B07f33A8B32118C" as Address;
 
 /** Default CELO amount to sponsor per wallet (in ether). */
-export const DEFAULT_SPONSOR_AMOUNT_CELO = "0.1";
+export const DEFAULT_SPONSOR_AMOUNT_CELO = "0.125";
 
 /** Minimum balance threshold for sponsoring gas (in ether). */
-export const MIN_BALANCE_THRESHOLD_CELO = "0.075";
+export const MIN_BALANCE_THRESHOLD_CELO = "0.125";
 
 /** Default referral reward amount (off-chain, stored as numeric). */
 export const REFERRAL_REWARD_AMOUNT = 100;
