@@ -22,6 +22,7 @@ import { canvassingRewarderABI } from "../../utils/abis/canvassingRewarder";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
 import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
+import { computeNetPayoutAmount } from "../../utils/helpers/computeNetPayoutAmount";
 import { createWithdrawalRecordIfNotExists } from "../../utils/helpers/createWithdrawal";
 import { resolveWithdrawalPaymentMethodIdByRecipient } from "../../utils/helpers/resolveWithdrawalPaymentMethod";
 export const processAchievementClaim = onCall(
@@ -121,6 +122,12 @@ export const processAchievementClaim = onCall(
         Number.isInteger(donationBasisPoints) &&
         Number(donationBasisPoints) > 0 &&
         Number(donationBasisPoints) <= 10000;
+
+      const payoutAmount = computeNetPayoutAmount(
+        Number(amountEarned),
+        hasDonationSplit,
+        donationBasisPoints
+      );
 
       const isV2 = !!eoWalletAddress && !!encryptedPrivateKey && !!sessionKey;
 
@@ -315,7 +322,7 @@ export const processAchievementClaim = onCall(
             {
               participantId: userId,
               paymentMethodId: resolvedPaymentMethodId,
-              amountRequested: Number(amountEarned),
+              amountRequested: payoutAmount,
               rewardCurrencyId: 1,
               txnHash: bundleTxnHash,
             },
@@ -498,7 +505,7 @@ export const processAchievementClaim = onCall(
             {
               participantId: userId,
               paymentMethodId: resolvedPaymentMethodId,
-              amountRequested: Number(amountEarned),
+              amountRequested: payoutAmount,
               rewardCurrencyId: 1,
               txnHash: bundleTxnHash,
             },

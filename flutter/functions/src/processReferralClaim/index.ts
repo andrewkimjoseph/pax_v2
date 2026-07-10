@@ -22,6 +22,7 @@ import {
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { getTokenConfigForCurrencyId } from "../../utils/helpers/tokenConfig";
 import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
+import { computeNetPayoutAmount } from "../../utils/helpers/computeNetPayoutAmount";
 import { createWithdrawalRecordIfNotExists } from "../../utils/helpers/createWithdrawal";
 import { resolveWithdrawalPaymentMethodIdByRecipient } from "../../utils/helpers/resolveWithdrawalPaymentMethod";
 import type { ToSimpleSmartAccountReturnType } from "permissionless/accounts";
@@ -350,14 +351,11 @@ export const processReferralClaim = onCall(
         Number(donationBasisPoints) > 0 &&
         Number(donationBasisPoints) <= 10000;
 
-      const payoutAmount = hasDonationSplit
-        ? Number(
-            (
-              (amountReceived * (10000 - Number(donationBasisPoints))) /
-              10000
-            ).toFixed(12)
-          )
-        : amountReceived;
+      const payoutAmount = computeNetPayoutAmount(
+        Number(amountReceived),
+        hasDonationSplit,
+        donationBasisPoints
+      );
 
       // Referrals are currently paid in the primary reward currency (token id 1).
       const { tokenAddress, decimals } = getTokenConfigForCurrencyId(1);

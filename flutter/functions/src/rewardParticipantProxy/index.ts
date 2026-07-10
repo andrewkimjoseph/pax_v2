@@ -24,6 +24,7 @@ import {
   createRewardRecord,
   updateRewardWithTxnHash,
 } from "../../utils/helpers/createReward";
+import { computeNetPayoutAmount } from "../../utils/helpers/computeNetPayoutAmount";
 import { createWithdrawalRecordIfNotExists } from "../../utils/helpers/createWithdrawal";
 import { resolveWithdrawalPaymentMethodIdByRecipient } from "../../utils/helpers/resolveWithdrawalPaymentMethod";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
@@ -318,6 +319,12 @@ export const rewardParticipantProxy = onCall(
         Number(donationBasisPoints) > 0 &&
         Number(donationBasisPoints) <= 10000;
 
+      const payoutAmount = computeNetPayoutAmount(
+        Number(rewardAmountPerParticipant),
+        hasDonationSplit,
+        donationBasisPoints
+      );
+
       const { tokenAddress, decimals } = getTokenConfigForCurrencyId(
         Number(rewardCurrencyId)
       );
@@ -419,7 +426,7 @@ export const rewardParticipantProxy = onCall(
           {
             participantId,
             paymentMethodId: resolvedPaymentMethodId,
-            amountRequested: Number(rewardAmountPerParticipant),
+            amountRequested: payoutAmount,
             rewardCurrencyId: Number(rewardCurrencyId),
             txnHash: bundleTxnHash,
           },
@@ -455,7 +462,7 @@ export const rewardParticipantProxy = onCall(
         txnHash: bundleTxnHash,
         rewardRecordId,
         withdrawalId,
-        amount: rewardAmountPerParticipant,
+        amount: payoutAmount,
         rewardCurrencyId,
       };
     } catch (error) {
