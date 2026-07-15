@@ -18,7 +18,7 @@ import {
   CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
 } from "../../utils/config";
 import { canvassingWalletRegistryABI } from "../../utils/abis/canvassingWalletRegistry";
-import { CANVASSINGTaggedCallData } from "../../utils/helpers/attribution";
+import { tagCalldata } from "../../utils/helpers/attribution";
 import { isWalletAlreadyLogged } from "../../utils/registry";
 
 export const logWalletToRegistry = onCall(
@@ -86,7 +86,7 @@ export const logWalletToRegistry = onCall(
 
       const txHash = await walletClient.sendTransaction({
         to: CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
-        data: CANVASSINGTaggedCallData(data),
+        data: tagCalldata(data),
       });
 
       logger.info(

@@ -19,7 +19,7 @@ import {
   DEFAULT_SPONSOR_AMOUNT_CELO,
 } from "../../utils/config";
 import { canvassingGasSponsorABI } from "../../utils/abis/canvassingGasSponsor";
-import { CANVASSINGTaggedCallData } from "../../utils/helpers/attribution";
+import { tagCalldata } from "../../utils/helpers/attribution";
 import { isWalletWhitelisted } from "../../utils/helpers/isWalletWhitelisted";
 import { isWalletAlreadyLogged } from "../../utils/registry";
 
@@ -163,7 +163,7 @@ export const sponsorWalletGas = onCall(
 
       const txHash = await walletClient.sendTransaction({
         to: CANVASSING_GAS_SPONSOR_PROXY_ADDRESS,
-        data: CANVASSINGTaggedCallData(data),
+        data: tagCalldata(data),
       });
 
       logger.info("[V2] sponsorWalletGas tx submitted", {

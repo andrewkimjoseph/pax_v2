@@ -13,7 +13,7 @@ import {
   AUTH,
 } from "../../utils/config";
 import { paxAccountV1ABI } from "../../utils/abis/paxAccountV1ABI";
-import { CANVASSINGTaggedCallData } from "../../utils/helpers/attribution";
+import { tagCalldata } from "../../utils/helpers/attribution";
 // Initialize clients
 
 /**
@@ -182,7 +182,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
       // Prepare the transaction data
       const transactionData = {
         to: contractAddress as Address,
-        data: CANVASSINGTaggedCallData(addNonPrimaryPaymentMethodData),
+        data: tagCalldata(addNonPrimaryPaymentMethodData),
       };
 
       // Send the transaction via account abstraction

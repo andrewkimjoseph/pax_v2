@@ -10,10 +10,11 @@
     "strict": true,
     "target": "ES2017",
     "baseUrl": ".",
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@shared/*": ["utils/*"]
     },
-    "resolveJsonModule": true,
+    "resolveJsonModule": true,  
     "skipLibCheck": true
   },
   "compileOnSave": true,

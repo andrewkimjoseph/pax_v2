@@ -17,6 +17,7 @@ import {
 } from "../../utils/config";
 import { getDeployedProxyContractAddress } from "../../utils/helpers/getDeployedProxyContractAddress";
 import { getProxyDeployDataAndSalt } from "../../utils/helpers/getProxyDeployDataAndSalt";
+import { tagCalldata } from "../../utils/helpers/attribution";
 // Initialize clients
 
 /**
@@ -183,7 +184,7 @@ export const createPaxAccountV1Proxy = onCall(
           {
             to: CREATE2_FACTORY,
             value: BigInt(0),
-            data: deployData,
+            data: tagCalldata(deployData),
           },
         ],
       });
