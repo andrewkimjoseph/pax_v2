@@ -4,9 +4,9 @@ import {
   Address,
   createWalletClient,
   http,
-  encodeFunctionData,
   keccak256,
   stringToHex,
+  type Abi,
 } from "viem";
 import { celo } from "viem/chains";
 import {
@@ -18,7 +18,7 @@ import {
   CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
 } from "../../utils/config";
 import { canvassingWalletRegistryABI } from "../../utils/abis/canvassingWalletRegistry";
-import { tagCalldata } from "../../utils/helpers/attribution";
+import { sendEoaPreparedContractCall } from "../../utils/celina/sendEoa";
 import { isWalletAlreadyLogged } from "../../utils/registry";
 
 export const logWalletToRegistry = onCall(
@@ -78,15 +78,13 @@ export const logWalletToRegistry = onCall(
       });
       const uidHash = keccak256(stringToHex(userId));
 
-      const data = encodeFunctionData({
-        abi: canvassingWalletRegistryABI,
+      const txHash = await sendEoaPreparedContractCall({
+        from: PAX_MASTER_PRIVATE_KEY_ACCOUNT.address,
+        walletClient,
+        contractAddress: CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
+        abi: canvassingWalletRegistryABI as Abi,
         functionName: "logWallet",
         args: [eoAddress, uidHash],
-      });
-
-      const txHash = await walletClient.sendTransaction({
-        to: CANVASSING_WALLET_REGISTRY_PROXY_ADDRESS,
-        data: tagCalldata(data),
       });
 
       logger.info(

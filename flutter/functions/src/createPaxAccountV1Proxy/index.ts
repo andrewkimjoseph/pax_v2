@@ -1,9 +1,8 @@
 // src/createPaxAccountProxy/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { Address, http } from "viem";
+import { Address } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
-import { celo } from "viem/chains";
 import { createViemAccount } from "@privy-io/server-auth/viem";
 import {
   PAXACCOUNT_V1_IMPLEMENTATION_ADDRESS,
@@ -11,13 +10,12 @@ import {
   CREATE2_FACTORY,
   PRIVY_CLIENT,
   PUBLIC_CLIENT,
-  PIMLICO_URL,
   DB,
   AUTH,
 } from "../../utils/config";
 import { getDeployedProxyContractAddress } from "../../utils/helpers/getDeployedProxyContractAddress";
 import { getProxyDeployDataAndSalt } from "../../utils/helpers/getProxyDeployDataAndSalt";
-import { tagCalldata } from "../../utils/helpers/attribution";
+import { sendPrivySponsoredUserOp } from "../../utils/celina/sendAaV1Privy";
 // Initialize clients
 
 /**
@@ -27,19 +25,7 @@ export const createPaxAccountV1Proxy = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
     try {
-      const { createSmartAccountClient } = await import("permissionless");
       const { toSimpleSmartAccount } = await import("permissionless/accounts");
-      const { createPimlicoClient } = await import(
-        "permissionless/clients/pimlico"
-      );
-
-      const PIMLICO_CLIENT = createPimlicoClient({
-        transport: http(PIMLICO_URL),
-        entryPoint: {
-          address: entryPoint07Address,
-          version: "0.7",
-        },
-      });
       // Ensure the user is authenticated
       if (!request.auth) {
         logger.error("[V1] Unauthenticated request to createPaxAccountV1Proxy", {
@@ -156,58 +142,27 @@ export const createPaxAccountV1Proxy = onCall(
         address: smartAccount.address,
       });
 
-      // Create the smart account client
-      const smartAccountClient = createSmartAccountClient({
-        account: smartAccount,
-        chain: celo,
-        bundlerTransport: http(PIMLICO_URL),
-        paymaster: PIMLICO_CLIENT,
-        userOperation: {
-          estimateFeesPerGas: async () => {
-            return (await PIMLICO_CLIENT.getUserOperationGasPrice()).fast;
-          },
-        },
-      });
-
-      const _owner = smartAccount.address;
-
-      // Get deployment data with salt for CREATE2
       const { deployData } = getProxyDeployDataAndSalt(
         PAXACCOUNT_V1_IMPLEMENTATION_ADDRESS,
-        _owner,
-        _primaryPaymentMethod as Address // Use the provided wallet address as primary payment method
+        smartAccount.address,
+        _primaryPaymentMethod as Address
       );
 
-      // Deploy using CREATE2 factory via account abstraction
-      const userOpTxnHash = await smartAccountClient.sendUserOperation({
+      const { bundleTxnHash: userOpTxnHash } = await sendPrivySponsoredUserOp({
+        smartAccount,
         calls: [
           {
             to: CREATE2_FACTORY,
             value: BigInt(0),
-            data: tagCalldata(deployData),
+            data: deployData,
           },
         ],
+        logPrefix: "[V1]",
       });
 
       logger.info("[V1] User operation submitted", { userOpTxnHash });
 
-      // Wait for user operation receipt
-      const userOpReceipt =
-        await smartAccountClient.waitForUserOperationReceipt({
-          hash: userOpTxnHash,
-        });
-
-      if (!userOpReceipt.success) {
-        logger.error("[V1] User operation failed in createPaxAccountV1Proxy", {
-          userOpReceipt,
-        });
-        throw new HttpsError(
-          "internal",
-          `User operation failed: ${JSON.stringify(userOpReceipt)}`
-        );
-      }
-
-      const txnHash = userOpReceipt.receipt.transactionHash;
+      const txnHash = userOpTxnHash;
       logger.info("[V1] Transaction confirmed", { txnHash });
 
       // Retrieve proxy address from logs

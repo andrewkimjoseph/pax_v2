@@ -198,6 +198,7 @@ export const rewardParticipantProxy = onCall(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let smartAccount: any;
       let logPrefix: string;
+      let v2PrivateKeyHex: `0x${string}` | undefined;
 
       if (isV1) {
         logPrefix = "[V1]";
@@ -273,7 +274,7 @@ export const rewardParticipantProxy = onCall(
             "Private key does not match eoWalletAddress"
           );
         }
-        privateKeyHex = "";
+        v2PrivateKeyHex = privateKeyHex as `0x${string}`;
         smartAccount = await toSimpleSmartAccount({
           client: PUBLIC_CLIENT,
           owner: eoaAccount,
@@ -390,11 +391,19 @@ export const rewardParticipantProxy = onCall(
             ],
           });
 
-      const { bundleTxnHash } = await submitSponsoredRewarderCall({
-        smartAccount,
-        data: rewardClaimData,
-        logPrefix,
-      });
+      const { bundleTxnHash } = isV2
+        ? await submitSponsoredRewarderCall({
+            path: "v2",
+            privateKeyHex: v2PrivateKeyHex!,
+            data: rewardClaimData,
+            logPrefix,
+          })
+        : await submitSponsoredRewarderCall({
+            path: "v1",
+            smartAccount,
+            data: rewardClaimData,
+            logPrefix,
+          });
 
       const nonceString = signaturePackage.nonce;
       const rewardRecordId = await createRewardRecord({

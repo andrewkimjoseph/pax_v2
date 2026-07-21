@@ -183,7 +183,7 @@ export const processAchievementClaim = onCall(
           );
         }
         const eoAddress = eoWalletAddress as Address;
-        privateKeyHex = "";
+        const v2PrivateKeyHex = privateKeyHex as `0x${string}`;
 
         const { toSimpleSmartAccount } = await import(
           "permissionless/accounts"
@@ -295,7 +295,8 @@ export const processAchievementClaim = onCall(
             });
 
         const { bundleTxnHash } = await submitSponsoredRewarderCall({
-          smartAccount,
+          path: "v2",
+          privateKeyHex: v2PrivateKeyHex,
           data,
           logPrefix: "[V2]",
         });
@@ -478,6 +479,7 @@ export const processAchievementClaim = onCall(
             });
 
         const { bundleTxnHash } = await submitSponsoredRewarderCall({
+          path: "v1",
           smartAccount,
           data,
           logPrefix: "[V1]",

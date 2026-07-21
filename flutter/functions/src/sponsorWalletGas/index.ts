@@ -4,8 +4,8 @@ import {
   Address,
   createWalletClient,
   http,
-  encodeFunctionData,
   parseEther,
+  type Abi,
 } from "viem";
 import { celo } from "viem/chains";
 import {
@@ -19,7 +19,7 @@ import {
   DEFAULT_SPONSOR_AMOUNT_CELO,
 } from "../../utils/config";
 import { canvassingGasSponsorABI } from "../../utils/abis/canvassingGasSponsor";
-import { tagCalldata } from "../../utils/helpers/attribution";
+import { sendEoaPreparedContractCall } from "../../utils/celina/sendEoa";
 import { isWalletWhitelisted } from "../../utils/helpers/isWalletWhitelisted";
 import { isWalletAlreadyLogged } from "../../utils/registry";
 
@@ -155,15 +155,13 @@ export const sponsorWalletGas = onCall(
         transport: http(DRPC_URL),
       });
 
-      const data = encodeFunctionData({
-        abi: canvassingGasSponsorABI,
+      const txHash = await sendEoaPreparedContractCall({
+        from: PAX_MASTER_PRIVATE_KEY_ACCOUNT.address,
+        walletClient,
+        contractAddress: CANVASSING_GAS_SPONSOR_PROXY_ADDRESS,
+        abi: canvassingGasSponsorABI as Abi,
         functionName: "sponsorWallet",
         args: [eoAddress, amountWei],
-      });
-
-      const txHash = await walletClient.sendTransaction({
-        to: CANVASSING_GAS_SPONSOR_PROXY_ADDRESS,
-        data: tagCalldata(data),
       });
 
       logger.info("[V2] sponsorWalletGas tx submitted", {

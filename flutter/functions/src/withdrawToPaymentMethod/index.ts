@@ -1,9 +1,8 @@
 // src/withdrawToPaymentMethod/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { Address, encodeFunctionData, http } from "viem";
+import { Address, encodeFunctionData } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
-import { celo } from "viem/chains";
 import { createViemAccount } from "@privy-io/server-auth/viem";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -13,11 +12,11 @@ import {
   FUNCTION_RUNTIME_OPTS,
   PRIVY_CLIENT,
   PUBLIC_CLIENT,
-  PIMLICO_URL,
   AUTH,
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
-import { tagCalldata } from "../../utils/helpers/attribution";
+import { sendCelinaPreparedFlow } from "../../utils/celina/sendAaV2";
+import { sendPrivySponsoredUserOp } from "../../utils/celina/sendAaV1Privy";
 import { createWithdrawalRecord } from "../../utils/helpers/createWithdrawal";
 /**
  * Cloud function to withdraw tokens to a payment method
@@ -27,19 +26,7 @@ export const withdrawToPaymentMethod = onCall(
   async (request) => {
     try {
       // Ensure the user is authenticated
-      const { createSmartAccountClient } = await import("permissionless");
       const { toSimpleSmartAccount } = await import("permissionless/accounts");
-      const { createPimlicoClient } = await import(
-        "permissionless/clients/pimlico"
-      );
-
-      const PIMLICO_CLIENT = createPimlicoClient({
-        transport: http(PIMLICO_URL),
-        entryPoint: {
-          address: entryPoint07Address,
-          version: "0.7",
-        },
-      });
       if (!request.auth) {
         logger.error("Unauthenticated request to withdrawToPaymentMethod", {
           requestAuth: request.auth,
@@ -182,6 +169,7 @@ export const withdrawToPaymentMethod = onCall(
       });
 
       let smartAccount: Awaited<ReturnType<typeof toSimpleSmartAccount>>;
+      let v2PrivateKeyHex: `0x${string}` | undefined;
 
       if (isV1) {
         const wallet = await PRIVY_CLIENT.walletApi.getWallet({
@@ -235,26 +223,14 @@ export const withdrawToPaymentMethod = onCall(
             version: "0.7",
           },
         });
-        privateKeyHex = "";
+        v2PrivateKeyHex = privateKeyHex as `0x${string}`;
       }
 
       logger.info(`${logPrefix} Using Smart Account`, {
         address: smartAccount.address,
       });
 
-      const smartAccountClient = createSmartAccountClient({
-        account: smartAccount,
-        chain: celo,
-        bundlerTransport: http(PIMLICO_URL),
-        paymaster: PIMLICO_CLIENT,
-        userOperation: {
-          estimateFeesPerGas: async () => {
-            return (await PIMLICO_CLIENT.getUserOperationGasPrice()).fast;
-          },
-        },
-      });
-
-      let userOpTxnHash: `0x${string}`;
+      let bundleTxnHash: `0x${string}`;
 
       if (isV1) {
         const withdrawData = encodeFunctionData({
@@ -262,51 +238,37 @@ export const withdrawToPaymentMethod = onCall(
           functionName: "withdrawToPaymentMethod",
           args: [BigInt(paymentMethodId!), amountInWei, currency as Address],
         });
-        userOpTxnHash = await smartAccountClient.sendUserOperation({
+        ({ bundleTxnHash } = await sendPrivySponsoredUserOp({
+          smartAccount,
           calls: [
             {
               to: paxAccountAddress as Address,
               value: BigInt(0),
-              data: tagCalldata(withdrawData),
+              data: withdrawData,
             },
           ],
-        });
+          logPrefix,
+        }));
       } else {
         const transferData = encodeFunctionData({
           abi: erc20ABI,
           functionName: "transfer",
           args: [paymentMethodAddress! as Address, amountInWei],
         });
-        userOpTxnHash = await smartAccountClient.sendUserOperation({
-          calls: [
+        ({ bundleTxnHash } = await sendCelinaPreparedFlow({
+          privateKeyHex: v2PrivateKeyHex!,
+          steps: [
             {
+              kind: "erc20",
               to: currency as Address,
-              value: BigInt(0),
-              data: tagCalldata(transferData),
+              data: transferData,
+              description: "Withdraw to payment method",
             },
           ],
-        });
+          summary: `${logPrefix} Withdraw to payment method`,
+        }));
       }
 
-      logger.info(`${logPrefix} User operation submitted`, { userOpTxnHash });
-
-      // Wait for user operation receipt
-      const userOpReceipt =
-        await smartAccountClient.waitForUserOperationReceipt({
-          hash: userOpTxnHash,
-        });
-
-      if (!userOpReceipt.success) {
-        logger.error(`${logPrefix} User operation failed in withdrawToPaymentMethod`, {
-          userOpReceipt,
-        });
-        throw new HttpsError("internal", "User operation failed");
-      }
-
-      // const txnHash = userOpReceipt.userOpHash;
-      // logger.info("Transaction confirmed", { txnHash });
-
-      const bundleTxnHash = userOpReceipt.receipt.transactionHash;
       logger.info(`${logPrefix} Bundle transaction confirmed`, { bundleTxnHash });
 
       // Create withdrawal record

@@ -1,9 +1,8 @@
 // src/screenParticipantProxy/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { Address, encodeFunctionData, http } from "viem";
+import { Address, encodeFunctionData } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
-import { celo } from "viem/chains";
 import { createViemAccount } from "@privy-io/server-auth/viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { FieldValue } from "firebase-admin/firestore";
@@ -13,13 +12,13 @@ import {
   FUNCTION_RUNTIME_OPTS,
   PRIVY_CLIENT,
   PUBLIC_CLIENT,
-  PIMLICO_URL,
   DB,
   AUTH,
   CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
-import { tagCalldata } from "../../utils/helpers/attribution";
+import { sendCelinaPreparedFlow } from "../../utils/celina/sendAaV2";
+import { sendPrivySponsoredUserOp } from "../../utils/celina/sendAaV1Privy";
 import {
   createScreeningSignaturePackageCanvassing,
   generateRandomNonce,
@@ -40,18 +39,6 @@ export const screenParticipantProxy = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
     try {
-      const { createPimlicoClient } = await import(
-        "permissionless/clients/pimlico"
-      );
-
-      const PIMLICO_CLIENT = createPimlicoClient({
-        transport: http(PIMLICO_URL),
-        entryPoint: {
-          address: entryPoint07Address,
-          version: "0.7",
-        },
-      });
-      const { createSmartAccountClient } = await import("permissionless");
       const { toSimpleSmartAccount } = await import("permissionless/accounts");
       // Ensure the user is authenticated
       if (!request.auth) {
@@ -144,6 +131,7 @@ export const screenParticipantProxy = onCall(
       });
 
       let smartAccount: Awaited<ReturnType<typeof toSimpleSmartAccount>>;
+      let v2PrivateKeyHex: `0x${string}` | undefined;
 
       if (isV1) {
         // V1: participant's Privy server wallet -> smart account
@@ -207,7 +195,7 @@ export const screenParticipantProxy = onCall(
             version: "0.7",
           },
         });
-        privateKeyHex = "";
+        v2PrivateKeyHex = privateKeyHex as `0x${string}`;
       }
 
       const participantProxy = smartAccount.address;
@@ -245,19 +233,6 @@ export const screenParticipantProxy = onCall(
       const signature = signaturePackage.signature;
       const nonceString = signaturePackage.nonce;
 
-      // Step 3: Submit screening transaction
-      const smartAccountClient = createSmartAccountClient({
-        account: smartAccount,
-        chain: celo,
-        bundlerTransport: http(PIMLICO_URL),
-        paymaster: PIMLICO_CLIENT,
-        userOperation: {
-          estimateFeesPerGas: async () => {
-            return (await PIMLICO_CLIENT.getUserOperationGasPrice()).fast;
-          },
-        },
-      });
-
       const screeningData = encodeFunctionData({
         abi: canvassingTaskManagerABI,
         functionName: "screenParticipantProxy",
@@ -266,37 +241,31 @@ export const screenParticipantProxy = onCall(
 
       logger.info(`${logPrefix} Submitting screening transaction`);
 
-      const userOpTxnHash = await smartAccountClient.sendUserOperation({
-        calls: [
-          {
-            to: CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
-            value: BigInt(0),
-            data: tagCalldata(screeningData),
-          },
-        ],
-      });
+      const screeningStep = {
+        kind: "contract" as const,
+        to: CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
+        data: screeningData,
+        description: "Screen participant",
+      };
 
-      logger.info(`${logPrefix} Transaction submitted`, { userOpTxnHash });
+      const { bundleTxnHash } = isV2
+        ? await sendCelinaPreparedFlow({
+            privateKeyHex: v2PrivateKeyHex!,
+            steps: [screeningStep],
+            summary: `${logPrefix} Screen participant`,
+          })
+        : await sendPrivySponsoredUserOp({
+            smartAccount,
+            calls: [
+              {
+                to: CANVASSING_TASK_MANAGER_PROXY_ADDRESS,
+                value: BigInt(0),
+                data: screeningData,
+              },
+            ],
+            logPrefix,
+          });
 
-      const userOpReceipt =
-        await smartAccountClient.waitForUserOperationReceipt({
-          hash: userOpTxnHash,
-        });
-
-      if (!userOpReceipt.success) {
-        logger.error(`${logPrefix} User operation failed in screenParticipantProxy`, {
-          userOpReceipt,
-        });
-        throw new HttpsError(
-          "internal",
-          `User operation failed: ${JSON.stringify(userOpReceipt)}`
-        );
-      }
-
-      // const txnHash = userOpReceipt.userOpHash;
-      // logger.info("Transaction confirmed", { txnHash });
-
-      const bundleTxnHash = userOpReceipt.receipt.transactionHash;
       logger.info(`${logPrefix} Bundle transaction confirmed`, { bundleTxnHash });
 
       // Step 4: Create screening record using the utility function

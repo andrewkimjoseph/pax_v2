@@ -1,8 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { Address, encodeFunctionData, http } from "viem";
+import { Address, encodeFunctionData } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
-import { celo } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { createViemAccount } from "@privy-io/server-auth/viem";
 import { erc20ABI } from "../../utils/abis/erc20";
@@ -11,31 +10,19 @@ import {
   FUNCTION_RUNTIME_OPTS,
   PRIVY_CLIENT,
   PUBLIC_CLIENT,
-  PIMLICO_URL,
   AUTH,
   MIN_DONATION_AMOUNT_GD,
 } from "../../utils/config";
 import { decryptPrivateKey } from "../../utils/helpers/decryptPrivateKey";
-import { tagCalldata } from "../../utils/helpers/attribution";
+import { sendCelinaPreparedFlow } from "../../utils/celina/sendAaV2";
+import { sendPrivySponsoredUserOp } from "../../utils/celina/sendAaV1Privy";
 
 export const donateToGoodCollective = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
     try {
       logger.info("donateToGoodCollective: request received");
-      const { createSmartAccountClient } = await import("permissionless");
       const { toSimpleSmartAccount } = await import("permissionless/accounts");
-      const { createPimlicoClient } = await import(
-        "permissionless/clients/pimlico"
-      );
-
-      const PIMLICO_CLIENT = createPimlicoClient({
-        transport: http(PIMLICO_URL),
-        entryPoint: {
-          address: entryPoint07Address,
-          version: "0.7",
-        },
-      });
 
       if (!request.auth) {
         throw new HttpsError(
@@ -121,6 +108,7 @@ export const donateToGoodCollective = onCall(
       });
 
       let smartAccount: Awaited<ReturnType<typeof toSimpleSmartAccount>>;
+      let v2PrivateKeyHex: `0x${string}` | undefined;
       if (isV1) {
         logger.info("donateToGoodCollective: resolving V1 smart account", {
           userId,
@@ -166,24 +154,14 @@ export const donateToGoodCollective = onCall(
             version: "0.7",
           },
         });
+        v2PrivateKeyHex = privateKeyHex as `0x${string}`;
       }
       logger.info("donateToGoodCollective: smart account resolved", {
         userId,
         smartAccountAddress: smartAccount.address,
       });
 
-      const smartAccountClient = createSmartAccountClient({
-        account: smartAccount,
-        chain: celo,
-        bundlerTransport: http(PIMLICO_URL),
-        paymaster: PIMLICO_CLIENT,
-        userOperation: {
-          estimateFeesPerGas: async () =>
-            (await PIMLICO_CLIENT.getUserOperationGasPrice()).fast,
-        },
-      });
-
-      let userOpTxnHash: `0x${string}`;
+      let bundleTxnHash: `0x${string}`;
       const emptyTransferAndCallData: `0x${string}` = "0x";
       if (isV1) {
         logger.info("donateToGoodCollective: preparing V1 calls", { userId });
@@ -271,12 +249,11 @@ export const donateToGoodCollective = onCall(
           callCount: calls.length,
           addedPaymentMethod: !!addPaymentMethodData,
         });
-        userOpTxnHash = await smartAccountClient.sendUserOperation({
-          calls: calls.map((call) => ({
-            ...call,
-            data: tagCalldata(call.data),
-          })),
-        });
+        ({ bundleTxnHash } = await sendPrivySponsoredUserOp({
+          smartAccount,
+          calls,
+          logPrefix: "donateToGoodCollective",
+        }));
       } else {
         logger.info("donateToGoodCollective: sending V2 user operation", {
           userId,
@@ -291,37 +268,20 @@ export const donateToGoodCollective = onCall(
             emptyTransferAndCallData,
           ],
         });
-        userOpTxnHash = await smartAccountClient.sendUserOperation({
-          calls: [
+        ({ bundleTxnHash } = await sendCelinaPreparedFlow({
+          privateKeyHex: v2PrivateKeyHex!,
+          steps: [
             {
+              kind: "erc20",
               to: currency as Address,
-              value: BigInt(0),
-              data: tagCalldata(transferData),
+              data: transferData,
+              description: "Donate to GoodCollective",
             },
           ],
-        });
-      }
-      logger.info("donateToGoodCollective: user operation submitted", {
-        userId,
-        userOpTxnHash,
-      });
-
-      logger.info("donateToGoodCollective: waiting for user operation receipt", {
-        userId,
-        userOpTxnHash,
-      });
-      const userOpReceipt = await smartAccountClient.waitForUserOperationReceipt({
-        hash: userOpTxnHash,
-      });
-      if (!userOpReceipt.success) {
-        logger.error("donateToGoodCollective: user operation failed", {
-          userId,
-          userOpTxnHash,
-        });
-        throw new HttpsError("internal", "Donation user operation failed.");
+          summary: "donateToGoodCollective",
+        }));
       }
 
-      const bundleTxnHash = userOpReceipt.receipt.transactionHash;
       logger.info("Donation submitted successfully", {
         userId,
         paxAccountAddress,

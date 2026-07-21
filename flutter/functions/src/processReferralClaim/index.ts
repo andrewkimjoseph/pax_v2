@@ -231,6 +231,7 @@ export const processReferralClaim = onCall(
 
       let smartAccount: ToSimpleSmartAccountReturnType;
       let logPrefix: string;
+      let v2PrivateKeyHex: `0x${string}` | undefined;
 
       if (isV1) {
         logPrefix = "[V1][Referral]";
@@ -305,7 +306,7 @@ export const processReferralClaim = onCall(
             "Private key does not match eoWalletAddress"
           );
         }
-        privateKeyHex = "";
+        v2PrivateKeyHex = privateKeyHex as `0x${string}`;
         smartAccount = await toSimpleSmartAccount({
           client: PUBLIC_CLIENT,
           owner: eoaAccount,
@@ -425,11 +426,19 @@ export const processReferralClaim = onCall(
             ],
           });
 
-      const { bundleTxnHash } = await submitSponsoredRewarderCall({
-        smartAccount,
-        data: rewardClaimData,
-        logPrefix,
-      });
+      const { bundleTxnHash } = isV1
+        ? await submitSponsoredRewarderCall({
+            path: "v1",
+            smartAccount,
+            data: rewardClaimData,
+            logPrefix,
+          })
+        : await submitSponsoredRewarderCall({
+            path: "v2",
+            privateKeyHex: v2PrivateKeyHex!,
+            data: rewardClaimData,
+            logPrefix,
+          });
 
       const now = new Date();
       await referralDoc.ref.update({

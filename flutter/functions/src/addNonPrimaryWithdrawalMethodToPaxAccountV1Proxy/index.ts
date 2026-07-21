@@ -1,19 +1,17 @@
 // src/addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy/index.ts
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { Address, http, encodeFunctionData } from "viem";
+import { Address, encodeFunctionData } from "viem";
 import { entryPoint07Address } from "viem/account-abstraction";
-import { celo } from "viem/chains";
 import { createViemAccount } from "@privy-io/server-auth/viem";
 import {
   FUNCTION_RUNTIME_OPTS,
   PRIVY_CLIENT,
   PUBLIC_CLIENT,
-  PIMLICO_URL,
   AUTH,
 } from "../../utils/config";
 import { paxAccountV1ABI } from "../../utils/abis/paxAccountV1ABI";
-import { tagCalldata } from "../../utils/helpers/attribution";
+import { sendPrivySponsoredUserOp } from "../../utils/celina/sendAaV1Privy";
 // Initialize clients
 
 /**
@@ -23,19 +21,7 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
   FUNCTION_RUNTIME_OPTS,
   async (request) => {
     try {
-      const { createSmartAccountClient } = await import("permissionless");
       const { toSimpleSmartAccount } = await import("permissionless/accounts");
-      const { createPimlicoClient } = await import(
-        "permissionless/clients/pimlico"
-      );
-
-      const PIMLICO_CLIENT = createPimlicoClient({
-        transport: http(PIMLICO_URL),
-        entryPoint: {
-          address: entryPoint07Address,
-          version: "0.7",
-        },
-      });
 
       // Ensure the user is authenticated
       if (!request.auth) {
@@ -160,60 +146,24 @@ export const addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy = onCall(
         address: smartAccount.address,
       });
 
-      // Create the smart account client
-      const smartAccountClient = createSmartAccountClient({
-        account: smartAccount,
-        chain: celo,
-        bundlerTransport: http(PIMLICO_URL),
-        paymaster: PIMLICO_CLIENT,
-        userOperation: {
-          estimateFeesPerGas: async () => {
-            return (await PIMLICO_CLIENT.getUserOperationGasPrice()).fast;
-          },
-        },
-      });
-
       const addNonPrimaryPaymentMethodData = encodeFunctionData({
         abi: paxAccountV1ABI,
         functionName: "addNonPrimaryPaymentMethod",
         args: [BigInt(_paymentMethodId), walletAddress as Address],
       });
 
-      // Prepare the transaction data
-      const transactionData = {
-        to: contractAddress as Address,
-        data: tagCalldata(addNonPrimaryPaymentMethodData),
-      };
-
-      // Send the transaction via account abstraction
-      const userOpTxnHash = await smartAccountClient.sendUserOperation({
-        calls: [transactionData],
-      });
-
-      logger.info("[V1] User operation submitted for adding payment method", {
-        userOpTxnHash,
-      });
-
-      // Wait for user operation receipt
-      const userOpReceipt =
-        await smartAccountClient.waitForUserOperationReceipt({
-          hash: userOpTxnHash,
-        });
-
-      if (!userOpReceipt.success) {
-        logger.error(
-          "[V1] User operation failed in addNonPrimaryWithdrawalMethodToPaxAccountV1Proxy",
+      const { bundleTxnHash: txnHash } = await sendPrivySponsoredUserOp({
+        smartAccount,
+        calls: [
           {
-            userOpReceipt,
-          }
-        );
-        throw new HttpsError(
-          "internal",
-          `User operation failed: ${JSON.stringify(userOpReceipt)}`
-        );
-      }
+            to: contractAddress as Address,
+            value: BigInt(0),
+            data: addNonPrimaryPaymentMethodData,
+          },
+        ],
+        logPrefix: "[V1]",
+      });
 
-      const txnHash = userOpReceipt.receipt.transactionHash;
       logger.info("[V1] Payment method addition transaction confirmed", { txnHash });
 
       return {
