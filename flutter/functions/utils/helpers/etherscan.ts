@@ -2,12 +2,28 @@ import { logger } from "firebase-functions/v2";
 import {
   ETHERSCAN_API_KEY_1,
   ETHERSCAN_API_KEY_2,
+  ETHERSCAN_API_KEY_3,
+  ETHERSCAN_API_KEY_4,
   ETHERSCAN_V2_BASE_URL,
 } from "../config";
 import { celo } from "viem/chains";
 
 /** Round-robin index for Etherscan API keys. */
 let etherscanKeyIndex = 0;
+
+/** Celo Blockscout REST API — no API key; used when Etherscan is rate-limited. */
+const CELO_BLOCKSCOUT_BASE_URL = "https://celo.blockscout.com/api/v2";
+
+function isRateLimitedResult(result: unknown): boolean {
+  if (typeof result !== "string") return false;
+  const lower = result.toLowerCase();
+  return (
+    lower.includes("rate limit") ||
+    lower.includes("max rate") ||
+    lower.includes("api limit reached") ||
+    lower.includes("community free api limit")
+  );
+}
 
 export interface EtherscanApiUsageResult {
   creditsUsed: number;
@@ -47,11 +63,23 @@ export async function getEtherscanApiUsage(
 }
 
 /**
+ * Returns configured Etherscan API keys (non-empty only).
+ */
+export function getEtherscanApiKeys(): string[] {
+  return [
+    ETHERSCAN_API_KEY_1,
+    ETHERSCAN_API_KEY_2,
+    ETHERSCAN_API_KEY_3,
+    ETHERSCAN_API_KEY_4,
+  ].filter(Boolean);
+}
+
+/**
  * Returns the next Etherscan API key in round-robin order.
  * @throws Error if no keys are configured.
  */
 export function getNextEtherscanApiKey(): string {
-  const keys = [ETHERSCAN_API_KEY_1, ETHERSCAN_API_KEY_2].filter(Boolean);
+  const keys = getEtherscanApiKeys();
   if (keys.length === 0) {
     throw new Error("Etherscan API keys not configured.");
   }
@@ -120,58 +148,189 @@ export function buildEtherscanTxListUrl(
   return url.toString();
 }
 
+interface BlockscoutTokenTransfer {
+  block_number?: number;
+  timestamp?: string;
+  transaction_hash?: string;
+  from?: { hash?: string };
+  to?: { hash?: string };
+  token?: {
+    address_hash?: string;
+    name?: string;
+    symbol?: string;
+    decimals?: string | number;
+  };
+  total?: { value?: string; decimals?: string | number };
+  method?: string;
+}
+
 /**
- * Fetches transaction list from Etherscan v2 API.
- * Uses round-robin API key. Returns parsed result array; throws on HTTP or API error.
+ * Maps a Blockscout token-transfer item to the Etherscan tokentx shape used by the app.
+ */
+export function mapBlockscoutTransferToEtherscanTx(
+  item: BlockscoutTokenTransfer
+): EtherscanTx {
+  const tsMs = item.timestamp ? Date.parse(item.timestamp) : NaN;
+  const timeStamp = Number.isFinite(tsMs)
+    ? String(Math.floor(tsMs / 1000))
+    : undefined;
+  return {
+    blockNumber:
+      item.block_number !== undefined ? String(item.block_number) : undefined,
+    timeStamp,
+    hash: item.transaction_hash,
+    from: item.from?.hash,
+    to: item.to?.hash,
+    value: item.total?.value,
+    contractAddress: item.token?.address_hash,
+    tokenName: item.token?.name,
+    tokenSymbol: item.token?.symbol,
+    tokenDecimal:
+      item.token?.decimals !== undefined
+        ? String(item.token.decimals)
+        : undefined,
+    functionName: item.method,
+    isError: "0",
+    txreceipt_status: "1",
+  };
+}
+
+/**
+ * Fetches ERC-20 token transfers from Celo Blockscout (no API key).
+ */
+export async function fetchBlockscoutTxList(
+  params: FetchTxListParams
+): Promise<{ status: string; message: string; result: EtherscanTx[] }> {
+  const { page = 1, offset = 20 } = params;
+  const address = params.address.trim().toLowerCase().startsWith("0x")
+    ? params.address.trim().toLowerCase()
+    : `0x${params.address.trim().toLowerCase()}`;
+
+  // Blockscout first page is newest-first; we only request page 1 from callers today.
+  const url = `${CELO_BLOCKSCOUT_BASE_URL}/addresses/${address}/token-transfers?type=ERC-20`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    logger.warn("Blockscout API HTTP error", {
+      status: response.status,
+      address,
+    });
+    throw new Error(`Blockscout API returned ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    items?: BlockscoutTokenTransfer[];
+  };
+  const items = Array.isArray(data.items) ? data.items : [];
+  const start = Math.max(0, (page - 1) * offset);
+  const sliced = items.slice(start, start + offset);
+  const result = sliced.map(mapBlockscoutTransferToEtherscanTx);
+
+  return {
+    status: result.length > 0 ? "1" : "0",
+    message: result.length > 0 ? "OK" : "No transactions found",
+    result,
+  };
+}
+
+/**
+ * Fetches transaction list from Etherscan v2 API, rotating keys on rate-limit.
+ * Falls back to Celo Blockscout when all Etherscan keys are exhausted / rate-limited.
  */
 export async function fetchEtherscanTxList(
   params: FetchTxListParams
 ): Promise<{ status: string; message: string; result: EtherscanTx[] }> {
-  const apiKey = getNextEtherscanApiKey();
-  const url = buildEtherscanTxListUrl(params, apiKey);
+  const keys = getEtherscanApiKeys();
+  if (keys.length === 0) {
+    logger.warn("No Etherscan keys; using Blockscout fallback");
+    return fetchBlockscoutTxList(params);
+  }
 
-  const response = await fetch(url);
-  if (!response.ok) {
-    logger.warn("Etherscan API HTTP error", {
-      status: response.status,
+  let lastError: Error | null = null;
+  let sawRateLimit = false;
+
+  for (let attempt = 0; attempt < keys.length; attempt++) {
+    const apiKey = getNextEtherscanApiKey();
+    const url = buildEtherscanTxListUrl(params, apiKey);
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        lastError = new Error(`Etherscan API returned ${response.status}`);
+        logger.warn("Etherscan API HTTP error", {
+          status: response.status,
+          address: params.address,
+        });
+        continue;
+      }
+
+      const data = (await response.json()) as EtherscanTxListResponse;
+
+      if (data.status !== "1" && data.message !== "No transactions found") {
+        if (isRateLimitedResult(data.result)) {
+          sawRateLimit = true;
+          lastError = new Error(
+            typeof data.result === "string" ? data.result : "Etherscan rate limit"
+          );
+          logger.warn("Etherscan rate limited; trying next key", {
+            address: params.address,
+            result:
+              typeof data.result === "string"
+                ? data.result.slice(0, 160)
+                : data.result,
+          });
+          continue;
+        }
+        logger.warn("Etherscan API error response", {
+          message: data.message,
+          result:
+            typeof data.result === "string"
+              ? data.result.slice(0, 160)
+              : data.result,
+          address: params.address,
+        });
+        lastError = new Error(
+          (typeof data.result === "string" && data.result) ||
+            data.message ||
+            "Etherscan API error"
+        );
+        continue;
+      }
+
+      let result: EtherscanTx[] = [];
+      if (Array.isArray(data.result)) {
+        result = data.result;
+      } else if (
+        typeof data.result === "string" &&
+        data.result !== "No transactions found"
+      ) {
+        logger.warn("Unexpected Etherscan result type", { result: data.result });
+      }
+
+      return {
+        status: data.status,
+        message: data.message,
+        result,
+      };
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+    }
+  }
+
+  if (sawRateLimit || lastError) {
+    logger.warn("Etherscan exhausted; falling back to Blockscout", {
       address: params.address,
+      sawRateLimit,
+      lastError: lastError?.message,
     });
-    throw new Error(`Etherscan API returned ${response.status}`);
+    try {
+      return await fetchBlockscoutTxList(params);
+    } catch (fallbackErr) {
+      throw lastError ??
+        (fallbackErr instanceof Error
+          ? fallbackErr
+          : new Error(String(fallbackErr)));
+    }
   }
 
-  const data = (await response.json()) as EtherscanTxListResponse;
-  if (data.status !== "1" && data.message !== "No transactions found") {
-    logger.warn("Etherscan API error response", {
-      message: data.message,
-      address: params.address,
-    });
-    throw new Error(data.message || "Etherscan API error");
-  }
-
-  const usage = await getEtherscanApiUsage(apiKey);
-  if (usage) {
-    logger.info("Etherscan API usage", {
-      creditsUsed: usage.creditsUsed,
-      creditsAvailable: usage.creditsAvailable,
-      creditLimit: usage.creditLimit,
-      limitInterval: usage.limitInterval,
-      intervalExpiryTimespan: usage.intervalExpiryTimespan,
-    });
-  }
-
-  let result: EtherscanTx[] = [];
-  if (Array.isArray(data.result)) {
-    result = data.result;
-  } else if (
-    typeof data.result === "string" &&
-    data.result !== "No transactions found"
-  ) {
-    logger.warn("Unexpected Etherscan result type", { result: data.result });
-  }
-
-  return {
-    status: data.status,
-    message: data.message,
-    result,
-  };
+  throw lastError ?? new Error("Etherscan API error");
 }
