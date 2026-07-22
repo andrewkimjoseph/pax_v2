@@ -25,8 +25,20 @@ export async function sendEoaPreparedContractCall(params: {
     );
   }
 
+  const walletAccount = params.walletClient.account;
+  if (
+    typeof walletAccount !== "object" ||
+    walletAccount === null ||
+    !("signTransaction" in walletAccount)
+  ) {
+    throw new HttpsError(
+      "failed-precondition",
+      "walletClient must be created with a local signing account"
+    );
+  }
+
   return params.walletClient.sendTransaction({
-    account: params.from,
+    account: walletAccount,
     chain: params.walletClient.chain,
     to: step.to,
     data: step.data,
