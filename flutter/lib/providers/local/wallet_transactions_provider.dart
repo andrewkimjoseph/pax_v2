@@ -35,6 +35,9 @@ const _staleThreshold = Duration(minutes: 5);
 const _defaultPageSize = 50;
 
 class WalletTransactionsNotifier extends Notifier<WalletTransactionsState> {
+  String? _inFlightAddress;
+  Future<void>? _inFlightFetch;
+
   @override
   WalletTransactionsState build() => const WalletTransactionsState();
 
@@ -76,6 +79,28 @@ class WalletTransactionsNotifier extends Notifier<WalletTransactionsState> {
   }
 
   Future<void> _fetchAndUpsert(String eoAddress, String participantId) async {
+    if (_inFlightAddress == eoAddress && _inFlightFetch != null) {
+      await _inFlightFetch;
+      return;
+    }
+
+    final fetch = _runFetchAndUpsert(eoAddress, participantId);
+    _inFlightAddress = eoAddress;
+    _inFlightFetch = fetch;
+    try {
+      await fetch;
+    } finally {
+      if (_inFlightFetch == fetch) {
+        _inFlightAddress = null;
+        _inFlightFetch = null;
+      }
+    }
+  }
+
+  Future<void> _runFetchAndUpsert(
+    String eoAddress,
+    String participantId,
+  ) async {
     state = state.copyWith(isRefreshing: true, clearError: true);
     try {
       final response = await WalletTransactionsService().getTransactionList(

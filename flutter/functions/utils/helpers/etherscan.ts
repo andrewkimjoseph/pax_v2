@@ -11,18 +11,58 @@ import { celo } from "viem/chains";
 /** Round-robin index for Etherscan API keys. */
 let etherscanKeyIndex = 0;
 
-/** Celo Blockscout REST API — no API key; used when Etherscan is rate-limited. */
+/** Min spacing between Etherscan calls per key (ms) within one function instance. */
+const ETHERSCAN_KEY_MIN_SPACING_MS = 200;
+
+/** Backoff before trying the next key after a rate-limit response (ms). */
+const ETHERSCAN_RATE_LIMIT_BACKOFF_MS = 250;
+
+/** Last call timestamp per API key (per Cloud Function instance). */
+const etherscanKeyLastCallMs = new Map<string, number>();
+
+/** Celo Blockscout REST API — no API key; primary source for Celo tx history. */
 const CELO_BLOCKSCOUT_BASE_URL = "https://celo.blockscout.com/api/v2";
 
-function isRateLimitedResult(result: unknown): boolean {
-  if (typeof result !== "string") return false;
+type EtherscanErrorKind =
+  | "per_second"
+  | "community_pool"
+  | "invalid_key"
+  | "other";
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function classifyEtherscanError(result: unknown): EtherscanErrorKind {
+  if (typeof result !== "string") return "other";
   const lower = result.toLowerCase();
-  return (
+  if (lower.includes("community free api limit")) return "community_pool";
+  if (
+    lower.includes("invalid api key") ||
+    lower.includes("invalid api key attempts")
+  ) {
+    return "invalid_key";
+  }
+  if (
     lower.includes("rate limit") ||
     lower.includes("max rate") ||
-    lower.includes("api limit reached") ||
-    lower.includes("community free api limit")
-  );
+    lower.includes("api limit reached")
+  ) {
+    return "per_second";
+  }
+  return "other";
+}
+
+function isRateLimitedResult(result: unknown): boolean {
+  const kind = classifyEtherscanError(result);
+  return kind === "per_second" || kind === "community_pool";
+}
+
+async function waitForEtherscanKeySlot(apiKey: string): Promise<void> {
+  const lastCall = etherscanKeyLastCallMs.get(apiKey) ?? 0;
+  const waitMs = ETHERSCAN_KEY_MIN_SPACING_MS - (Date.now() - lastCall);
+  if (waitMs > 0) await sleep(waitMs);
+  etherscanKeyLastCallMs.set(apiKey, Date.now());
 }
 
 export interface EtherscanApiUsageResult {
@@ -234,22 +274,21 @@ export async function fetchBlockscoutTxList(
 
 /**
  * Fetches transaction list from Etherscan v2 API, rotating keys on rate-limit.
- * Falls back to Celo Blockscout when all Etherscan keys are exhausted / rate-limited.
+ * Used as fallback when Blockscout is unavailable.
  */
-export async function fetchEtherscanTxList(
+async function fetchEtherscanTxListFromApi(
   params: FetchTxListParams
 ): Promise<{ status: string; message: string; result: EtherscanTx[] }> {
   const keys = getEtherscanApiKeys();
   if (keys.length === 0) {
-    logger.warn("No Etherscan keys; using Blockscout fallback");
-    return fetchBlockscoutTxList(params);
+    throw new Error("Etherscan API keys not configured.");
   }
 
   let lastError: Error | null = null;
-  let sawRateLimit = false;
 
   for (let attempt = 0; attempt < keys.length; attempt++) {
     const apiKey = getNextEtherscanApiKey();
+    await waitForEtherscanKeySlot(apiKey);
     const url = buildEtherscanTxListUrl(params, apiKey);
 
     try {
@@ -266,33 +305,32 @@ export async function fetchEtherscanTxList(
       const data = (await response.json()) as EtherscanTxListResponse;
 
       if (data.status !== "1" && data.message !== "No transactions found") {
+        const resultText =
+          typeof data.result === "string" ? data.result : String(data.result);
+        const errorKind = classifyEtherscanError(data.result);
+
         if (isRateLimitedResult(data.result)) {
-          sawRateLimit = true;
-          lastError = new Error(
-            typeof data.result === "string" ? data.result : "Etherscan rate limit"
-          );
+          lastError = new Error(resultText || "Etherscan rate limit");
           logger.warn("Etherscan rate limited; trying next key", {
             address: params.address,
-            result:
-              typeof data.result === "string"
-                ? data.result.slice(0, 160)
-                : data.result,
+            errorKind,
+            result: resultText,
+            attempt: attempt + 1,
+            keyCount: keys.length,
           });
+          if (attempt < keys.length - 1) {
+            await sleep(ETHERSCAN_RATE_LIMIT_BACKOFF_MS);
+          }
           continue;
         }
+
         logger.warn("Etherscan API error response", {
-          message: data.message,
-          result:
-            typeof data.result === "string"
-              ? data.result.slice(0, 160)
-              : data.result,
           address: params.address,
+          errorKind,
+          message: data.message,
+          result: resultText,
         });
-        lastError = new Error(
-          (typeof data.result === "string" && data.result) ||
-            data.message ||
-            "Etherscan API error"
-        );
+        lastError = new Error(resultText || data.message || "Etherscan API error");
         continue;
       }
 
@@ -316,21 +354,33 @@ export async function fetchEtherscanTxList(
     }
   }
 
-  if (sawRateLimit || lastError) {
-    logger.warn("Etherscan exhausted; falling back to Blockscout", {
+  throw lastError ?? new Error("Etherscan API error");
+}
+
+/**
+ * Fetches Celo wallet token transfers. Blockscout is primary (no API key);
+ * Etherscan is fallback when Blockscout fails.
+ */
+export async function fetchEtherscanTxList(
+  params: FetchTxListParams
+): Promise<{ status: string; message: string; result: EtherscanTx[] }> {
+  try {
+    return await fetchBlockscoutTxList(params);
+  } catch (blockscoutErr) {
+    logger.warn("Blockscout failed; falling back to Etherscan", {
       address: params.address,
-      sawRateLimit,
-      lastError: lastError?.message,
+      error:
+        blockscoutErr instanceof Error
+          ? blockscoutErr.message
+          : String(blockscoutErr),
     });
-    try {
-      return await fetchBlockscoutTxList(params);
-    } catch (fallbackErr) {
-      throw lastError ??
-        (fallbackErr instanceof Error
-          ? fallbackErr
-          : new Error(String(fallbackErr)));
-    }
   }
 
-  throw lastError ?? new Error("Etherscan API error");
+  try {
+    return await fetchEtherscanTxListFromApi(params);
+  } catch (etherscanErr) {
+    throw etherscanErr instanceof Error
+      ? etherscanErr
+      : new Error(String(etherscanErr));
+  }
 }

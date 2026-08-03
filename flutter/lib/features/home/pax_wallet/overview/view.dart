@@ -66,20 +66,19 @@ class _PaxWalletViewState extends ConsumerState<PaxWalletView> {
       }
     });
 
-    // When balance card updates (e.g. after miniapp tx or pull-to-refresh), refresh transaction list.
+    // When balance card updates after a tx (not on initial load), refresh transactions.
     ref.listen(paxWalletViewProvider, (prev, next) {
       final addr = ref.read(paxWalletProvider).wallet?.eoAddress;
       if (addr == null) return;
       if (next.state != PaxWalletViewState.loaded) return;
       final prevLoaded = prev?.state == PaxWalletViewState.loaded;
-      final justLoaded = !prevLoaded;
       final balancesChanged =
           prevLoaded &&
           prev != null &&
           (prev.gdBalance != next.gdBalance ||
               prev.cusdBalance != next.cusdBalance ||
               prev.usdtBalance != next.usdtBalance);
-      if (justLoaded || balancesChanged) {
+      if (balancesChanged) {
         ref.read(walletTransactionsProvider.notifier).refresh(addr);
       }
     });
