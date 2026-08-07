@@ -1,4 +1,4 @@
-import { preparedStepsToUserOpCalls } from "@andrewkimjoseph/celina-sdk";
+import { preparedStepsToUserOpCalls } from "@andrewkimjoseph/celina-sdk/aa";
 import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 import { http, type Address, type Hex } from "viem";
