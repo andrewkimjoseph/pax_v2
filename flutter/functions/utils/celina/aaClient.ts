@@ -1,4 +1,4 @@
-import { createAAClient, type AAClient } from "@andrewkimjoseph/celina-sdk";
+import { createAAClient, type AAClient } from "@andrewkimjoseph/celina-sdk/aa";
 import type { Hex } from "viem";
 import { CANVASSING_ATTRIBUTION_TAGS } from "./client";
 import { PIMLICO_API_KEY, PUBLIC_CLIENT } from "../config";
