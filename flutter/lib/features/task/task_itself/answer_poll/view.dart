@@ -79,7 +79,7 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = ErrorMessageUtil.userFacing(e.toString());
+        _errorMessage = ErrorMessageUtil.fromError(e);
       });
     }
   }
@@ -149,11 +149,13 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
         answers: answers,
       );
 
-      await ref.read(taskCompletionServiceProvider).onTaskRecordedComplete(
-        screeningId: screeningId,
-        taskId: taskId,
-        taskCompletionId: result['taskCompletionId'] as String,
-      );
+      await ref
+          .read(taskCompletionServiceProvider)
+          .onTaskRecordedComplete(
+            screeningId: screeningId,
+            taskId: taskId,
+            taskCompletionId: result['taskCompletionId'] as String,
+          );
 
       if (!mounted) return;
 
@@ -188,7 +190,7 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
         'screeningId': screeningId,
         'error': e.toString(),
       });
-      _showErrorDialog(ErrorMessageUtil.userFacing(e.toString()));
+      _showErrorDialog(ErrorMessageUtil.fromError(e));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -409,19 +411,25 @@ class _AnswerPollViewState extends ConsumerState<AnswerPollView> {
                       i++
                     ) ...[
                       if (i > 0) const Gap(12),
-                      RadioItem(
-                        value: sortedQuestions[qIndex].options[i].id,
-                        trailing: Text(
-                          sortedQuestions[qIndex].options[i].text,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color:
-                                _isSubmitting
-                                    ? PaxColors.deepPurple.withValues(
-                                      alpha: 0.5,
-                                    )
-                                    : PaxColors.deepPurple,
+                      SizedBox(
+                        width: double.infinity,
+                        child: RadioItem(
+                          value: sortedQuestions[qIndex].options[i].id,
+                          trailing: Expanded(
+                            child: Text(
+                              sortedQuestions[qIndex].options[i].text,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                height: 1.4,
+                                color:
+                                    _isSubmitting
+                                        ? PaxColors.deepPurple.withValues(
+                                          alpha: 0.5,
+                                        )
+                                        : PaxColors.deepPurple,
+                              ),
+                            ),
                           ),
                         ),
                       ),
