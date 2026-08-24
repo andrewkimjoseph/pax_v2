@@ -110,7 +110,7 @@ class _CheckOutAppViewState extends ConsumerState<CheckOutAppView> {
     } catch (e) {
       _isCompleting = false; // Reset flag on error
       if (mounted) {
-        _showErrorDialog(context, ErrorMessageUtil.userFacing(e.toString()));
+        _showErrorDialog(context, ErrorMessageUtil.fromError(e));
       }
     }
   }

@@ -156,7 +156,7 @@ class _ClaimReviewSummaryViewState
       if (!mounted) return;
       context.pop();
       _showErrorDialog(
-        'Claim failed: ${ErrorMessageUtil.userFacing(e.toString())}',
+        'Claim failed: ${ErrorMessageUtil.fromError(e)}',
       );
     } finally {
       if (mounted) {

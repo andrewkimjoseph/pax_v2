@@ -128,7 +128,7 @@ class _TaskItselfViewState extends ConsumerState<FillAFormView> {
     } catch (e) {
       _isCompleting = false;
       if (mounted) {
-        _showErrorDialog(context, ErrorMessageUtil.userFacing(e.toString()));
+        _showErrorDialog(context, ErrorMessageUtil.fromError(e));
       }
     }
   }
