@@ -5,6 +5,7 @@ import 'package:pax/services/wallet/wallet_service.dart';
 import 'package:pax/services/wallet/wallet_encryption.dart';
 import 'package:pax/services/wallet/drive_service.dart';
 import 'package:pax/services/wallet/local_wallet_cache.dart';
+import 'package:pax/services/wallet/wallet_backup_reconciliation.dart';
 import 'package:pax/utils/secret_constants.dart' as secret_constants;
 
 enum WalletCredentialsStatus { initial, loading, loaded, error }
@@ -79,7 +80,12 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
       }
 
       final encrypted = walletEnc.encrypt(result.mnemonic, accountId);
-      await drive.upload(encrypted);
+      // Overwrite any existing backup in place instead of creating a duplicate
+      // file. Drive allows multiple files with the same name, so without this
+      // a retried creation (e.g. after a partial failure) would silently leave
+      // an orphaned backup with a different mnemonic behind.
+      final existingFileId = await drive.findAppDataFile();
+      await drive.upload(encrypted, existingFileId: existingFileId);
       if (kDebugMode) {
         debugPrint('[WalletCredentials] WalletCredentials: uploaded to Drive');
       }
@@ -112,9 +118,16 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
   }
 
   /// Restores wallet from local cache first, then Drive as fallback.
+  ///
+  /// [expectedEoAddress], when known (e.g. from the Firestore-pinned
+  /// `pax_wallets` document), is used to self-heal accounts affected by the
+  /// legacy duplicate-Drive-backup bug: if more than one backup file is found,
+  /// each candidate is decrypted and compared against [expectedEoAddress] so
+  /// the correct one can be restored and the orphaned duplicates cleaned up.
   Future<void> restoreWallet({
     required String accessToken,
     required String accountId,
+    String? expectedEoAddress,
   }) async {
     if (kDebugMode) {
       debugPrint('[WalletCredentials] WalletCredentials: restoreWallet start');
@@ -186,9 +199,28 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
       }
       final drive = DriveService(accessToken: accessToken);
       try {
-        final fileId = await drive.findAppDataFile();
-        if (fileId != null) {
-          final content = await drive.download(fileId);
+        final candidates = await drive.listAppDataFiles();
+
+        if (candidates.isEmpty) {
+          // No backup found during restore — do not create a new wallet here.
+          // Wallet creation is handled explicitly by the wallet creation flow.
+          drive.close();
+          if (kDebugMode) {
+            debugPrint(
+              '[WalletCredentials] WalletCredentials: no Drive backup found during restore',
+            );
+          }
+          state = state.copyWith(
+            status: WalletCredentialsStatus.error,
+            errorMessage:
+                'Wallet backup not found in Google Drive. '
+                'Please sign in with the Google account you used when creating your wallet.',
+          );
+          return;
+        }
+
+        if (candidates.length == 1) {
+          final content = await drive.download(candidates.first.id);
           final mnemonic = await compute(_decryptInBackground, [
             content,
             accountId,
@@ -211,19 +243,16 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
           return;
         }
 
-        // No backup found during restore — do not create a new wallet here.
-        // Wallet creation is handled explicitly by the wallet creation flow.
-        drive.close();
-        if (kDebugMode) {
-          debugPrint(
-            '[WalletCredentials] WalletCredentials: no Drive backup found during restore',
-          );
-        }
-        state = state.copyWith(
-          status: WalletCredentialsStatus.error,
-          errorMessage:
-              'Wallet backup not found in Google Drive. '
-              'Please sign in with the Google account you used when creating your wallet.',
+        // Multiple backup files found (legacy duplicate-upload bug). Self-heal
+        // by decrypting each candidate and matching it against the
+        // Firestore-pinned address, then cleaning up the orphan(s).
+        await _reconcileMultipleDriveBackups(
+          drive: drive,
+          localCache: localCache,
+          walletService: walletService,
+          accountId: accountId,
+          candidates: candidates,
+          expectedEoAddress: expectedEoAddress,
         );
         return;
       } catch (e) {
@@ -239,6 +268,137 @@ class WalletCredentialsNotifier extends Notifier<WalletCredentialsState> {
         errorMessage: e.toString(),
       );
     }
+  }
+
+  /// Decrypts each of [candidates], compares the derived EO address against
+  /// [expectedEoAddress] using the pure [selectBackupWinner] logic, restores
+  /// the winning backup, and deletes the orphaned duplicate(s) from Drive.
+  Future<void> _reconcileMultipleDriveBackups({
+    required DriveService drive,
+    required LocalWalletCache localCache,
+    required WalletService walletService,
+    required String accountId,
+    required List<DriveFileInfo> candidates,
+    String? expectedEoAddress,
+  }) async {
+    if (kDebugMode) {
+      debugPrint(
+        '[WalletCredentials] WalletCredentials: ${candidates.length} Drive '
+        'backups found, reconciling (expectedEoAddress present: '
+        '${(expectedEoAddress?.isNotEmpty ?? false)})',
+      );
+    }
+    final needsEoAddress = normalizeEoAddress(expectedEoAddress).isNotEmpty;
+
+    final mnemonicsByFileId = <String, String>{};
+    final credentialsByFileId = <String, Credentials>{};
+    final decrypted = <DecryptedBackupCandidate>[];
+
+    for (final candidate in candidates) {
+      try {
+        final content = await drive.download(candidate.id);
+        final mnemonic = await compute(_decryptInBackground, [
+          content,
+          accountId,
+        ]);
+        mnemonicsByFileId[candidate.id] = mnemonic;
+
+        if (!needsEoAddress) {
+          // No pinned address to reconcile against yet; selectBackupWinner
+          // will default to the first (newest) decrypted entry.
+          decrypted.add(DecryptedBackupCandidate(fileId: candidate.id));
+          continue;
+        }
+
+        final credentials = await walletService.restoreFromMnemonic(
+          mnemonic,
+          saveToStorage: false,
+        );
+        credentialsByFileId[candidate.id] = credentials;
+        decrypted.add(
+          DecryptedBackupCandidate(
+            fileId: candidate.id,
+            eoAddress: credentials.address.with0x,
+          ),
+        );
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[WalletCredentials] WalletCredentials: candidate '
+            '${candidate.id} failed to decrypt/derive: $e',
+          );
+        }
+      }
+    }
+
+    final result = selectBackupWinner(
+      decrypted: decrypted,
+      totalCandidateCount: candidates.length,
+      expectedEoAddress: expectedEoAddress,
+    );
+
+    if (!result.isSuccess) {
+      drive.close();
+      if (kDebugMode) {
+        debugPrint(
+          '[WalletCredentials] WalletCredentials: reconciliation failed: '
+          '${result.errorMessage}',
+        );
+      }
+      state = state.copyWith(
+        status: WalletCredentialsStatus.error,
+        errorMessage: result.errorMessage,
+      );
+      return;
+    }
+
+    final winnerFileId = result.winnerFileId!;
+    final winnerMnemonic = mnemonicsByFileId[winnerFileId]!;
+    final credentials =
+        credentialsByFileId[winnerFileId] ??
+        await walletService.restoreFromMnemonic(
+          winnerMnemonic,
+          saveToStorage: true,
+        );
+    if (credentialsByFileId.containsKey(winnerFileId)) {
+      // Winner was only derived without persisting; persist it now.
+      await walletService.restoreFromMnemonic(
+        winnerMnemonic,
+        saveToStorage: true,
+      );
+    }
+    await localCache.cacheWallet(winnerMnemonic, accountId);
+
+    // Self-heal: remove the orphaned duplicate(s), keeping only the winner.
+    for (final candidate in candidates) {
+      if (candidate.id == winnerFileId) continue;
+      try {
+        await drive.deleteFile(candidate.id);
+        if (kDebugMode) {
+          debugPrint(
+            '[WalletCredentials] WalletCredentials: deleted orphaned '
+            'Drive backup ${candidate.id}',
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint(
+            '[WalletCredentials] WalletCredentials: failed to delete '
+            'orphaned backup ${candidate.id}: $e',
+          );
+        }
+      }
+    }
+
+    drive.close();
+    state = state.copyWith(
+      status: WalletCredentialsStatus.loaded,
+      credentials: credentials,
+      mnemonic: winnerMnemonic,
+      eoAddress: credentials.address.with0x,
+      errorMessage: null,
+      isDebugOverride: false,
+    );
   }
 
   void clearCredentials() {

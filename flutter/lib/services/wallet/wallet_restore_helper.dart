@@ -98,6 +98,7 @@ Future<void> restoreWalletIfNeeded(
     await walletCredNotifier.restoreWallet(
       accessToken: accessToken,
       accountId: driveAccount.id,
+      expectedEoAddress: paxWalletState.wallet?.eoAddress,
     );
     if (kDebugMode) {
       debugPrint('[WalletRestoreHelper] wallet restored on preload');
