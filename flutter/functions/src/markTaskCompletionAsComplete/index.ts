@@ -4,6 +4,7 @@ import { logger } from "firebase-functions/v2";
 import { FieldValue } from "firebase-admin/firestore";
 
 import { FUNCTION_RUNTIME_OPTS, DB, AUTH } from "../../utils/config";
+import { requireParticipantHasVerifiedWithdrawalMethod } from "../../utils/helpers/requireParticipantHasVerifiedWithdrawalMethod";
 
 /**
  * Cloud function to mark a task completion as complete
@@ -82,6 +83,19 @@ export const markTaskCompletionAsComplete = onCall(
       // Get the first (and should be only) matching document
       const taskCompletionDoc = querySnapshot.docs[0];
       const taskCompletionId = taskCompletionDoc.id;
+      const taskCompletionData = taskCompletionDoc.data();
+      const participantId = taskCompletionData?.participantId as
+        | string
+        | undefined;
+
+      if (participantId && participantId !== userId) {
+        throw new HttpsError(
+          "permission-denied",
+          "Only the participant may complete their task."
+        );
+      }
+
+      await requireParticipantHasVerifiedWithdrawalMethod(userId);
 
       // Update the document with timeCompleted and timeUpdated
       await taskCompletionDoc.ref.update({

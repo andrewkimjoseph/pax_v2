@@ -6,6 +6,7 @@ import ws from "ws";
 
 import { isPollActiveOnPax } from "../../utils/pollPublicationState";
 import { FUNCTION_RUNTIME_OPTS, DB, AUTH } from "../../utils/config";
+import { requireParticipantHasVerifiedWithdrawalMethod } from "../../utils/helpers/requireParticipantHasVerifiedWithdrawalMethod";
 
 function getSupabaseAdmin() {
   const url = process.env.SUPABASE_URL;
@@ -95,6 +96,8 @@ export const submitPollResponse = onCall(
       if (!participantDoc.exists) {
         throw new HttpsError("not-found", "Participant profile not found.");
       }
+
+      await requireParticipantHasVerifiedWithdrawalMethod(userId);
 
       const participant = participantDoc.data()!;
       const supabase = getSupabaseAdmin();

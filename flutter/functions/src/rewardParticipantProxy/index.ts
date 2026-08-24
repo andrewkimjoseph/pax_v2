@@ -29,6 +29,7 @@ import { createWithdrawalRecordIfNotExists } from "../../utils/helpers/createWit
 import { resolveWithdrawalPaymentMethodIdByRecipient } from "../../utils/helpers/resolveWithdrawalPaymentMethod";
 import { submitSponsoredRewarderCall } from "../../utils/helpers/submitSponsoredRewarderCall";
 import { assertRecipientIsUserWithdrawalMethod } from "../../utils/helpers/validateClaimRecipientAddress";
+import { requireParticipantHasVerifiedWithdrawalMethod } from "../../utils/helpers/requireParticipantHasVerifiedWithdrawalMethod";
 
 function isHttpsError(e: unknown): e is HttpsError {
   return (
@@ -150,6 +151,8 @@ export const rewardParticipantProxy = onCall(
           "Only the participant may claim their reward."
         );
       }
+
+      await requireParticipantHasVerifiedWithdrawalMethod(participantId);
 
       const taskDoc = await firestore.collection("tasks").doc(taskId).get();
       if (!taskDoc.exists) {

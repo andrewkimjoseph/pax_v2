@@ -24,6 +24,17 @@ import {
   generateRandomNonce,
 } from "../../utils/helpers/screeningSignature";
 import { createScreeningRecord } from "../../utils/helpers/createScreening";
+import { requireParticipantHasVerifiedWithdrawalMethod } from "../../utils/helpers/requireParticipantHasVerifiedWithdrawalMethod";
+
+function isHttpsError(e: unknown): e is HttpsError {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "code" in e &&
+    typeof (e as HttpsError).code === "string"
+  );
+}
+
 /**
  * Comprehensive cloud function to screen a participant
  * This function handles the complete process:
@@ -129,6 +140,8 @@ export const screenParticipantProxy = onCall(
         participantId,
         isV2,
       });
+
+      await requireParticipantHasVerifiedWithdrawalMethod(participantId);
 
       let smartAccount: Awaited<ReturnType<typeof toSimpleSmartAccount>>;
       let v2PrivateKeyHex: `0x${string}` | undefined;
@@ -318,6 +331,7 @@ export const screenParticipantProxy = onCall(
         taskCompletionId, // Added task completion ID to the response
       };
     } catch (error) {
+      if (isHttpsError(error)) throw error;
       logger.error("Comprehensive screening process failed", { error });
 
       throw new HttpsError(
