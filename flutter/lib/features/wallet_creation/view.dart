@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,8 @@ import 'package:pax/providers/db/participant/participant_provider.dart';
 import 'package:pax/providers/db/pax_wallet/pax_wallet_provider.dart';
 import 'package:pax/providers/wallet/wallet_credentials_provider.dart';
 import 'package:pax/routing/routes.dart';
+import 'package:pax/services/wallet/drive_service.dart';
+import 'package:pax/services/wallet/local_wallet_cache.dart';
 import 'package:pax/services/wallet/smart_account_service.dart';
 import 'package:pax/services/wallet/gooddollar_identity_service.dart';
 import 'package:pax/services/wallet/wallet_restore_helper.dart';
@@ -26,6 +29,11 @@ class WalletCreationView extends ConsumerStatefulWidget {
 
 class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   bool? _isWhitelisted;
+
+  /// Re-entrancy guard so a double-tap (or a tap that lands before the
+  /// "creating" step commits) cannot kick off two concurrent creation flows,
+  /// which would otherwise generate two competing mnemonics/backups.
+  bool _creationInFlight = false;
 
   @override
   void initState() {
@@ -54,6 +62,16 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
   }
 
   Future<void> _startWalletCreation() async {
+    if (_creationInFlight) {
+      if (kDebugMode) {
+        debugPrint(
+          '[WalletCreationView] creation already in flight, ignoring tap',
+        );
+      }
+      return;
+    }
+    _creationInFlight = true;
+
     final viewModel = ref.read(walletCreationProvider.notifier);
     final analytics = ref.read(analyticsProvider);
     final walletCredentialsNotifier = ref.read(
@@ -81,11 +99,46 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
         return;
       }
 
-      // Create wallet
-      await walletCredentialsNotifier.createWallet(
-        accessToken: accessToken,
-        accountId: driveAccount.id,
+      // Idempotency guard: if this Drive account already has a backup
+      // (local cache or Drive appDataFolder), restore it instead of
+      // generating a brand-new mnemonic. Without this, retrying after a
+      // partial failure ("Try Again") would create an orphaned duplicate
+      // wallet with a different mnemonic under the same Google account.
+      final localCache = LocalWalletCache();
+      final cachedMnemonic = await localCache.getCachedWallet(
+        driveAccount.id,
       );
+      if (!mounted) return;
+      String? existingDriveFileId;
+      if (cachedMnemonic == null) {
+        final probeDrive = DriveService(accessToken: accessToken);
+        try {
+          existingDriveFileId = await probeDrive.findAppDataFile();
+        } finally {
+          probeDrive.close();
+        }
+        if (!mounted) return;
+      }
+
+      if (cachedMnemonic != null || existingDriveFileId != null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[WalletCreationView] existing backup found for this Drive '
+            'account; restoring instead of creating a new wallet',
+          );
+        }
+        final knownEoAddress = ref.read(paxWalletProvider).wallet?.eoAddress;
+        await walletCredentialsNotifier.restoreWallet(
+          accessToken: accessToken,
+          accountId: driveAccount.id,
+          expectedEoAddress: knownEoAddress,
+        );
+      } else {
+        await walletCredentialsNotifier.createWallet(
+          accessToken: accessToken,
+          accountId: driveAccount.id,
+        );
+      }
       if (!mounted) return;
 
       final walletState = ref.read(walletCredentialsProvider);
@@ -163,6 +216,8 @@ class _WalletCreationViewState extends ConsumerState<WalletCreationView> {
       analytics.v2WalletCreationFailed({
         'error': e.toString().substring(0, e.toString().length.clamp(0, 99)),
       });
+    } finally {
+      _creationInFlight = false;
     }
   }
 
