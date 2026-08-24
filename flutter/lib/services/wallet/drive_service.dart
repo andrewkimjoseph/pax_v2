@@ -9,19 +9,27 @@ class DriveService {
       'https://www.googleapis.com/upload/drive/v3/files';
 
   final String accessToken;
-  final http.Client _client = http.Client();
+  final http.Client _client;
 
-  DriveService({required this.accessToken});
+  DriveService({required this.accessToken, http.Client? client})
+    : _client = client ?? http.Client();
 
-  Future<String?> findAppDataFile() async {
+  /// Lists all `pax_wallet_backup.enc` files in the appDataFolder, newest first.
+  ///
+  /// Google Drive allows multiple files with the same name, so legacy or
+  /// partially-failed wallet creations can leave duplicates behind. Ordering
+  /// by `createdTime desc` makes file selection deterministic even when
+  /// duplicates exist.
+  Future<List<DriveFileInfo>> listAppDataFiles() async {
     if (kDebugMode) {
       debugPrint('[Drive] Drive: listing app data folder');
     }
     final uri = Uri.parse('$_baseUrl/files').replace(
       queryParameters: {
         'spaces': 'appDataFolder',
-        'fields': 'files(id,name)',
+        'fields': 'files(id,name,createdTime)',
         'pageSize': '10',
+        'orderBy': 'createdTime desc',
       },
     );
     final response = await _client.get(uri, headers: _authHeaders());
@@ -38,20 +46,65 @@ class DriveService {
     }
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     final files = data['files'] as List<dynamic>? ?? [];
+    final matches = <DriveFileInfo>[];
     for (final f in files) {
       final map = f as Map<String, dynamic>;
-      if (map['name'] == _fileName) {
-        final id = map['id'] as String?;
-        if (kDebugMode) {
-          debugPrint('[Drive] Drive: backup found (fileId present)');
-        }
-        return id;
-      }
+      if (map['name'] != _fileName) continue;
+      final id = map['id'] as String?;
+      if (id == null) continue;
+      final createdTimeRaw = map['createdTime'] as String?;
+      matches.add(
+        DriveFileInfo(
+          id: id,
+          createdTime: createdTimeRaw != null
+              ? DateTime.tryParse(createdTimeRaw)
+              : null,
+        ),
+      );
     }
     if (kDebugMode) {
-      debugPrint('[Drive] Drive: no backup file found');
+      debugPrint('[Drive] Drive: found ${matches.length} backup file(s)');
     }
-    return null;
+    return matches;
+  }
+
+  /// Returns the newest backup file id, or null if none exists.
+  Future<String?> findAppDataFile() async {
+    final matches = await listAppDataFiles();
+    if (matches.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('[Drive] Drive: no backup file found');
+      }
+      return null;
+    }
+    if (kDebugMode) {
+      debugPrint('[Drive] Drive: backup found (fileId present)');
+    }
+    return matches.first.id;
+  }
+
+  Future<void> deleteFile(String fileId) async {
+    if (kDebugMode) {
+      debugPrint('[Drive] Drive: deleting backup file');
+    }
+    final response = await _client.delete(
+      Uri.parse('$_baseUrl/files/$fileId'),
+      headers: _authHeaders(),
+    );
+    if (response.statusCode != 200 && response.statusCode != 204) {
+      if (kDebugMode) {
+        debugPrint(
+          'Drive: delete failed ${response.statusCode} ${response.body}',
+        );
+      }
+      throw DriveException(
+        _messageForStatus(response.statusCode, response.body, 'Delete'),
+        response.statusCode,
+      );
+    }
+    if (kDebugMode) {
+      debugPrint('[Drive] Drive: delete OK');
+    }
   }
 
   Future<String> download(String fileId) async {
@@ -256,6 +309,12 @@ class DriveService {
   }
 
   void close() => _client.close();
+}
+
+class DriveFileInfo {
+  const DriveFileInfo({required this.id, required this.createdTime});
+  final String id;
+  final DateTime? createdTime;
 }
 
 class DriveException implements Exception {
