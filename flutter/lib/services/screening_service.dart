@@ -276,11 +276,7 @@ class ScreeningService {
       ref
           .read(screeningProvider.notifier)
           .setError(
-            ErrorMessageUtil.userFacing(
-              e is FirebaseFunctionsException
-                  ? e.message ?? e.toString()
-                  : e.toString(),
-            ),
+            ErrorMessageUtil.fromError(e),
           );
       rethrow;
     }

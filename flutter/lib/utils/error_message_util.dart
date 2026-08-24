@@ -1,3 +1,5 @@
+import 'package:cloud_functions/cloud_functions.dart';
+
 /// Utilities for formatting error messages for user-facing display.
 class ErrorMessageUtil {
   ErrorMessageUtil._();
@@ -6,6 +8,17 @@ class ErrorMessageUtil {
   /// only the message content (e.g. "You need to complete face verification"
   /// instead of "Exception: You need to complete face verification").
   static const List<String> _prefixes = ['Exception:', 'Error:'];
+
+  /// Strips plugin-style prefixes such as `[firebase_functions/failed-precondition]`.
+  static final RegExp _bracketPrefix = RegExp(r'^\[[^\]]+\]\s*');
+
+  /// Returns a user-facing error string from any caught error.
+  static String fromError(Object error) {
+    if (error is FirebaseFunctionsException) {
+      return userFacing(error.message ?? error.toString());
+    }
+    return userFacing(error.toString());
+  }
 
   /// Returns a user-facing error string by stripping common exception/error
   /// prefixes. Pass the result of [error.toString()] or [FirebaseFunctionsException.message].
@@ -19,6 +32,7 @@ class ErrorMessageUtil {
         break;
       }
     }
-    return msg;
+    msg = msg.replaceFirst(_bracketPrefix, '');
+    return msg.trim();
   }
 }
