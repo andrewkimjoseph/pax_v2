@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "reconcile-task-achievements": "tsx src/reconcileTaskAchievements/index.ts",
+    "reconcile-task-achievements:apply": "tsx src/reconcileTaskAchievements/index.ts --apply",
+    "save-disabled-users": "tsx src/saveDisableUsersToSpreadsheet/index.ts",
+    "send-tokens": "tsx src/sendTokensToAddress/index.ts",
+    "withdraw-from-task-manager": "tsx src/withdrawTokensFromTaskManager/index.ts",
+    "upgrade-pax-accounts": "tsx src/upgradePaxAccounts/ofManyParticipants/index.ts",
+    "categorize-account-types": "tsx src/categorizeParticipantAccountTypes/index.ts",
+    "categorize-account-types:apply": "tsx src/categorizeParticipantAccountTypes/index.ts --apply"
   },
   "keywords": [],
   "author": "",
