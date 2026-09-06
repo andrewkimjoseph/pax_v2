@@ -124,18 +124,20 @@ class _RootViewState extends ConsumerState<RootView> {
                 .maybeWhen(data: (tasks) => tasks.length, orElse: () => 0)
             : 0;
 
-    final earnedToClaimCount =
+    final achievementBadgeCount =
         achievementsEnabled && achievementState.state == AchievementState.loaded
             ? achievementState.achievements
                 .where(
                   (a) =>
                       achievementStatusName(a.status) ==
-                      AchievementStatusNames.earned,
+                          AchievementStatusNames.earned ||
+                      achievementStatusName(a.status) ==
+                          AchievementStatusNames.inProgress,
                 )
                 .length
             : 0;
 
-    final homeCombinedBadgeCount = taskCount + earnedToClaimCount;
+    final homeCombinedBadgeCount = taskCount + achievementBadgeCount;
     final int? homeTasksBadgeCount =
         homeCombinedBadgeCount > 0 ? homeCombinedBadgeCount : null;
 
